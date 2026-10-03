@@ -1520,7 +1520,7 @@ export default function App() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}>
             
-            {/* 🖼️ قسم الغلاف والصورة الشخصية */}
+            {/* 🖼️ قسم الغلاف والصورة الشخصية (تم زيادة الارتفاع لـ 220px ليصبح موضع الغلاف واضحاً) */}
             <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '220px', overflow: 'hidden' }}>
               
               {/* الغلاف (Cover) يتمدد ليغطي المربع الأسود كاملاً */}
@@ -1559,7 +1559,7 @@ export default function App() {
                 ✕
               </button>
 
-              {/* زر تغيير الغلاف متاح فقط لصاحب الموقع والرتب المشابهة */}
+              {/* زر تغيير الغلاف متاح فقط لصاحب الموقع والرتب المشابهة (أدمن، سوبر أدمن، بريميوم) */}
               {canEditCover && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
@@ -1606,7 +1606,7 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* زر الكاميرا على الصورة الشخصية للتغيير */}
+                  {/* زر الكاميرا على الصورة الشخصية للتغيير (متاح للأعضاء المسجلين والرتب، وغير متاح للزائر) */}
                   {canEditAvatar && (
                     <button 
                       onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
@@ -1873,7 +1873,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 قائمة المتصلين الجانبية - تم تعديل ترتيب العناصر عمودياً (صورة -> رتبة -> اسم) */}
+      {/* 🔴 قائمة المتصلين الجانبية */}
       {showOnlineModal && (
         <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '68%', maxWidth: '340px', minWidth: '260px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
@@ -1897,40 +1897,27 @@ export default function App() {
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
               {filteredOnlineUsers.map((u, idx) => (
-                <div 
-                  key={u.userId || idx} 
-                  onClick={() => openUserProfile(u)} 
-                  style={{ 
-                    padding: '10px 12px', 
-                    borderBottom: '1px solid #f1f5f9', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justify: 'center', 
-                    backgroundColor: '#fff', 
-                    cursor: 'pointer',
-                    gap: '4px'
-                  }}
-                >
-                  {/* 1. الصورة الشخصية في الأعلى */}
-                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                    {u.avatarUrl ? (
-                      <img src={u.avatarUrl} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      u.flag || '🇯🇴'
-                    )}
+                <div key={u.userId || idx} onClick={() => openUserProfile(u)} style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
+                      {u.avatarUrl ? (
+                        <img src={u.avatarUrl} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        u.flag || '🇯🇴'
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', lineHeight: '1.2' }}>
+                        {u.role || 'زائر'}
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.3' }}>
+                        {u.name}
+                      </span>
+                    </div>
+
                   </div>
-
-                  {/* 2. الرتبة أسفل الصورة */}
-                  <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 'bold', lineHeight: '1.2', textAlign: 'center' }}>
-                    {u.role || 'زائر'}
-                  </span>
-
-                  {/* 3. الاسم أسفل الرتبة */}
-                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.2', textAlign: 'center' }}>
-                    {u.name}
-                  </span>
-
                 </div>
               ))}
             </div>
