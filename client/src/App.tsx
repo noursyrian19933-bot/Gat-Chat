@@ -370,6 +370,9 @@ export default function App() {
         updateData.flag = newFlag;
       }
       await updateDoc(userRef, updateData);
+
+      const presenceRef = doc(db, 'room_presence', user.uid);
+      await setDoc(presenceRef, updateData, { merge: true });
     } catch (e) {
       console.error(e);
     }
@@ -1061,15 +1064,10 @@ export default function App() {
     );
   }
 
-  // 🔹 فحص صلاحيات رفع الصور والغلاف
+  // 🔹 التعديل: إتاحة تعديل الصورة والغلاف لكل شخص يفتح ملفه الشخصي
   const isSelfProfile = user && selectedProfileUser && user.uid === selectedProfileUser.userId;
-  const isVerifiedRealMember = user && !user.isAnonymous && user.emailVerified;
-  
-  const selectedRole = (selectedProfileUser?.role || '').toLowerCase();
-  const isSpecialRole = isAdmin || ['صاحب الموقع', 'admin', 'super_admin', 'premium', 'سوبر أدمن', 'بريميوم', 'أدمن'].some(r => selectedRole.includes(r.toLowerCase()));
-
-  const canEditAvatar = isSelfProfile && (isVerifiedRealMember || isSpecialRole);
-  const canEditCover = isSelfProfile && isSpecialRole;
+  const canEditAvatar = Boolean(isSelfProfile);
+  const canEditCover = Boolean(isSelfProfile);
 
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
@@ -1509,92 +1507,129 @@ export default function App() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}>
             
-            {/* 🖼️ قسم الغلاف والصورة الشخصية */}
-            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724' }}>
+            {/* 🖼️ قسم الغلاف والصورة الشخصية (المربع الأسود يتغطى بالكامل بالغلاف) */}
+            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '170px', overflow: 'hidden' }}>
               
-              {/* الغلاف (Cover) */}
+              {/* الغلاف (Cover) يتمدد ليغطي المربع الأسود كاملاً */}
               <div 
                 onClick={() => {
-                  if (selectedProfileUser.coverUrl) {
-                    setPreviewImage(selectedProfileUser.coverUrl);
-                  } else if (canEditCover) {
+                  if (canEditCover) {
                     coverInputRef.current?.click();
+                  } else if (selectedProfileUser.coverUrl) {
+                    setPreviewImage(selectedProfileUser.coverUrl);
                   }
                 }}
                 style={{
-                  height: '110px',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
                   width: '100%',
-                  backgroundColor: '#1e293b',
+                  height: '100%',
                   backgroundImage: selectedProfileUser.coverUrl ? `url(${selectedProfileUser.coverUrl})` : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justify: 'center',
-                  color: '#ffffff',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  position: 'relative'
+                  backgroundRepeat: 'no-repeat',
+                  cursor: 'pointer'
                 }}
-              >
-                {!selectedProfileUser.coverUrl && canEditCover && (
-                  <span style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)' }}>
-                    📷 إضافة غلاف
-                  </span>
-                )}
-                
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedProfileUser(null); }} 
-                  style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#ffffff', fontSize: '16px', cursor: 'pointer', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
-                >
-                  ✕
-                </button>
-              </div>
+              />
 
-              {/* الصورة الشخصية (Avatar) */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '-36px', paddingBottom: '10px' }}>
-                <div 
-                  onClick={() => {
-                    if (selectedProfileUser.avatarUrl) {
-                      setPreviewImage(selectedProfileUser.avatarUrl);
-                    } else if (canEditAvatar) {
-                      avatarInputRef.current?.click();
-                    }
-                  }}
-                  style={{
-                    width: '72px',
-                    height: '72px',
-                    borderRadius: '50%',
-                    border: '3px solid #ffffff',
-                    backgroundColor: '#0284c7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justify: 'center',
-                    fontSize: '28px',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                    position: 'relative'
-                  }}
+              {/* طبقة خفيفة لضمان وضوح النصوص والأيقونات فوق صورة الغلاف */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.3) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
+
+              {/* زر الإغلاق */}
+              <button 
+                onClick={(e) => { e.stopPropagation(); setSelectedProfileUser(null); }} 
+                style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#ffffff', fontSize: '16px', cursor: 'pointer', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 10 }}
+              >
+                ✕
+              </button>
+
+              {/* زر تغيير الغلاف إذا كان ملف الشخص نفسه */}
+              {canEditCover && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
+                  style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.65)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  {selectedProfileUser.avatarUrl ? (
-                    <img src={selectedProfileUser.avatarUrl} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : canEditAvatar ? (
-                    <div style={{ fontSize: '10px', color: '#fff', textAlign: 'center', padding: '2px', fontWeight: 'bold' }}>
-                      إضافة صورة
-                    </div>
-                  ) : (
-                    '👤'
+                  <span>📷</span>
+                  <span>تغيير الغلاف</span>
+                </button>
+              )}
+
+              {/* محتوى الصورة الشخصية والرتبة والاسم */}
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '16px', paddingBottom: '14px' }}>
+                
+                {/* الصورة الشخصية (Avatar) + أيقونة التغيير */}
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <div 
+                    onClick={() => {
+                      if (canEditAvatar) {
+                        avatarInputRef.current?.click();
+                      } else if (selectedProfileUser.avatarUrl) {
+                        setPreviewImage(selectedProfileUser.avatarUrl);
+                      }
+                    }}
+                    style={{
+                      width: '76px',
+                      height: '76px',
+                      borderRadius: '50%',
+                      border: '3px solid #ffffff',
+                      backgroundColor: '#0284c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'center',
+                      fontSize: '28px',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                      position: 'relative'
+                    }}
+                  >
+                    {selectedProfileUser.avatarUrl ? (
+                      <img src={selectedProfileUser.avatarUrl} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      '👤'
+                    )}
+                  </div>
+
+                  {/* زر الكاميرا على الصورة الشخصية للتغيير */}
+                  {canEditAvatar && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        right: '0',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: '2px solid #ffffff',
+                        borderRadius: '50%',
+                        width: '26px',
+                        height: '26px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'center',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                        zIndex: 5
+                      }}
+                      title="تغيير الصورة الشخصية"
+                    >
+                      📷
+                    </button>
                   )}
                 </div>
 
-                <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 'bold', marginTop: '6px', backgroundColor: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>
+                <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 'bold', marginTop: '8px', backgroundColor: 'rgba(30, 41, 59, 0.85)', padding: '2px 10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)' }}>
                   {selectedProfileUser.role || 'زائر'}
                 </div>
-                <div style={{ fontSize: '17px', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px', marginTop: '2px' }}>
+                
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px', marginTop: '4px', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
                   {selectedProfileUser.name}
                 </div>
+
               </div>
 
             </div>
