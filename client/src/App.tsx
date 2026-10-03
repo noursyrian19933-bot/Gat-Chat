@@ -1064,10 +1064,23 @@ export default function App() {
     );
   }
 
-  // 🔹 التعديل: إتاحة تعديل الصورة والغلاف لكل شخص يفتح ملفه الشخصي
-  const isSelfProfile = user && selectedProfileUser && user.uid === selectedProfileUser.userId;
-  const canEditAvatar = Boolean(isSelfProfile);
-  const canEditCover = Boolean(isSelfProfile);
+  // 🔹 فحص صلاحية التعديل حسب نوع المستخدم ورتبته
+  const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
+  const currentUserRole = (selectedProfileUser?.role || '').toLowerCase();
+  
+  // هل يملك رتبة خاصة (صاحب الموقع، أدمن، سوبر أدمن، بريميوم)
+  const hasSpecialRank = Boolean(
+    isAdmin || 
+    ['صاحب الموقع', 'admin', 'أدمن', 'ادمن', 'super_admin', 'سوبر أدمن', 'سوبر ادمن', 'premium', 'بريميوم'].some(r => currentUserRole.includes(r.toLowerCase()))
+  );
+  
+  const isGuestUser = Boolean(user?.isAnonymous);
+
+  // 1. الزائر: لا يستطيع وضع صورة شخصية ولا غلاف
+  // 2. العضو المسجل: صورة شخصية فقط بدون غلاف
+  // 3. صاحب الموقع والرتب: صورة شخصية وغلاف
+  const canEditAvatar = Boolean(isSelfProfile && !isGuestUser);
+  const canEditCover = Boolean(isSelfProfile && !isGuestUser && hasSpecialRank);
 
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
@@ -1507,8 +1520,8 @@ export default function App() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}>
             
-            {/* 🖼️ قسم الغلاف والصورة الشخصية (المربع الأسود يتغطى بالكامل بالغلاف) */}
-            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '170px', overflow: 'hidden' }}>
+            {/* 🖼️ قسم الغلاف والصورة الشخصية (تم زيادة الارتفاع لـ 220px ليصبح موضع الغلاف واضحاً) */}
+            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '220px', overflow: 'hidden' }}>
               
               {/* الغلاف (Cover) يتمدد ليغطي المربع الأسود كاملاً */}
               <div 
@@ -1536,7 +1549,7 @@ export default function App() {
               />
 
               {/* طبقة خفيفة لضمان وضوح النصوص والأيقونات فوق صورة الغلاف */}
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.3) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.2) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
 
               {/* زر الإغلاق */}
               <button 
@@ -1546,7 +1559,7 @@ export default function App() {
                 ✕
               </button>
 
-              {/* زر تغيير الغلاف إذا كان ملف الشخص نفسه */}
+              {/* زر تغيير الغلاف متاح فقط لصاحب الموقع والرتب المشابهة (أدمن، سوبر أدمن، بريميوم) */}
               {canEditCover && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
@@ -1558,7 +1571,7 @@ export default function App() {
               )}
 
               {/* محتوى الصورة الشخصية والرتبة والاسم */}
-              <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '16px', paddingBottom: '14px' }}>
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px', paddingBottom: '14px' }}>
                 
                 {/* الصورة الشخصية (Avatar) + أيقونة التغيير */}
                 <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -1571,15 +1584,15 @@ export default function App() {
                       }
                     }}
                     style={{
-                      width: '76px',
-                      height: '76px',
+                      width: '80px',
+                      height: '80px',
                       borderRadius: '50%',
                       border: '3px solid #ffffff',
                       backgroundColor: '#0284c7',
                       display: 'flex',
                       alignItems: 'center',
                       justify: 'center',
-                      fontSize: '28px',
+                      fontSize: '30px',
                       cursor: 'pointer',
                       overflow: 'hidden',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
@@ -1593,7 +1606,7 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* زر الكاميرا على الصورة الشخصية للتغيير */}
+                  {/* زر الكاميرا على الصورة الشخصية للتغيير (متاح للأعضاء المسجلين والرتب، وغير متاح للزائر) */}
                   {canEditAvatar && (
                     <button 
                       onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
