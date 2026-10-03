@@ -1,4 +1,5 @@
-import { Button } from 'react-bootstrap';
+import { useState } from 'react';
+import { Button, Modal, Badge } from 'react-bootstrap';
 import { Room, User } from '../Interfaces/Interfaces';
 import { useNavigate } from 'react-router-dom';
 import { Socket } from 'socket.io-client';
@@ -16,23 +17,27 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
   const { socket, currentUser, currentRoom, roomList } = props;
   const navigate = useNavigate();
 
-  // Get the room where the user is
+  // حالات التحكم بالنافذة المنبثقة للمستخدم المحدد
+  const [showModal, setShowModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [loadingRole, setLoadingRole] = useState(false);
+
+  // جلب الغرفة الحالية
   const room: Room | undefined = roomList.find(
     (roomObj) => roomObj.roomName === currentRoom
   );
 
   const currentUserId = currentUser.userId;
 
-  // Helper to remove rank badges like (# Admin #) from username
+  // تنظيف اسم المستخدم من الرتب
   const cleanUserName = (name: string) => {
     if (!name) return '';
     return name.replace(/\s*\(#.*?#\)\s*/g, '').trim();
   };
 
-  // Get the users of the current room
+  // تجهيز قائمة المستخدمين لعرض الحساب الحالي في البداية
   const usersToShow = room?.users ? [...room.users] : [];
-
-  // Show own user at the top of the list
   usersToShow.map((user, index) => {
     if (user.userId === currentUserId) {
       const ownUser = usersToShow[index];
@@ -44,8 +49,9 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
     }
   });
 
-  // دالة بدء المحادثة الخاصة
-  const startPrivateChat = async (clickedUser: string) => {
+  // 1. بدء محادثة خاصة
+  const startPrivateChat = async (targetUserName: string) => {
+    setShowModal(false);
     const response = await fetch('/api/users/tokeninfo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -56,7 +62,7 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
       navigate('/gatochat/login');
       return;
     }
-    const newRoomName = `🔏${currentUser.userName}↔${clickedUser}`;
+    const newRoomName = `🔏${currentUser.userName}↔${targetUserName}`;
     const data = {
       roomName: newRoomName,
       isPrivate: true,
@@ -64,66 +70,49 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
     socket?.emit('create_room', data);
   };
 
-  // دالة تغيير أو سحب الرتبة في الفايربيس
-  const changeUserRole = async (targetUserId: string, targetUserName: string) => {
-    const choice = prompt(
-      `إدارة رتبة المستخدم: ${targetUserName}\n\nاختر رقم الرتبة:\n1. أدمن (admin)\n2. سوبر أدمن (super_admin)\n3. بريميوم (premium)\n4. سحب الرتبة (user)`
-    );
-
-    if (!choice) return;
-
-    let newRole = '';
-    if (choice === '1') newRole = 'admin';
-    else if (choice === '2') newRole = 'super_admin';
-    else if (choice === '3') newRole = 'premium';
-    else if (choice === '4') newRole = 'user';
-    else {
-      alert('اختيار غير صحيح!');
-      return;
-    }
+  // 2. تحديث الرتبة في الفايربيس
+  const handleAssignRole = async (newRole: string) => {
+    if (!selectedUser) return;
+    setLoadingRole(true);
 
     const db = getDatabase();
+    const cleanName = cleanUserName(selectedUser.userName);
+
     try {
-      await set(ref(db, `users/${targetUserId}/role`), newRole);
-      alert(`تم تعديل رتبة ${targetUserName} إلى (${newRole}) بنجاح!`);
+      await set(ref(db, `users/${selectedUser.userId}/role`), newRole);
+      alert(`تم تحديث رتبة ${cleanName} إلى (${newRole}) بنجاح!`);
+      setShowModal(false);
     } catch (error: any) {
       alert(`فشلت العملية: ${error.message || 'لا تملك صلاحيات Owner'}`);
+    } finally {
+      setLoadingRole(false);
     }
   };
 
-  // التعامل مع الضغط على أي مستخدم في القائمة
+  // 3. عند الضغط على اسم مستخدم من القائمة
   const handleUserClick = async (targetUser: User) => {
     const cleanClickedUser = cleanUserName(targetUser.userName);
     const cleanCurrentUserName = cleanUserName(currentUser.userName);
 
-    // إذا ضغط الشخص على اسمه لا يفعل شيئاً
+    // لا تفعل شيئاً إذا ضغطت على نفسك
     if (cleanClickedUser === cleanCurrentUserName) return;
 
-    const db = getDatabase();
-    let isOwner = false;
+    setSelectedUser(targetUser);
 
-    // فحص هل الحساب الحالي لديه رتبة owner
+    // التحقق هل الحساب الحالي يحمل رتبة owner
+    const db = getDatabase();
     try {
       const snapshot = await get(ref(db, `users/${currentUserId}/role`));
       if (snapshot.exists() && snapshot.val() === 'owner') {
-        isOwner = true;
+        setIsOwner(true);
+      } else {
+        setIsOwner(false);
       }
     } catch (error) {
-      console.error('Error fetching user role:', error);
+      setIsOwner(false);
     }
 
-    if (isOwner) {
-      const action = prompt(
-        `اختر إجرائك للمستخدم (${cleanClickedUser}):\n1. بدء محادثة خاصة\n2. تغيير / سحب الرتبة`
-      );
-      if (action === '1') {
-        startPrivateChat(cleanClickedUser);
-      } else if (action === '2') {
-        changeUserRole(targetUser.userId, cleanClickedUser);
-      }
-    } else {
-      startPrivateChat(cleanClickedUser);
-    }
+    setShowModal(true);
   };
 
   return (
@@ -157,6 +146,67 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
             );
           })}
       </div>
+
+      {/* نافذة خيارات المستخدم المنبثقة */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered dir="rtl">
+        <Modal.Header closeButton>
+          <Modal.Title className="fs-6">
+            👤 {selectedUser ? cleanUserName(selectedUser.userName) : ''}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="d-grid gap-2 text-center">
+          {/* زر المحادثة الخاصة للجميع */}
+          <Button
+            variant="primary"
+            onClick={() =>
+              selectedUser && startPrivateChat(cleanUserName(selectedUser.userName))
+            }
+          >
+            💬 بدء محادثة خاصة
+          </Button>
+
+          {/* خيارات تغيير الرتب (تظهر للـ Owner فقط) */}
+          {isOwner && (
+            <div className="mt-3 pt-3 border-top">
+              <p className="fw-bold text-muted small mb-2">🛡️ إدارة الرتب (خاص بالـ Owner)</p>
+              <div className="d-grid gap-2">
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  disabled={loadingRole}
+                  onClick={() => handleAssignRole('admin')}
+                >
+                  منح رتبة أدمن (Admin)
+                </Button>
+                <Button
+                  variant="outline-dark"
+                  size="sm"
+                  disabled={loadingRole}
+                  onClick={() => handleAssignRole('super_admin')}
+                >
+                  منح رتبة سوبر أدمن (Super Admin)
+                </Button>
+                <Button
+                  variant="outline-warning"
+                  size="sm"
+                  disabled={loadingRole}
+                  onClick={() => handleAssignRole('premium')}
+                >
+                  منح رتبة بريميوم (Premium)
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  disabled={loadingRole}
+                  onClick={() => handleAssignRole('user')}
+                >
+                  ❌ سحب الرتبة (مستخدم عادي)
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };
