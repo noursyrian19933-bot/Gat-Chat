@@ -29,7 +29,7 @@ import {
 } from 'firebase/firestore';
 
 // 🔹 الخطوة أ: استيراد Realtime Database
-import { getDatabase, ref, child, get } from 'firebase/database';
+import { getDatabase, ref, child, get, set } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -742,6 +742,35 @@ export default function App() {
     }
   };
 
+  // 👑 دالة منح وسحب الرتب للـ Owner (تحدث Firestore و Realtime Database معاً)
+  const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
+    if (!user || !isAdmin) return;
+    try {
+      // 1. تحديث في Firestore مجموعة users
+      const userRef = doc(db, 'users', targetUid);
+      await setDoc(userRef, { role: newRole }, { merge: true });
+
+      // 2. تحديث في Firestore مجموعة التواجد room_presence
+      const presenceRef = doc(db, 'room_presence', targetUid);
+      await setDoc(presenceRef, { role: newRole }, { merge: true });
+
+      // 3. تحديث في Realtime Database
+      try {
+        await set(ref(rdb, `users/${targetUid}/role`), newRole);
+      } catch (rdbErr) {
+        console.error("خطأ أثناء التحديث في Realtime Database:", rdbErr);
+      }
+
+      // 4. تحديث الواجهة المنبثقة فوراً
+      setSelectedProfileUser((prev: any) => prev ? { ...prev, role: newRole } : null);
+
+      alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${newRole}`);
+    } catch (e: any) {
+      console.error("خطأ في تعديل الرتبة:", e);
+      alert(`❌ حدث خطأ أثناء تغيير الرتبة: ${e.message}`);
+    }
+  };
+
   const toggleRadio = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio('https://stream.radio9090.com/9090fm');
@@ -1388,6 +1417,41 @@ export default function App() {
               </div>
 
             </div>
+
+            {/* 👑 لوحة تحكم الأدمن لـ Owner فقط (إدارة الرتب) */}
+            {isAdmin && (
+              <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px' }}>
+                  👑 لوحة التحكم بالرتب (Owner)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <button 
+                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'admin')}
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🛡️ منح admin
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'super_admin')}
+                    style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🌟 منح super_admin
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'premium')}
+                    style={{ backgroundColor: '#d97706', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    💎 منح premium
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'user')}
+                    style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🔄 سحب الرتبة (user)
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-around', gap: '8px' }}>
               <button 
