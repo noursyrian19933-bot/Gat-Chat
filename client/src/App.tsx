@@ -179,7 +179,7 @@ export default function App() {
           if (data.bio) setProfileBio(data.bio);
           if (data.nameColor) setNameColor(data.nameColor);
         } else {
-          const defaultRole = currentUser.email === ADMIN_EMAIL ? 'مؤسس' : (currentUser.isAnonymous ? 'زائر' : 'عضو');
+          const defaultRole = currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو');
           
           await setDoc(userRef, {
             email: currentUser.email || '',
@@ -370,7 +370,7 @@ export default function App() {
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
     
-    const roleText = isAdmin ? 'مؤسس' : (user.isAnonymous ? 'زائر' : 'عضو');
+    const roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
     const roomId = selectedRoom ? selectedRoom.id : 'lobby';
     const roomName = selectedRoom ? selectedRoom.name : 'القائمة الرئيسية';
     
@@ -536,7 +536,7 @@ export default function App() {
     const senderName = user.isAnonymous 
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
-    const roleText = isAdmin ? 'مؤسس' : (user.isAnonymous ? 'زائر' : 'عضو');
+    const roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
     
     try {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
