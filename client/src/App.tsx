@@ -762,7 +762,7 @@ export default function App() {
             margin: '0 4px'
           }}
         >
-          (# {match[1]} #)
+          {match[1]}
         </span>
       );
       lastIndex = badgeRegex.lastIndex;
@@ -773,7 +773,6 @@ export default function App() {
     return parts.length > 0 ? parts : text;
   };
 
-  // 🔹 فحص وجود الجلسة لتجاوز شاشة التحميل السوداء المزعجة عند تحديث الصفحة
   const hasSavedRoomOrSession = Boolean(
     localStorage.getItem('gat_current_room_id') || 
     localStorage.getItem('gat_guest_name') || 
@@ -1278,8 +1277,9 @@ export default function App() {
                 <span style={{ position: 'absolute', bottom: '2px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#22c55e', border: '2px solid #0b1724' }}></span>
               </div>
 
+              {/* 🔹 الرتبة تظهر مباشرة فوق الاسم بدون أي أقواس أو إضافة # */}
               <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 'bold', marginBottom: '2px', backgroundColor: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>
-                (# {selectedProfileUser.role || 'زائر'} #)
+                {selectedProfileUser.role || 'زائر'}
               </div>
               <div style={{ fontSize: '18px', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px' }}>
                 {selectedProfileUser.name}
@@ -1481,8 +1481,9 @@ export default function App() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '14px' }}>{u.flag || '🇯🇴'}</span>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      {/* 🔹 إزالة الأقواس من الرتبة في قائمة المتصلين وجعلها فوق الاسم */}
                       <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', lineHeight: '1.2' }}>
-                        ({u.role || 'زائر'})
+                        {u.role || 'زائر'}
                       </span>
                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.3' }}>
                         {u.name}
