@@ -8,11 +8,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install and Build
+      - name: Install Dependencies
         run: |
           cd client
           npm install
-          npm run build
+          
+      - name: Build Project
+        run: |
+          cd client
+          npx vite build
           
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
