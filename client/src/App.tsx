@@ -172,16 +172,38 @@ export default function App() {
         const userSnap = await getDoc(userRef);
         const todayDate = new Date().toISOString().split('T')[0];
 
-        // 🔹 الخطوة ب: قراءة الرتبة من Realtime Database عند تسجيل الدخول
-        let fetchedRole = null;
-        try {
-          const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
-          if (snapshot.exists()) {
-            const rdbData = snapshot.val();
-            fetchedRole = rdbData?.role || rdbData?.rank || null;
+        let activeRole = currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو');
+
+        // 🔹 1. التحقق من الرتبة المربوطة بالبريد الإلكتروني في مجموعة roles_by_email
+        if (currentUser.email) {
+          const cleanEmail = currentUser.email.trim().toLowerCase();
+          try {
+            const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
+            if (roleDoc.exists() && roleDoc.data().role) {
+              activeRole = roleDoc.data().role;
+            }
+          } catch (e) {
+            console.error("خطأ أثناء جلب الرتبة المربوطة بالإيميل:", e);
           }
-        } catch (error) {
-          console.error("حدث خطأ أثناء جلب البيانات من Realtime Database:", error);
+        }
+
+        // 🔹 2. إذا لم توجد رتبة بالإيميل، نقرأ من Firestore أو Realtime DB
+        if (activeRole === 'عضو' || activeRole === 'زائر') {
+          if (userSnap.exists() && userSnap.data().role) {
+            activeRole = userSnap.data().role;
+          } else {
+            try {
+              const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
+              if (snapshot.exists()) {
+                const rdbData = snapshot.val();
+                if (rdbData?.role || rdbData?.rank) {
+                  activeRole = rdbData.role || rdbData.rank;
+                }
+              }
+            } catch (error) {
+              console.error("حدث خطأ أثناء جلب البيانات من Realtime Database:", error);
+            }
+          }
         }
 
         if (userSnap.exists()) {
@@ -195,17 +217,13 @@ export default function App() {
           if (data.bio) setProfileBio(data.bio);
           if (data.nameColor) setNameColor(data.nameColor);
 
-          // تحديث الرتبة في المستند إذا تم العثور عليها في Realtime Database
-          if (fetchedRole) {
-            await updateDoc(userRef, { role: fetchedRole });
-          }
+          // تحديث الرتبة والمستند للتأكد من حفظ الرتبة
+          await updateDoc(userRef, { role: activeRole, email: currentUser.email || '' });
         } else {
-          const defaultRole = fetchedRole || (currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو'));
-          
           await setDoc(userRef, {
             email: currentUser.email || '',
             displayName: actualName,
-            role: defaultRole,
+            role: activeRole,
             flag: '🇯🇴',
             country: 'الأردن',
             gender: 'ذكر',
@@ -402,9 +420,18 @@ export default function App() {
       
       let currentRole = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
       try {
-        const userSnap = await getDoc(doc(db, 'users', user.uid));
-        if (userSnap.exists() && userSnap.data().role) {
-          currentRole = userSnap.data().role;
+        if (user.email) {
+          const cleanEmail = user.email.trim().toLowerCase();
+          const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
+          if (roleDoc.exists() && roleDoc.data().role) {
+            currentRole = roleDoc.data().role;
+          }
+        }
+        if (currentRole === 'عضو' || currentRole === 'زائر') {
+          const userSnap = await getDoc(doc(db, 'users', user.uid));
+          if (userSnap.exists() && userSnap.data().role) {
+            currentRole = userSnap.data().role;
+          }
         }
       } catch (e) {}
 
@@ -568,9 +595,18 @@ export default function App() {
 
     let roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
     try {
-      const uSnap = await getDoc(doc(db, 'users', user.uid));
-      if (uSnap.exists() && uSnap.data().role) {
-        roleText = uSnap.data().role;
+      if (user.email) {
+        const cleanEmail = user.email.trim().toLowerCase();
+        const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
+        if (roleDoc.exists() && roleDoc.data().role) {
+          roleText = roleDoc.data().role;
+        }
+      }
+      if (roleText === 'عضو' || roleText === 'زائر') {
+        const uSnap = await getDoc(doc(db, 'users', user.uid));
+        if (uSnap.exists() && uSnap.data().role) {
+          roleText = uSnap.data().role;
+        }
       }
     } catch (e) {}
 
@@ -742,26 +778,39 @@ export default function App() {
     }
   };
 
-  // 👑 دالة منح وسحب الرتب للـ Owner (تحدث Firestore و Realtime Database معاً)
+  // 👑 دالة منح وسحب الرتب المربوطة بالإيميل بشكل دائم
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isAdmin) return;
     try {
-      // 1. تحديث في Firestore مجموعة users
+      // 1. تحديث Firestore مجموعة users
       const userRef = doc(db, 'users', targetUid);
       await setDoc(userRef, { role: newRole }, { merge: true });
 
-      // 2. تحديث في Firestore مجموعة التواجد room_presence
+      // 2. تحديث Firestore مجموعة التواجد room_presence
       const presenceRef = doc(db, 'room_presence', targetUid);
       await setDoc(presenceRef, { role: newRole }, { merge: true });
 
-      // 3. تحديث في Realtime Database
+      // 3. ربط الرتبة بالبريد الإلكتروني للـ User في مجموعة خاصة roles_by_email
+      const targetEmail = selectedProfileUser?.email;
+      if (targetEmail) {
+        const cleanEmail = targetEmail.trim().toLowerCase();
+        if (cleanEmail) {
+          await setDoc(doc(db, 'roles_by_email', cleanEmail), {
+            role: newRole,
+            email: cleanEmail,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
+      }
+
+      // 4. تحديث في Realtime Database
       try {
         await set(ref(rdb, `users/${targetUid}/role`), newRole);
       } catch (rdbErr) {
         console.error("خطأ أثناء التحديث في Realtime Database:", rdbErr);
       }
 
-      // 4. تحديث الواجهة المنبثقة فوراً
+      // 5. تحديث الواجهة المنبثقة فوراً
       setSelectedProfileUser((prev: any) => prev ? { ...prev, role: newRole } : null);
 
       alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${newRole}`);
@@ -784,17 +833,42 @@ export default function App() {
     }
   };
 
-  const openUserProfile = (uData: any) => {
-    setSelectedProfileUser({
-      userId: uData.userId || uData.uid || 'guest_id',
+  const openUserProfile = async (uData: any) => {
+    const targetId = uData.userId || uData.uid || uData.id || 'guest_id';
+    let userEmail = uData.email || '';
+
+    let fetchedData = {
+      userId: targetId,
       name: uData.name || uData.user || uData.userName || 'زائر',
-      role: uData.role || (uData.userId === user?.uid && user?.isAnonymous ? 'زائر' : 'عضو'),
-      gender: uData.gender || (uData.userId === user?.uid ? profileGender : 'ذكر'),
+      role: uData.role || (targetId === user?.uid && user?.isAnonymous ? 'زائر' : 'عضو'),
+      gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
       joinedDate: uData.joinedDate || new Date().toISOString().split('T')[0],
       roomName: uData.roomName || 'القائمة الرئيسية',
       lastSeen: uData.lastSeen || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      points: uData.points || 0
-    });
+      points: uData.points || 0,
+      email: userEmail
+    };
+
+    if (targetId && targetId !== 'guest_id') {
+      try {
+        const userSnap = await getDoc(doc(db, 'users', targetId));
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          fetchedData = {
+            ...fetchedData,
+            name: data.displayName || fetchedData.name,
+            role: data.role || fetchedData.role,
+            gender: data.gender || fetchedData.gender,
+            joinedDate: data.joinedDate || fetchedData.joinedDate,
+            points: data.points ?? fetchedData.points,
+            email: data.email || fetchedData.email
+          };
+        }
+      } catch (err) {
+        console.error("خطأ أثناء جلب بيانات الملف الشخصي:", err);
+      }
+    }
+    setSelectedProfileUser(fetchedData);
   };
 
   const filteredOnlineUsers = onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
