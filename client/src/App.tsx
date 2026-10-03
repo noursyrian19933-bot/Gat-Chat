@@ -28,7 +28,7 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 
-// 🔹 الخطوة أ: استيراد Realtime Database
+// 🔹 استيراد Realtime Database
 import { getDatabase, ref, child, get, set } from 'firebase/database';
 
 const firebaseConfig = {
@@ -44,7 +44,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
+const rdb = getDatabase(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
@@ -118,7 +118,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; avatarUrl?: string }>>([]);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -151,12 +151,34 @@ export default function App() {
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
   const [nameColor, setNameColor] = useState('#2563eb');
 
+  // 🔹 حالات الصور والرتبة الحالية
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [coverUrl, setCoverUrl] = useState<string>('');
+  const [currentUserRole, setCurrentUserRole] = useState<string>('زائر');
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string; type?: 'avatar' | 'cover'; canChange?: boolean } | null>(null);
+
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+
   const [isPlayingRadio, setIsPlayingRadio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
 
   const isAdmin = user && !user.isAnonymous && user.email === ADMIN_EMAIL;
+
+  // 🔹 التحقق من الصلاحيات:
+  // العضو المسجل ومؤكد البريد يستطيع وضع صورة شخصية
+  const isEmailVerifiedUser = Boolean(user && !user.isAnonymous && user.emailVerified);
+  
+  // صاحب الموقع والرتب المتميزة تستطيع وضع صورة شخصية وغلاف
+  const isSpecialRole = Boolean(
+    isAdmin || 
+    ['صاحب الموقع', 'admin', 'super_admin', 'premium', 'أدمن', 'سوبر أدمن', 'بريميوم'].includes(currentUserRole)
+  );
+
+  const canSetAvatar = isEmailVerifiedUser || isSpecialRole;
+  const canSetCover = isSpecialRole;
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -174,7 +196,6 @@ export default function App() {
 
         let activeRole = currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو');
 
-        // 🔹 1. التحقق من الرتبة المربوطة بالبريد الإلكتروني في مجموعة roles_by_email
         if (currentUser.email) {
           const cleanEmail = currentUser.email.trim().toLowerCase();
           try {
@@ -187,7 +208,6 @@ export default function App() {
           }
         }
 
-        // 🔹 2. إذا لم توجد رتبة بالإيميل، نقرأ من Firestore أو Realtime DB
         if (activeRole === 'عضو' || activeRole === 'زائر') {
           if (userSnap.exists() && userSnap.data().role) {
             activeRole = userSnap.data().role;
@@ -206,6 +226,8 @@ export default function App() {
           }
         }
 
+        setCurrentUserRole(activeRole);
+
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.gender) setProfileGender(data.gender);
@@ -216,8 +238,9 @@ export default function App() {
           if (data.flag) setCurrentFlag(data.flag);
           if (data.bio) setProfileBio(data.bio);
           if (data.nameColor) setNameColor(data.nameColor);
+          if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
+          if (data.coverUrl) setCoverUrl(data.coverUrl);
 
-          // تحديث الرتبة والمستند للتأكد من حفظ الرتبة
           await updateDoc(userRef, { role: activeRole, email: currentUser.email || '' });
         } else {
           await setDoc(userRef, {
@@ -230,6 +253,8 @@ export default function App() {
             age: 'عدم إظهار',
             bio: 'أهلاً بك في ملفي الشخصي.',
             nameColor: '#2563eb',
+            avatarUrl: '',
+            coverUrl: '',
             points: 0,
             joinedDate: todayDate,
             createdAt: new Date().toISOString()
@@ -239,6 +264,57 @@ export default function App() {
     });
     return () => unsubscribeAuth();
   }, [guestName]);
+
+  // 🔹 دالة ضغط وتحميل الصورة وتحويلها إلى Base64 للحفظ الدائم
+  const compressAndSaveImage = (file: File, type: 'avatar' | 'cover') => {
+    if (!file || !user) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = type === 'avatar' ? 300 : 800;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Str = canvas.toDataURL('image/jpeg', 0.75);
+          
+          if (type === 'avatar') {
+            setAvatarUrl(base64Str);
+            saveSettingToFirebase('avatarUrl', base64Str);
+            setDoc(doc(db, 'room_presence', user.uid), { avatarUrl: base64Str }, { merge: true }).catch(() => {});
+            if (selectedProfileUser?.userId === user.uid) {
+              setSelectedProfileUser((prev: any) => prev ? { ...prev, avatarUrl: base64Str } : null);
+            }
+          } else {
+            setCoverUrl(base64Str);
+            saveSettingToFirebase('coverUrl', base64Str);
+            setDoc(doc(db, 'room_presence', user.uid), { coverUrl: base64Str }, { merge: true }).catch(() => {});
+            if (selectedProfileUser?.userId === user.uid) {
+              setSelectedProfileUser((prev: any) => prev ? { ...prev, coverUrl: base64Str } : null);
+            }
+          }
+          setPreviewImage(null);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const updateLastSeenOnExit = async () => {
     if (!user) return;
@@ -444,6 +520,8 @@ export default function App() {
         flag: currentFlag,
         gender: profileGender,
         country: profileCountry,
+        avatarUrl: avatarUrl,
+        coverUrl: coverUrl,
         joinedDate: todayDate,
         lastSeen: nowTime,
         lastActive: Date.now(),
@@ -457,7 +535,7 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, avatarUrl, coverUrl]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
@@ -481,6 +559,8 @@ export default function App() {
               flag: data.flag || '🇯🇴',
               country: data.country || 'الأردن',
               gender: data.gender || 'ذكر',
+              avatarUrl: data.avatarUrl || '',
+              coverUrl: data.coverUrl || '',
               joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
               lastSeen: data.lastSeen || '01:00 AM',
               points: data.points || 0,
@@ -617,6 +697,7 @@ export default function App() {
         text: inputText.trim(),
         role: roleText,
         color: nameColor,
+        avatarUrl: avatarUrl,
         createdAt: serverTimestamp()
       });
       setInputText('');
@@ -778,19 +859,15 @@ export default function App() {
     }
   };
 
-  // 👑 دالة منح وسحب الرتب المربوطة بالإيميل بشكل دائم
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isAdmin) return;
     try {
-      // 1. تحديث Firestore مجموعة users
       const userRef = doc(db, 'users', targetUid);
       await setDoc(userRef, { role: newRole }, { merge: true });
 
-      // 2. تحديث Firestore مجموعة التواجد room_presence
       const presenceRef = doc(db, 'room_presence', targetUid);
       await setDoc(presenceRef, { role: newRole }, { merge: true });
 
-      // 3. ربط الرتبة بالبريد الإلكتروني للـ User في مجموعة خاصة roles_by_email
       const targetEmail = selectedProfileUser?.email;
       if (targetEmail) {
         const cleanEmail = targetEmail.trim().toLowerCase();
@@ -803,14 +880,12 @@ export default function App() {
         }
       }
 
-      // 4. تحديث في Realtime Database
       try {
         await set(ref(rdb, `users/${targetUid}/role`), newRole);
       } catch (rdbErr) {
         console.error("خطأ أثناء التحديث في Realtime Database:", rdbErr);
       }
 
-      // 5. تحديث الواجهة المنبثقة فوراً
       setSelectedProfileUser((prev: any) => prev ? { ...prev, role: newRole } : null);
 
       alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${newRole}`);
@@ -846,6 +921,8 @@ export default function App() {
       roomName: uData.roomName || 'القائمة الرئيسية',
       lastSeen: uData.lastSeen || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       points: uData.points || 0,
+      avatarUrl: uData.avatarUrl || '',
+      coverUrl: uData.coverUrl || '',
       email: userEmail
     };
 
@@ -861,7 +938,9 @@ export default function App() {
             gender: data.gender || fetchedData.gender,
             joinedDate: data.joinedDate || fetchedData.joinedDate,
             points: data.points ?? fetchedData.points,
-            email: data.email || fetchedData.email
+            email: data.email || fetchedData.email,
+            avatarUrl: data.avatarUrl || fetchedData.avatarUrl,
+            coverUrl: data.coverUrl || fetchedData.coverUrl
           };
         }
       } catch (err) {
@@ -870,11 +949,6 @@ export default function App() {
     }
     setSelectedProfileUser(fetchedData);
   };
-
-  const filteredOnlineUsers = onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
-
-  const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
 
   const renderBadgeText = (text: string) => {
     const badgeRegex = /\(#\s*([^#]+)\s*#\)/g;
@@ -986,9 +1060,33 @@ export default function App() {
     );
   }
 
+  const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
+
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       
+      {/* 🔹 حقول الملف المخفية لرفع الصور */}
+      <input 
+        type="file" 
+        ref={avatarInputRef} 
+        accept="image/*" 
+        onChange={(e) => {
+          if (e.target.files?.[0]) compressAndSaveImage(e.target.files[0], 'avatar');
+          e.target.value = '';
+        }} 
+        style={{ display: 'none' }} 
+      />
+      <input 
+        type="file" 
+        ref={coverInputRef} 
+        accept="image/*" 
+        onChange={(e) => {
+          if (e.target.files?.[0]) compressAndSaveImage(e.target.files[0], 'cover');
+          e.target.value = '';
+        }} 
+        style={{ display: 'none' }} 
+      />
+
       {/* 🔴 الشريط العلوي */}
       <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, backgroundColor: '#0b141a', color: '#fff', padding: '0 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
         
@@ -1092,9 +1190,18 @@ export default function App() {
                 messages.map((m, idx) => (
                   <div key={m.id || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', padding: '8px 10px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px', direction: 'rtl' }}>
                     
-                    <div onClick={() => openUserProfile(m)} style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer' }}>
-                      👤
-                    </div>
+                    {m.avatarUrl ? (
+                      <img 
+                        src={m.avatarUrl} 
+                        alt={m.user} 
+                        onClick={() => openUserProfile(m)} 
+                        style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', cursor: 'pointer', border: '1px solid #cbd5e1' }} 
+                      />
+                    ) : (
+                      <div onClick={() => openUserProfile(m)} style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer' }}>
+                        👤
+                      </div>
+                    )}
 
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
                       <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
@@ -1151,6 +1258,218 @@ export default function App() {
         )}
 
       </div>
+
+      {/* 🔴 نافذة المعاينة المكبرة للصور */}
+      {previewImage && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
+          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <img src={previewImage.url} alt={previewImage.title} style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px', objectFit: 'contain', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} />
+            <div style={{ color: '#fff', marginTop: '12px', fontSize: '14px', fontWeight: 'bold' }}>{previewImage.title}</div>
+            
+            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+              {previewImage.canChange && (
+                <button 
+                  onClick={() => {
+                    if (previewImage.type === 'avatar') avatarInputRef.current?.click();
+                    if (previewImage.type === 'cover') coverInputRef.current?.click();
+                  }}
+                  style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  📷 تغيير الصورة
+                </button>
+              )}
+              <button 
+                onClick={() => setPreviewImage(null)}
+                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                إغلاق ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔴 نافذة عرض الملف الشخصي للمستخدم */}
+      {selectedProfileUser && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', position: 'relative' }}>
+            
+            {/* 🖼️ الغلاف (Cover Image) */}
+            <div 
+              style={{ 
+                height: '110px', 
+                backgroundColor: '#0b141a', 
+                backgroundImage: selectedProfileUser.coverUrl ? `url(${selectedProfileUser.coverUrl})` : 'none', 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center', 
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                const isSelf = selectedProfileUser.userId === user?.uid;
+                if (selectedProfileUser.coverUrl) {
+                  setPreviewImage({ url: selectedProfileUser.coverUrl, title: `غلاف ${selectedProfileUser.name}`, type: 'cover', canChange: isSelf && canSetCover });
+                } else if (isSelf && canSetCover) {
+                  coverInputRef.current?.click();
+                }
+              }}
+            >
+              {/* إظهار زر إضافة غلاف إذا لم يوجد غلاف وكان الحساب خاص بك وله صلاحية */}
+              {!selectedProfileUser.coverUrl && selectedProfileUser.userId === user?.uid && canSetCover && (
+                <div style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '11px', padding: '4px 10px', borderRadius: '20px', fontWeight: 'bold' }}>
+                  📷 إضافة صورة غلاف
+                </div>
+              )}
+
+              <button 
+                onClick={(e) => { e.stopPropagation(); setSelectedProfileUser(null); }} 
+                style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#ffffff', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 👤 صورة الملف الشخصي (Avatar) والمعلومات */}
+            <div style={{ padding: '0 16px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '-35px' }}>
+              
+              <div 
+                style={{ 
+                  width: '70px', 
+                  height: '70px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#0284c7', 
+                  color: '#ffffff', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '28px', 
+                  fontWeight: 'bold', 
+                  border: '3px solid #ffffff', 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  position: 'relative'
+                }}
+                onClick={() => {
+                  const isSelf = selectedProfileUser.userId === user?.uid;
+                  if (selectedProfileUser.avatarUrl) {
+                    setPreviewImage({ url: selectedProfileUser.avatarUrl, title: `صورة ${selectedProfileUser.name}`, type: 'avatar', canChange: isSelf && canSetAvatar });
+                  } else if (isSelf && canSetAvatar) {
+                    avatarInputRef.current?.click();
+                  }
+                }}
+              >
+                {selectedProfileUser.avatarUrl ? (
+                  <img src={selectedProfileUser.avatarUrl} alt={selectedProfileUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  selectedProfileUser.userId === user?.uid && canSetAvatar ? (
+                    <span style={{ fontSize: '10px', textAlign: 'center', padding: '2px', color: '#fff', fontWeight: 'bold' }}>إضافة صورة</span>
+                  ) : (
+                    '👤'
+                  )
+                )}
+              </div>
+
+              <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#1e293b' }}>{selectedProfileUser.name}</div>
+                <div style={{ fontSize: '11px', color: '#2563eb', fontWeight: 'bold', marginTop: '2px' }}>{selectedProfileUser.role}</div>
+              </div>
+
+              {/* أزرار التحكم بالرتب (لصاحب الموقع والمسؤولين) */}
+              {isAdmin && selectedProfileUser.userId !== user?.uid && (
+                <div style={{ marginTop: '10px', width: '100%', backgroundColor: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', textAlign: 'center' }}>⚙️ التحكم برتبة المستخدم (دائم):</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'صاحب الموقع')} style={{ padding: '4px', fontSize: '10px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>صاحب الموقع</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'أدمن')} style={{ padding: '4px', fontSize: '10px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>أدمن</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'سوبر أدمن')} style={{ padding: '4px', fontSize: '10px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>سوبر أدمن</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'بريميوم')} style={{ padding: '4px', fontSize: '10px', backgroundColor: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>بريميوم</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'عضو')} style={{ padding: '4px', fontSize: '10px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', gridColumn: 'span 2' }}>عضو عادي</button>
+                  </div>
+                </div>
+              )}
+
+              {/* خيارات التواصل مع المستخدم */}
+              {selectedProfileUser.userId !== user?.uid && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px', width: '100%' }}>
+                  <button onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)} style={{ flex: 1, backgroundColor: '#0b141a', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>خاص ✉️</button>
+                  <button onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)} style={{ flex: 1, backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>إضافة صديق 👤⁺</button>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🔴 نافذة الإعدادات الخيارات ومزيد التفاصيل */}
+      {showSettingsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+            
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>الإعدادات ⚙️</span>
+              <button onClick={() => setShowSettingsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '380px', overflowY: 'auto' }}>
+              
+              {/* قسم تعديل الصور المباشر */}
+              <div style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e293b' }}>🖼️ إدارة صور الحساب:</span>
+                
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {canSetAvatar ? (
+                    <button onClick={() => avatarInputRef.current?.click()} style={{ flex: 1, backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      📷 {avatarUrl ? 'تغيير الصورة الشخصية' : 'إضافة صورة شخصية'}
+                    </button>
+                  ) : (
+                    <div style={{ fontSize: '9px', color: '#dc2626', padding: '4px' }}>⚠️ يلزم تفعيل البريد الإلكتروني لإضافة صورة شخصية</div>
+                  )}
+
+                  {canSetCover && (
+                    <button onClick={() => coverInputRef.current?.click()} style={{ flex: 1, backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      🖼️ {coverUrl ? 'تغيير صورة الغلاف' : 'إضافة صورة غلاف'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>لون الاسم:</label>
+                <input type="color" value={nameColor} onChange={(e) => { setNameColor(e.target.value); saveSettingToFirebase('nameColor', e.target.value); }} style={{ width: '100%', height: '36px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>الجنس:</label>
+                <select value={profileGender} onChange={(e) => { setProfileGender(e.target.value); saveSettingToFirebase('gender', e.target.value); }} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                  <option value="ذكر">ذكر ♂</option>
+                  <option value="أنثى">أنثى ♀</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>الدولة:</label>
+                <select value={profileCountry} onChange={(e) => { setProfileCountry(e.target.value); saveSettingToFirebase('country', e.target.value); }} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}>
+                  {COUNTRIES_LIST.map((c, i) => (
+                    <option key={i} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button onClick={() => signOut(auth)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', marginTop: '10px' }}>
+                تسجيل الخروج 🚪
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* 🔴 نافذة المحادثة الخاصة */}
       {activePrivateChat && (
@@ -1246,6 +1565,96 @@ export default function App() {
         </div>
       )}
 
+      {/* 🔴 قائمة المستخدمين المتصلين */}
+      {showOnlineModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+            
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>المتصلين حالياً ({onlineUsersList.length}) 👥</span>
+              <button onClick={() => setShowOnlineModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            <div style={{ padding: '8px' }}>
+              <input 
+                type="text" 
+                placeholder="بحث عن متصل..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ padding: '8px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase())).map((onlineUser) => (
+                <div 
+                  key={onlineUser.userId} 
+                  onClick={() => openUserProfile(onlineUser)}
+                  style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {onlineUser.avatarUrl ? (
+                      <img src={onlineUser.avatarUrl} alt={onlineUser.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>👤</div>
+                    )}
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#1e293b' }}>{onlineUser.name}</div>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>{onlineUser.role} || {onlineUser.roomName}</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '14px' }}>{onlineUser.flag}</span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🔴 قائمة الأصدقاء */}
+      {showFriendsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+            
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>قائمة الأصدقاء ({friendsList.length}) 👥⁺</span>
+              <button onClick={() => setShowFriendsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            <div style={{ padding: '8px' }}>
+              <input 
+                type="text" 
+                placeholder="بحث في الأصدقاء..." 
+                value={friendsSearchQuery} 
+                onChange={(e) => setFriendsSearchQuery(e.target.value)} 
+                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ padding: '8px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase())).length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', padding: '20px 0' }}>لا يوجد أصدقاء حالياً.</div>
+              ) : (
+                friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase())).map((friend) => (
+                  <div key={friend.friendUid} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => openUserProfile({ userId: friend.friendUid, name: friend.name })}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#16a34a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>👤</div>
+                      <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#1e293b' }}>{friend.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => openPrivateChatWithUser(friend.friendUid, friend.name)} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>خاص ✉️</button>
+                      <button onClick={() => handleRemoveFriend(friend.friendUid)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>إزالة</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* 🔴 الشريط السفلي للتنقل */}
       <nav style={{ height: '52px', minHeight: '52px', flexShrink: 0, backgroundColor: '#0b141a', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
         
@@ -1314,357 +1723,32 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة التنبيهات والإشعارات */}
+      {/* 🔴 نافذة الإشعارات */}
       {showNotificationsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
             
             <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>التنبيهات والإشعارات 🔔</span>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>الإشعارات 🔔</span>
               <button onClick={() => setShowNotificationsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
 
-            <div style={{ padding: '12px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '12px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {notificationsList.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
-                  لا توجد إشعارات أو تنبيهات جديدة.
+                  لا توجد إشعارات جديدة حالياً.
                 </div>
               ) : (
-                notificationsList.map((note) => (
-                  <div key={note.id} style={{ borderRight: '4px solid #eab308', backgroundColor: '#fefce8', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#854d0e' }}>{note.title}</span>
-                      <span style={{ fontSize: '9px', color: '#a16207' }}>{note.createdAt}</span>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#713f12' }}>{note.body}</div>
+                notificationsList.map((note, i) => (
+                  <div key={i} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', backgroundColor: '#f8fafc' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#1e293b' }}>{note.title}</div>
+                    <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>{note.body}</div>
+                    <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px', textAlign: 'left' }}>{note.createdAt}</div>
                   </div>
                 ))
               )}
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {/* 🔴 نافذة الأصدقاء الجانبية */}
-      {showFriendsModal && (
-        <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
-          <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
-            
-            <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
-              <button onClick={() => setShowFriendsModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}>✕</button>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '4px 10px' }}>
-                <span style={{ color: '#0284c7', marginLeft: '6px', fontSize: '13px' }}>🔍</span>
-                <input 
-                  type="text" 
-                  placeholder="البحث عن أشخاص" 
-                  value={friendsSearchQuery}
-                  onChange={(e) => setFriendsSearchQuery(e.target.value)}
-                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '12px', textAlign: 'right', background: 'transparent' }}
-                />
-              </div>
-            </div>
-
-            <div style={{ textAlign: 'center', padding: '10px', color: '#475569', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>
-              إعلان ترويجي
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-              {filteredFriendsList.length === 0 ? (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#cbd5e1', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', marginBottom: '12px' }}>
-                    👤
-                  </div>
-                  <div style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>
-                    قائمة أصدقائك فارغة
-                  </div>
-                </div>
-              ) : (
-                filteredFriendsList.map((friend) => (
-                  <div key={friend.id} style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
-                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{friend.name}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => openPrivateChatWithUser(friend.friendUid, friend.name)} style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>خاص</button>
-                      <button onClick={() => handleRemoveFriend(friend.friendUid)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>حذف</button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* 🔴 نافذة الملف الشخصي */}
-      {selectedProfileUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
-          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b' }}>
-            
-            <div style={{ backgroundColor: '#0b1724', color: '#ffffff', padding: '12px 14px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '8px' }}>
-                <button onClick={() => setSelectedProfileUser(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-              </div>
-
-              <div style={{ position: 'relative', width: '64px', height: '64px', marginBottom: '6px' }}>
-                <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '2px solid #38bdf8', backgroundColor: '#fef08a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
-                  👤
-                </div>
-                <span style={{ position: 'absolute', bottom: '2px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#22c55e', border: '2px solid #0b1724' }}></span>
-              </div>
-
-              <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 'bold', marginBottom: '2px', backgroundColor: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>
-                {selectedProfileUser.role || 'زائر'}
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px' }}>
-                {selectedProfileUser.name}
-              </div>
-            </div>
-
-            <div style={{ padding: '0 16px', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', fontSize: '12px', color: '#1e293b' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>⚧️</span>
-                  <span>تحديد الجنس</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#475569' }}>
-                  {selectedProfileUser.gender || 'ذكر'}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👤</span>
-                  <span>تاريخ الإنضمام</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
-                  {selectedProfileUser.joinedDate || new Date().toISOString().split('T')[0]}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>🏠</span>
-                  <span>الغرفة الحالية</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#0284c7' }}>
-                  {selectedProfileUser.roomName || 'القائمة الرئيسية'}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👁</span>
-                  <span>آخر تواجد</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
-                  {selectedProfileUser.lastSeen || '01:00 AM'}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>🪙</span>
-                  <span>النقاط</span>
-                </div>
-                <span style={{ fontWeight: '700', color: '#16a34a' }}>
-                  {selectedProfileUser.points || 0}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px 0 16px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>🔗</span>
-                  <span>رابط الملف الشخصي</span>
-                </div>
-                <a 
-                  href={`https://gat-chat-b7187.web.app/#id${selectedProfileUser.userId}`} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  style={{ color: '#d97706', fontSize: '11px', textDecoration: 'underline', wordBreak: 'break-all', direction: 'ltr', textAlign: 'right', fontWeight: '500' }}
-                >
-                  {`https://gat-chat-b7187.web.app/#id${selectedProfileUser.userId.substring(0, 8)}`}
-                </a>
-              </div>
-
-            </div>
-
-            {/* 👑 لوحة تحكم الأدمن لـ Owner فقط (إدارة الرتب) */}
-            {isAdmin && (
-              <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px' }}>
-                  👑 لوحة التحكم بالرتب (Owner)
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                  <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'admin')}
-                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    🛡️ منح admin
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'super_admin')}
-                    style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    🌟 منح super_admin
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'premium')}
-                    style={{ backgroundColor: '#d97706', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    💎 منح premium
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'user')}
-                    style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    🔄 سحب الرتبة (user)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-around', gap: '8px' }}>
-              <button 
-                onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
-                style={{ flex: 1, backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                محادثة خاصة
-              </button>
-              <button 
-                onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
-                style={{ flex: 1, backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                إضافة صديق
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* نافذة الإعدادات */}
-      {showSettingsModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '10px' }}>
-          <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90dvh', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
-            
-            <div style={{ backgroundColor: '#0b141a', color: '#fff', padding: '12px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              <button onClick={() => setShowSettingsModal(false)} style={{ position: 'absolute', top: '10px', left: '10px', background: 'transparent', border: 'none', color: '#fff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '2px solid #fff' }}>👤</div>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold' }}>
-                    {user?.isAnonymous ? (localStorage.getItem('gat_guest_name') || guestName || 'زائر') : (user?.displayName || user?.email?.split('@')[0])}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.isAnonymous ? 'زائر' : 'عضو'}</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', backgroundColor: '#f1f5f9', borderBottom: '1px solid #cbd5e1', overflowX: 'auto', flexShrink: 0 }}>
-              <button onClick={() => setSettingsTab('info')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'info' ? '#0b141a' : 'transparent', color: settingsTab === 'info' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>معلوماتي</button>
-              <button onClick={() => { setShowSettingsModal(false); setShowFriendsModal(true); }} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'friends' ? '#0b141a' : 'transparent', color: settingsTab === 'friends' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>الأصدقاء</button>
-              <button onClick={() => setSettingsTab('ignore')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'ignore' ? '#0b141a' : 'transparent', color: settingsTab === 'ignore' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>تجاهل</button>
-              <button onClick={() => setSettingsTab('options')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'options' ? '#0b141a' : 'transparent', color: settingsTab === 'options' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>خيارات</button>
-              <button onClick={() => setSettingsTab('more')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'more' ? '#0b141a' : 'transparent', color: settingsTab === 'more' ? '#fff' : '#1e293b', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>المزيد</button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: '14px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {settingsTab === 'info' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '4px', textAlign: 'right' }}>الجنس</label>
-                      <select value={profileGender} onChange={(e) => { setProfileGender(e.target.value); saveSettingToFirebase('gender', e.target.value); }} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px' }}>
-                        <option value="ذكر">ذكر</option>
-                        <option value="أنثى">أنثى</option>
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '4px', textAlign: 'right' }}>البلد</label>
-                      <select value={profileCountry} onChange={(e) => { setProfileCountry(e.target.value); saveSettingToFirebase('country', e.target.value); }} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px' }}>
-                        {COUNTRIES_LIST.map((country) => (
-                          <option key={country} value={country}>{country}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '4px', textAlign: 'right' }}>نبذة عني</label>
-                    <textarea rows={3} value={profileBio} onChange={(e) => { setProfileBio(e.target.value); saveSettingToFirebase('bio', e.target.value); }} placeholder="اكتب نبذة عنك..." style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'right', fontSize: '12px', boxSizing: 'border-box' }} />
-                  </div>
-                  <button onClick={() => { alert('✅ تم الحفظ بنجاح!'); setShowSettingsModal(false); }} style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'center', fontSize: '12px' }}>حفظ</button>
-                </div>
-              )}
-
-              {settingsTab === 'options' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '2px', textAlign: 'right' }}>لون الاسم المميز</label>
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                      {['#2563eb', '#16a34a', '#dc2626', '#d97706', '#7c3aed', '#db2777'].map(color => (
-                        <div key={color} onClick={() => { setNameColor(color); saveSettingToFirebase('nameColor', color); }} style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: color, cursor: 'pointer', border: nameColor === color ? '2px solid #000' : 'none' }}></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {settingsTab === 'more' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'center', padding: '10px' }}>
-                  <button onClick={async () => { await updateLastSeenOnExit(); leaveRoomToLobby(); signOut(auth); localStorage.removeItem('gat_guest_name'); setShowSettingsModal(false); }} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
-                    تسجيل الخروج
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* 🔴 قائمة المتصلين الجانبية */}
-      {showOnlineModal && (
-        <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
-          <div style={{ width: '68%', maxWidth: '340px', minWidth: '260px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
-            <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc' }}>
-              <button onClick={() => setShowOnlineModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}>✕</button>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '3px 8px' }}>
-                <input 
-                  type="text" 
-                  placeholder="البحث عن أشخاص" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '11px', textAlign: 'right', background: 'transparent' }}
-                />
-              </div>
-            </div>
-            
-            <div style={{ backgroundColor: '#15803d', color: '#fff', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>👥</span>
-              <span>متصل ({filteredOnlineUsers.length})</span>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-              {filteredOnlineUsers.map((u, idx) => (
-                <div key={u.userId || idx} onClick={() => openUserProfile(u)} style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '14px' }}>{u.flag || '🇯🇴'}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', lineHeight: '1.2' }}>
-                        {u.role || 'زائر'}
-                      </span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.3' }}>
-                        {u.name}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
