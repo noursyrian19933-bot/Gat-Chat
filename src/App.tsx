@@ -201,17 +201,34 @@ export default function App() {
     return () => unsubscribeAuth();
   }, [guestName]);
 
-  // تحديث وقت الخروج بدقة تامة (آخر تواجد نظامي) عند مغادرة الصفحة أو إغلاقها
+  // دالة لتسجيل وقت الخروج والآخر تواجد بشكل نظامي ورسمي (غير وهمي)
+  const updateLastSeenOnExit = async () => {
+    if (!user) return;
+    try {
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const presenceRef = doc(db, 'room_presence', user.uid);
+      const userRef = doc(db, 'users', user.uid);
+      
+      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0 }, { merge: true });
+      await setDoc(userRef, { lastSeen: nowTime }, { merge: true });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     const handleBeforeUnload = () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const presenceRef = doc(db, 'room_presence', user.uid);
-      setDoc(presenceRef, { lastSeen: nowTime, lastActive: Date.now() }, { merge: true }).catch(() => {});
+      const userRef = doc(db, 'users', user.uid);
+      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0 }, { merge: true }).catch(() => {});
+      setDoc(userRef, { lastSeen: nowTime }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
     };
   }, [user]);
 
@@ -504,7 +521,8 @@ export default function App() {
     localStorage.setItem('gat_current_room_flag', room.flag || '💬');
   };
 
-  const leaveRoomToLobby = () => {
+  const leaveRoomToLobby = async () => {
+    await updateLastSeenOnExit();
     setSelectedRoom(null);
     setCurrentView('rooms');
     localStorage.removeItem('gat_current_room_id');
@@ -1237,7 +1255,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الملف الشخصي (معدلة: إخفاء أيقونات البريد والعلم والقائمة وبقاء زر الإغلاق X فقط) */}
+      {/* 🔴 نافذة الملف الشخصي (معدلة: إزالة الأيقونات العلوية وبقاء زر الإغلاق X فقط) */}
       {selectedProfileUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b' }}>
@@ -1418,7 +1436,7 @@ export default function App() {
 
               {settingsTab === 'more' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'center', padding: '10px' }}>
-                  <button onClick={() => { leaveRoomToLobby(); signOut(auth); localStorage.removeItem('gat_guest_name'); setShowSettingsModal(false); }} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                  <button onClick={async () => { await updateLastSeenOnExit(); leaveRoomToLobby(); signOut(auth); localStorage.removeItem('gat_guest_name'); setShowSettingsModal(false); }} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
                     تسجيل الخروج
                   </button>
                 </div>
