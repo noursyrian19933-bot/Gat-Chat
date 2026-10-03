@@ -142,7 +142,6 @@ export default function App() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
 
   const [profileGender, setProfileGender] = useState('ذكر');
-  const [profileAge, setProfileAge] = useState('عدم إظهار');
   const [profileCountry, setProfileCountry] = useState('الأردن');
   const [profileBio, setProfileBio] = useState('');
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
@@ -172,7 +171,6 @@ export default function App() {
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.gender) setProfileGender(data.gender);
-          if (data.age) setProfileAge(data.age);
           if (data.country) {
             setProfileCountry(data.country);
             setCurrentFlag(getCountryFlag(data.country));
@@ -202,6 +200,36 @@ export default function App() {
     });
     return () => unsubscribeAuth();
   }, [guestName]);
+
+  const updateLastSeenOnExit = async () => {
+    if (!user) return;
+    try {
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const presenceRef = doc(db, 'room_presence', user.uid);
+      const userRef = doc(db, 'users', user.uid);
+      
+      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0 }, { merge: true });
+      await setDoc(userRef, { lastSeen: nowTime }, { merge: true });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    const handleBeforeUnload = () => {
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const presenceRef = doc(db, 'room_presence', user.uid);
+      const userRef = doc(db, 'users', user.uid);
+      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0 }, { merge: true }).catch(() => {});
+      setDoc(userRef, { lastSeen: nowTime }, { merge: true }).catch(() => {});
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -321,7 +349,7 @@ export default function App() {
         setRooms(fetchedRooms);
 
         const savedId = localStorage.getItem('gat_current_room_id');
-        if (savedId) {
+        if (savedId && (!selectedRoom || selectedRoom.id !== savedId)) {
           const found = fetchedRooms.find(r => r.id === savedId);
           if (found) {
             setSelectedRoom(found);
@@ -492,7 +520,8 @@ export default function App() {
     localStorage.setItem('gat_current_room_flag', room.flag || '💬');
   };
 
-  const leaveRoomToLobby = () => {
+  const leaveRoomToLobby = async () => {
+    await updateLastSeenOnExit();
     setSelectedRoom(null);
     setCurrentView('rooms');
     localStorage.removeItem('gat_current_room_id');
@@ -710,7 +739,7 @@ export default function App() {
 
   const renderBadgeText = (text: string) => {
     const badgeRegex = /\(#\s*([^#]+)\s*#\)/g;
-    const parts: (string | JSX.Element)[] = [];
+    const parts: (string | React.ReactNode)[] = [];
     let lastIndex = 0;
     let match;
 
@@ -746,8 +775,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', width: '100vw', backgroundColor: '#0b141a', color: '#22c55e', fontSize: '18px', fontWeight: 'bold', direction: 'rtl' }}>
-        💬 جاري تحميل الشات...
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: '#0b141a', color: '#22c55e', fontSize: '18px', fontWeight: 'bold' }}>
+        جاري تحميل الشات... 💬
       </div>
     );
   }
@@ -982,7 +1011,6 @@ export default function App() {
       {activePrivateChat && (
         <div style={{ position: 'fixed', top: '50%', bottom: '52px', left: 0, right: 0, backgroundColor: '#ffffff', zIndex: 130, display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 25px rgba(0,0,0,0.3)', borderTop: '2px solid #0b141a', overflow: 'hidden', direction: 'rtl' }}>
           
-          {/* شريط عنوان المحادثة الخاصة */}
           <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{activePrivateChat.peerName}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -991,7 +1019,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* محتوى رسائل المحادثة الخاصة */}
           <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {privateMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
@@ -1013,7 +1040,6 @@ export default function App() {
             <div ref={privateChatBottomRef} />
           </div>
 
-          {/* شريط إرسال رسالة خاصة */}
           <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
             <button type="submit" style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px' }}>➤</button>
             <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '38px' }}>
@@ -1032,7 +1058,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة قائمة الرسائل الخاصة في الشريط العلوي */}
+      {/* 🔴 نافذة قائمة الرسائل الخاصة */}
       {showMessagesModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
@@ -1099,7 +1125,7 @@ export default function App() {
         </div>
 
         <div onClick={toggleRadio} style={{ color: isPlayingRadio ? '#22c55e' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️️'}</span>
+          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️'}</span>
           <span style={{ fontSize: '9px', fontWeight: 'bold' }}>Radio 9090</span>
         </div>
 
@@ -1228,19 +1254,14 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الملف الشخصي */}
+      {/* 🔴 نافذة الملف الشخصي (معدلة: إزالة الأيقونات العلوية وبقاء زر الإغلاق X فقط) */}
       {selectedProfileUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b' }}>
             
             <div style={{ backgroundColor: '#0b1724', color: '#ffffff', padding: '12px 14px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px' }}>
-                  <button onClick={() => setSelectedProfileUser(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                  <span style={{ cursor: 'pointer' }}>☰</span>
-                  <span style={{ cursor: 'pointer' }}>🚩</span>
-                </div>
-                <span onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)} style={{ fontSize: '18px', cursor: 'pointer' }}>✉️</span>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '8px' }}>
+                <button onClick={() => setSelectedProfileUser(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
               </div>
 
               <div style={{ position: 'relative', width: '64px', height: '64px', marginBottom: '6px' }}>
@@ -1291,7 +1312,7 @@ export default function App() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👁️</span>
+                  <span style={{ fontSize: '14px' }}>👁️️</span>
                   <span>آخر تواجد</span>
                 </div>
                 <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
@@ -1414,7 +1435,7 @@ export default function App() {
 
               {settingsTab === 'more' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'center', padding: '10px' }}>
-                  <button onClick={() => { leaveRoomToLobby(); signOut(auth); localStorage.removeItem('gat_guest_name'); setShowSettingsModal(false); }} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                  <button onClick={async () => { await updateLastSeenOnExit(); leaveRoomToLobby(); signOut(auth); localStorage.removeItem('gat_guest_name'); setShowSettingsModal(false); }} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
                     تسجيل الخروج
                   </button>
                 </div>
