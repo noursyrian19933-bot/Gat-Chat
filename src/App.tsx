@@ -1,8 +1,4 @@
-cd ~/Gat-Chat/client
-
-cat << 'EOF' > src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import './App.css';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -146,7 +142,6 @@ export default function App() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
 
   const [profileGender, setProfileGender] = useState('ذكر');
-  const [profileAge, setProfileAge] = useState('عدم إظهار');
   const [profileCountry, setProfileCountry] = useState('الأردن');
   const [profileBio, setProfileBio] = useState('');
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
@@ -176,7 +171,6 @@ export default function App() {
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.gender) setProfileGender(data.gender);
-          if (data.age) setProfileAge(data.age);
           if (data.country) {
             setProfileCountry(data.country);
             setCurrentFlag(getCountryFlag(data.country));
@@ -714,7 +708,7 @@ export default function App() {
 
   const renderBadgeText = (text: string) => {
     const badgeRegex = /\(#\s*([^#]+)\s*#\)/g;
-    const parts: (string | JSX.Element)[] = [];
+    const parts: (string | React.ReactNode)[] = [];
     let lastIndex = 0;
     let match;
 
@@ -986,7 +980,6 @@ export default function App() {
       {activePrivateChat && (
         <div style={{ position: 'fixed', top: '50%', bottom: '52px', left: 0, right: 0, backgroundColor: '#ffffff', zIndex: 130, display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 25px rgba(0,0,0,0.3)', borderTop: '2px solid #0b141a', overflow: 'hidden', direction: 'rtl' }}>
           
-          {/* شريط عنوان المحادثة الخاصة */}
           <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{activePrivateChat.peerName}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -995,7 +988,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* محتوى رسائل المحادثة الخاصة */}
           <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {privateMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
@@ -1017,7 +1009,6 @@ export default function App() {
             <div ref={privateChatBottomRef} />
           </div>
 
-          {/* شريط إرسال رسالة خاصة */}
           <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
             <button type="submit" style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px' }}>➤</button>
             <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '38px' }}>
@@ -1036,7 +1027,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة قائمة الرسائل الخاصة في الشريط العلوي */}
+      {/* 🔴 نافذة قائمة الرسائل الخاصة */}
       {showMessagesModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
@@ -1244,7 +1235,7 @@ export default function App() {
                   <span style={{ cursor: 'pointer' }}>☰</span>
                   <span style={{ cursor: 'pointer' }}>🚩</span>
                 </div>
-                <span onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)} style={{ fontSize: '18px', cursor: 'pointer' }}>✉️</span>
+                <span onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)} style={{ fontSize: '18px', cursor: 'pointer' }}>✉️️</span>
               </div>
 
               <div style={{ position: 'relative', width: '64px', height: '64px', marginBottom: '6px' }}>
@@ -1475,4 +1466,3 @@ export default function App() {
     </div>
   );
 }
-EOF
