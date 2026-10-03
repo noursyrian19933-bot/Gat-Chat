@@ -28,6 +28,9 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 
+// 🔹 الخطوة أ: استيراد Realtime Database
+import { getDatabase, ref, child, get } from 'firebase/database';
+
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
   authDomain: "gat-chat-b7187.firebaseapp.com",
@@ -41,6 +44,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
@@ -168,6 +172,18 @@ export default function App() {
         const userSnap = await getDoc(userRef);
         const todayDate = new Date().toISOString().split('T')[0];
 
+        // 🔹 الخطوة ب: قراءة الرتبة من Realtime Database عند تسجيل الدخول
+        let fetchedRole = null;
+        try {
+          const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
+          if (snapshot.exists()) {
+            const rdbData = snapshot.val();
+            fetchedRole = rdbData?.role || rdbData?.rank || null;
+          }
+        } catch (error) {
+          console.error("حدث خطأ أثناء جلب البيانات من Realtime Database:", error);
+        }
+
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.gender) setProfileGender(data.gender);
@@ -178,8 +194,13 @@ export default function App() {
           if (data.flag) setCurrentFlag(data.flag);
           if (data.bio) setProfileBio(data.bio);
           if (data.nameColor) setNameColor(data.nameColor);
+
+          // تحديث الرتبة في المستند إذا تم العثور عليها في Realtime Database
+          if (fetchedRole) {
+            await updateDoc(userRef, { role: fetchedRole });
+          }
         } else {
-          const defaultRole = currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو');
+          const defaultRole = fetchedRole || (currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو'));
           
           await setDoc(userRef, {
             email: currentUser.email || '',
@@ -370,21 +391,29 @@ export default function App() {
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
     
-    const roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
     const roomId = selectedRoom ? selectedRoom.id : 'lobby';
     const roomName = selectedRoom ? selectedRoom.name : 'القائمة الرئيسية';
     
     const presenceRef = doc(db, 'room_presence', user.uid);
     const todayDate = new Date().toISOString().split('T')[0];
 
-    const updatePresence = () => {
+    const updatePresence = async () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      let currentRole = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
+      try {
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
+        if (userSnap.exists() && userSnap.data().role) {
+          currentRole = userSnap.data().role;
+        }
+      } catch (e) {}
+
       setDoc(presenceRef, {
         roomId: roomId,
         roomName: roomName,
         userId: user.uid,
         userName: userName,
-        role: roleText,
+        role: currentRole,
         flag: currentFlag,
         gender: profileGender,
         country: profileCountry,
@@ -536,8 +565,15 @@ export default function App() {
     const senderName = user.isAnonymous 
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
-    const roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
-    
+
+    let roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
+    try {
+      const uSnap = await getDoc(doc(db, 'users', user.uid));
+      if (uSnap.exists() && uSnap.data().role) {
+        roleText = uSnap.data().role;
+      }
+    } catch (e) {}
+
     try {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName,
@@ -1277,7 +1313,6 @@ export default function App() {
                 <span style={{ position: 'absolute', bottom: '2px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#22c55e', border: '2px solid #0b1724' }}></span>
               </div>
 
-              {/* 🔹 الرتبة تظهر مباشرة فوق الاسم بدون أي أقواس أو إضافة # */}
               <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 'bold', marginBottom: '2px', backgroundColor: '#1e293b', padding: '2px 8px', borderRadius: '4px' }}>
                 {selectedProfileUser.role || 'زائر'}
               </div>
@@ -1481,7 +1516,6 @@ export default function App() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '14px' }}>{u.flag || '🇯🇴'}</span>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      {/* 🔹 إزالة الأقواس من الرتبة في قائمة المتصلين وجعلها فوق الاسم */}
                       <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', lineHeight: '1.2' }}>
                         {u.role || 'زائر'}
                       </span>
