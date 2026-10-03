@@ -1,0 +1,295 @@
+body {
+  text-align: center;
+  background-color: rgb(200, 207, 213);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Background-image catgb.jpg */
+  /* background-image: url('../../public/catbg.jpg'); */
+  /* background-size: 70%; */
+  /* background-position: 0% 10%; */
+  /* filter:brightness(0.85) */
+}
+
+.container {
+  position: relative;
+  height: 65vh;
+  width: 750px;
+  max-width: 90%;
+  display: grid;
+  grid-template-columns: 25% 50% 25%;
+  grid-template-rows: 15% 70% 15%;
+  grid-column-gap: 10px;
+}
+
+.exit-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  grid-row: 1/1;
+  grid-column: 3/3;
+  margin-bottom: 10px;
+}
+
+.header_bar {
+  grid-column-start: 1;
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 3px solid rgb(58, 108, 144);
+}
+
+/****** Room List ******/
+.room-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  grid-row: 1/1;
+  grid-column: 1/1;
+  margin-bottom: 10px;
+}
+
+.room-list {
+  border: 2px solid rgb(11, 61, 97);
+  grid-column: 1/1;
+  grid-row-start: 2;
+  grid-row-end: 4;
+  border-radius: 10px 0px 0px 10px;
+  overflow-y: auto;
+  padding: 4px;
+  overflow: auto;
+}
+
+.room-list .roomListItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  justify-content: space-between;
+}
+
+.room-list .roomListItem span {
+  font-weight: bold;
+  color: #636363;
+}
+
+.room-list .roomListItem .room-button {
+  margin-left: 3px;
+  flex-grow: 1;
+}
+
+/** Room Delete button styling **/
+.room-list .roomListItem .deleteRoomBtn {
+  display: none;
+}
+
+/* Display the deleteRoomBtn if I hover the roomListItem */
+.room-list .roomListItem:hover .deleteRoomBtn {
+  display: block;
+  cursor: pointer;
+  height: 100%;
+  width: auto;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  border: none;
+  background-color: #7ab7c3;
+  border-radius: 4px;
+}
+
+.room-list .roomListItem:hover .deleteRoomBtn:hover {
+  background-color: #cc9f9f;
+  color: #5baec5;
+  border-radius: 5px;
+}
+
+/****** Chat messages ******/
+.chat-box {
+  border: 2px solid rgb(11, 61, 97);
+  grid-column: 2/2;
+  grid-row: 2/4;
+  border-radius: 10px;
+  overflow: auto;
+}
+
+.chat-box .message {
+  display: flex;
+  flex-direction: column;
+  margin: 5px 3px;
+  height: auto;
+  width: auto;
+  overflow-wrap: break-word;
+  border-radius: 10px;
+  background-color: #a7bbc9;
+}
+
+.chat-box .message p {
+  text-align: left;
+  margin: 0.25rem 0.5rem 0;
+  padding: 0;
+  width: auto;
+  font-size: 0.9rem;
+  color: rgb(30, 110, 140);
+  border-radius: 0px 0px 6px 0px;
+  font-weight: 500;
+}
+
+.chat-box .message p > span {
+  font-weight: normal;
+  color: rgb(13, 123, 160);
+}
+
+.chat-box .ownMsg {
+  display: flex;
+  flex-direction: column;
+  margin: 5px 3px;
+  height: auto;
+  width: auto;
+  overflow-wrap: break-word;
+  border-radius: 10px;
+  background-color: #98bdd8;
+}
+
+.chat-box .ownMsg p {
+  font-weight: bold;
+  text-align: right;
+  margin: 0.25rem 0.5rem 0;
+  padding: 0;
+  width: auto;
+  font-size: 0.9rem;
+  /* font-weight: bold; */
+  color: rgb(30, 110, 140);
+  border-radius: 0px 0px 6px 0px;
+}
+
+.chat-box strong {
+  text-align: end;
+}
+
+small {
+  font-size: 0.7rem;
+}
+
+.ownMsg span {
+  font-weight: normal;
+}
+
+.chat-box .serverMsg {
+  background-color: transparent;
+  line-height: 0.8rem;
+}
+.chat-box .serverMsg p {
+  text-align: center;
+  font-style: italic;
+  font-size: 0.8rem;
+  margin: 0 auto;
+}
+
+.chat-box .serverMsg hr {
+  margin: 0 auto;
+}
+
+/****** Users List ******/
+.user-list {
+  border: 2px solid rgb(11, 61, 97);
+  grid-column: 3/3;
+  grid-row-start: 2;
+  grid-row-end: 4;
+  border-radius: 0px 10px 10px 0px;
+  overflow-y: auto;
+  padding: 5px;
+  overflow: auto;
+}
+
+.user-list p {
+  text-align: left;
+  margin: 0.25rem 1rem 0;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: bold;
+  color: rgb(13, 160, 98);
+  border: 1px solid rgb(13, 160, 98);
+  border-radius: 8px;
+}
+
+.msg-field {
+  margin-top: 5px;
+  grid-column: 2/2;
+  grid-row: 4/4;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+}
+
+/* ------------------------------------- */
+/* CUSTOM SCROLL BARS */
+/* width */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #bbcbd9;
+  border-radius: 50%;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #8ba4b6;
+  border-radius: 4px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #6c93ae;
+}
+/* ------------------------------------- */
+
+/** ---------*SPINNER*--------- **/
+.lds-ripple {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.lds-ripple div {
+  position: absolute;
+  border: 4px solid #fff;
+  opacity: 1;
+  border-radius: 50%;
+  animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.lds-ripple div:nth-child(2) {
+  animation-delay: -0.5s;
+}
+@keyframes lds-ripple {
+  0% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+  4.9% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+  5% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    top: 0px;
+    left: 0px;
+    width: 72px;
+    height: 72px;
+    opacity: 0;
+  }
+}
