@@ -321,7 +321,7 @@ export default function App() {
         setRooms(fetchedRooms);
 
         const savedId = localStorage.getItem('gat_current_room_id');
-        if (savedId && (!selectedRoom || selectedRoom.id !== savedId)) {
+        if (savedId) {
           const found = fetchedRooms.find(r => r.id === savedId);
           if (found) {
             setSelectedRoom(found);
@@ -746,8 +746,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: '#0b141a', color: '#22c55e', fontSize: '18px', fontWeight: 'bold' }}>
-        جاري تحميل الشات... 💬
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', width: '100vw', backgroundColor: '#0b141a', color: '#22c55e', fontSize: '18px', fontWeight: 'bold', direction: 'rtl' }}>
+        💬 جاري تحميل الشات...
       </div>
     );
   }
@@ -1099,7 +1099,7 @@ export default function App() {
         </div>
 
         <div onClick={toggleRadio} style={{ color: isPlayingRadio ? '#22c55e' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️'}</span>
+          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️️'}</span>
           <span style={{ fontSize: '9px', fontWeight: 'bold' }}>Radio 9090</span>
         </div>
 
