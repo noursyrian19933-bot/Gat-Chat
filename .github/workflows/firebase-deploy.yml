@@ -6,19 +6,17 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Dependencies
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install and Build Client
         run: |
           cd client
           npm install
-          
-      - name: Build Project
-        run: |
-          cd client
-          npx vite build
-          
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+          npx vite build --emptyOutDir
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GAT_CHAT_B7187 }}'
