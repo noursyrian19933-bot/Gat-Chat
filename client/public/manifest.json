@@ -1,0 +1,38 @@
+{
+  "background_color": "#ffffff",
+  "description": "تطبيق شات عربي للتعارف وتكوين صداقات جديدة من كافة انحاء الوطن العربي الحبيب\n\nمؤسس الموقع : LOST",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "E-Chat",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "E-Chat",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://gat-chat-b7187.web.app/vite.svg",
+      "type": "image/svg+xml",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://gat-chat-b7187.web.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ]
+}
