@@ -201,7 +201,6 @@ export default function App() {
     return () => unsubscribeAuth();
   }, [guestName]);
 
-  // دالة لتسجيل وقت الخروج والآخر تواجد بشكل نظامي ورسمي (غير وهمي)
   const updateLastSeenOnExit = async () => {
     if (!user) return;
     try {
@@ -1313,7 +1312,7 @@ export default function App() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👁️</span>
+                  <span style={{ fontSize: '14px' }}>👁️️</span>
                   <span>آخر تواجد</span>
                 </div>
                 <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
