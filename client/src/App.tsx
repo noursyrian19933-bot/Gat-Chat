@@ -85,7 +85,7 @@ const EMOJIS_LIST = [
 ];
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'guest'>('login');
   
@@ -349,7 +349,7 @@ export default function App() {
         setRooms(fetchedRooms);
 
         const savedId = localStorage.getItem('gat_current_room_id');
-        if (savedId && (!selectedRoom || selectedRoom.id !== savedId)) {
+        if (savedId) {
           const found = fetchedRooms.find(r => r.id === savedId);
           if (found) {
             setSelectedRoom(found);
@@ -773,7 +773,14 @@ export default function App() {
     return parts.length > 0 ? parts : text;
   };
 
-  if (loading) {
+  // 🔹 فحص وجود الجلسة لتجاوز شاشة التحميل السوداء المزعجة عند تحديث الصفحة
+  const hasSavedRoomOrSession = Boolean(
+    localStorage.getItem('gat_current_room_id') || 
+    localStorage.getItem('gat_guest_name') || 
+    auth.currentUser
+  );
+
+  if (loading && !hasSavedRoomOrSession) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', backgroundColor: '#0b141a', color: '#22c55e', fontSize: '18px', fontWeight: 'bold' }}>
         جاري تحميل الشات... 💬
@@ -781,7 +788,7 @@ export default function App() {
     );
   }
 
-  if (!user) {
+  if (!user && !loading) {
     return (
       <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px' }}>
         <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '380px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', direction: 'rtl' }}>
@@ -1254,7 +1261,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الملف الشخصي (معدلة: إزالة الأيقونات العلوية وبقاء زر الإغلاق X فقط) */}
+      {/* 🔴 نافذة الملف الشخصي */}
       {selectedProfileUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b' }}>
@@ -1312,7 +1319,7 @@ export default function App() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👁️️</span>
+                  <span style={{ fontSize: '14px' }}>👁</span>
                   <span>آخر تواجد</span>
                 </div>
                 <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
@@ -1377,9 +1384,9 @@ export default function App() {
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '2px solid #fff' }}>👤</div>
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: 'bold' }}>
-                    {user.isAnonymous ? (localStorage.getItem('gat_guest_name') || guestName || 'زائر') : (user.displayName || user.email?.split('@')[0])}
+                    {user?.isAnonymous ? (localStorage.getItem('gat_guest_name') || guestName || 'زائر') : (user?.displayName || user?.email?.split('@')[0])}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{user.isAnonymous ? 'زائر' : 'عضو'}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.isAnonymous ? 'زائر' : 'عضو'}</div>
                 </div>
               </div>
             </div>
