@@ -1,0 +1,22 @@
+name: Deploy to Firebase Hosting
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install and Build
+        run: |
+          cd client
+          npm install
+          npm run build
+          
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GAT_CHAT_B7187 }}'
+          channelId: live
+          projectId: gat-chat-b7187
