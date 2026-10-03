@@ -1,3 +1,6 @@
+cd ~/Gat-Chat/client
+
+cat << 'EOF' > src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
@@ -81,7 +84,7 @@ const EMOJIS_LIST = [
   "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", 
   "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", 
   "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "😣", "😖", 
-  "❤️️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", 
+  "❤", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", 
   "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅"
 ];
 
@@ -1472,3 +1475,4 @@ export default function App() {
     </div>
   );
 }
+EOF
