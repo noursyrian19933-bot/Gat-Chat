@@ -201,6 +201,20 @@ export default function App() {
     return () => unsubscribeAuth();
   }, [guestName]);
 
+  // تحديث وقت الخروج بدقة تامة (آخر تواجد نظامي) عند مغادرة الصفحة أو إغلاقها
+  useEffect(() => {
+    if (!user) return;
+    const handleBeforeUnload = () => {
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const presenceRef = doc(db, 'room_presence', user.uid);
+      setDoc(presenceRef, { lastSeen: nowTime, lastActive: Date.now() }, { merge: true }).catch(() => {});
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -1223,19 +1237,14 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الملف الشخصي */}
+      {/* 🔴 نافذة الملف الشخصي (معدلة: إخفاء أيقونات البريد والعلم والقائمة وبقاء زر الإغلاق X فقط) */}
       {selectedProfileUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b' }}>
             
             <div style={{ backgroundColor: '#0b1724', color: '#ffffff', padding: '12px 14px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px' }}>
-                  <button onClick={() => setSelectedProfileUser(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                  <span style={{ cursor: 'pointer' }}>☰</span>
-                  <span style={{ cursor: 'pointer' }}>🚩</span>
-                </div>
-                <span onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)} style={{ fontSize: '18px', cursor: 'pointer' }}>✉️️</span>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '8px' }}>
+                <button onClick={() => setSelectedProfileUser(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
               </div>
 
               <div style={{ position: 'relative', width: '64px', height: '64px', marginBottom: '6px' }}>
