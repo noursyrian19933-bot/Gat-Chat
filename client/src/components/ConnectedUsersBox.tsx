@@ -21,6 +21,12 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
 
   const currentUserId = currentUser.userId;
 
+  // Helper to remove rank badges like (# Admin #) from username
+  const cleanUserName = (name: string) => {
+    if (!name) return '';
+    return name.replace(/\s*\(#.*?#\)\s*/g, '').trim();
+  };
+
   // Get the users of the current room
   const usersToShow = room?.users ? [...room.users] : [];
 
@@ -38,9 +44,11 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
 
   const handleUserClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    // Extract username from button clicked
-    const clickedUser = event.currentTarget.innerText.slice(2);
-    if (clickedUser !== currentUser.userName) {
+    // Extract username from button clicked and clean any rank
+    const clickedUser = cleanUserName(event.currentTarget.innerText.slice(2));
+    const cleanCurrentUserName = cleanUserName(currentUser.userName);
+    
+    if (clickedUser !== cleanCurrentUserName) {
       const response = await fetch('/api/users/tokeninfo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +93,7 @@ const ConnectedUsersBox = (props: ConnectedUsersBoxProps) => {
                   className="text-truncate"
                   onClick={handleUserClick}
                 >
-                  🐱{user.userName}
+                  🐱{cleanUserName(user.userName)}
                 </Button>
               </motion.div>
             );
