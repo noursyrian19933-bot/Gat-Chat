@@ -220,8 +220,6 @@ export default function App() {
   const songInputRef = useRef<HTMLInputElement | null>(null);
   const profileAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [isPlayingRadio, setIsPlayingRadio] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -352,7 +350,7 @@ export default function App() {
             email: currentUser.email || '',
             displayName: actualName,
             role: activeRole,
-            previousRole: 'Member', // الاحتفاظ بالرتبة السابقة
+            previousRole: 'Member',
             permissions: rolePermissions[normalizeRole(activeRole)] || [],
             flag: '🇯🇴',
             country: 'الأردن',
@@ -1144,7 +1142,6 @@ export default function App() {
     }
   };
 
-  // 🔹 تحديث الرتبة مع استعادة الرتبة السابقة الحقيقية عند السحب
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
 
@@ -1186,9 +1183,7 @@ export default function App() {
       const oldRole = targetUserData.role || 'Member';
       let roleToSave = normalizedNewRole;
 
-      // إذا كانت العملية سحب رتبة (أي تعيين إلى Member أو Guest)
       if (normalizedNewRole === 'Member' || normalizedNewRole === 'Guest') {
-        // العودة الحرفية للرتبة السابقة المخزنة، وإن لم تكن موجودة فتعود إلى Member
         roleToSave = targetUserData.previousRole && !['Member', 'Guest'].includes(targetUserData.previousRole) 
           ? targetUserData.previousRole 
           : 'Member';
@@ -1258,7 +1253,7 @@ export default function App() {
           text: roomMsg,
           role: 'System',
           color: isDemote ? '#ef4444' : '#eab308',
-          isSystemSpecial: true, // رسالة ملونة وعصرية
+          isSystemSpecial: true,
           createdAt: serverTimestamp()
         });
       }
@@ -1311,19 +1306,6 @@ export default function App() {
       setIsEditingNameActive(false);
     } catch (e: any) {
       console.error(e);
-    }
-  };
-
-  const toggleRadio = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio('https://stream.radio9090.com/9090fm');
-    }
-    if (isPlayingRadio) {
-      audioRef.current.pause();
-      setIsPlayingRadio(false);
-    } else {
-      audioRef.current.play().catch(() => {});
-      setIsPlayingRadio(true);
     }
   };
 
@@ -1578,56 +1560,50 @@ export default function App() {
         onChange={handleSongSelect} 
       />
 
-      <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, backgroundColor: '#0b141a', color: '#fff', padding: '0 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
+      {/* 🔹 شريط العلوي العصري والأنيق (بدون الأثرياء والكبار وبأيقونات مميزة) */}
+      <header style={{ height: '56px', minHeight: '56px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
         
-        <div style={{ cursor: 'pointer', fontSize: '22px', color: '#fff', padding: '0 4px', lineHeight: '1' }}>
+        <div style={{ cursor: 'pointer', fontSize: '20px', color: '#38bdf8', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           ☰
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
-          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px' }}>
-            <span style={{ fontSize: '16px', lineHeight: '1' }}>👤</span>
-            <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>اعدادات</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+          
+          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', transition: 'all 0.2s' }}>
+            <span style={{ fontSize: '15px', color: '#38bdf8' }}>👤</span>
+            <span style={{ marginTop: '1px', fontWeight: '600' }}>اعدادات</span>
           </div>
 
-          <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px', position: 'relative' }}>
-            <span style={{ fontSize: '16px', lineHeight: '1' }}>🔔</span>
-            <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>إشعار</span>
+          <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+            <span style={{ fontSize: '15px', color: '#eab308' }}>🔔</span>
+            <span style={{ marginTop: '1px', fontWeight: '600' }}>إشعار</span>
             {notificationsList.length > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '0px', backgroundColor: '#eab308', color: '#000000', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ffffff' }}>
+              <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#eab308', color: '#000000', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
                 {notificationsList.length}
               </span>
             )}
           </div>
 
-          <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px', position: 'relative' }}>
-            <span style={{ fontSize: '16px', lineHeight: '1' }}>👤⁺</span>
-            <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>طلب</span>
+          <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+            <span style={{ fontSize: '15px', color: '#22c55e' }}>👥⁺</span>
+            <span style={{ marginTop: '1px', fontWeight: '600' }}>طلب</span>
             {pendingRequests.length > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '0px', backgroundColor: '#dc2626', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ffffff' }}>
+              <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#dc2626', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
                 {pendingRequests.length}
               </span>
             )}
           </div>
 
-          <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px', position: 'relative' }}>
-            <span style={{ fontSize: '16px', lineHeight: '1' }}>✉️</span>
-            <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>رسالة</span>
+          <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+            <span style={{ fontSize: '15px', color: '#a855f7' }}>💬</span>
+            <span style={{ marginTop: '1px', fontWeight: '600' }}>رسالة</span>
             {totalUnreadMessages > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '0px', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ffffff' }}>
+              <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
                 {totalUnreadMessages}
               </span>
             )}
           </div>
 
-          <div style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px' }}>
-            <span style={{ fontSize: '16px', lineHeight: '1' }}>👑</span>
-            <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>الأثرياء</span>
-          </div>
-          <div style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px' }}>
-            <span style={{ fontSize: '16px', lineHeight: '1' }}>💎</span>
-            <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>الكبار</span>
-          </div>
         </div>
 
       </header>
@@ -1713,7 +1689,6 @@ export default function App() {
                   const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
                   const hasCustomBg = m.profileBgColor && m.profileBgColor !== '#ffffff';
 
-                  // 🔹 تصميم رسائل الرتب الملونة والعصرية في الشات العام
                   if (m.isSystemSpecial) {
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
@@ -1923,31 +1898,27 @@ export default function App() {
         </div>
       )}
 
-      <nav style={{ height: '52px', minHeight: '52px', flexShrink: 0, backgroundColor: '#0b141a', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
+      {/* 🔹 شريط التنقل السفلي العصري والأنيق (بدون الراديو، بـ 4 أيقونات مصممة بشكل عصري) */}
+      <nav style={{ height: '60px', minHeight: '60px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.3)', padding: '0 8px' }}>
         
-        <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>⚙</span>
-          <span>خيارات</span>
+        <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+          <span style={{ fontSize: '18px', color: '#38bdf8' }}>⚙</span>
+          <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
         </div>
 
-        <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>👥<sup>+</sup></span>
-          <span>الأصدقاء</span>
+        <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+          <span style={{ fontSize: '18px', color: '#22c55e' }}>👥⁺</span>
+          <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
         </div>
 
-        <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>👥</span>
-          <span>المتصلين</span>
+        <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+          <span style={{ fontSize: '18px', color: '#eab308' }}>👥</span>
+          <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
         </div>
 
-        <div onClick={leaveRoomToLobby} style={{ color: currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>🏠</span>
-          <span>الغرف</span>
-        </div>
-
-        <div onClick={toggleRadio} style={{ color: isPlayingRadio ? '#22c55e' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️'}</span>
-          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>Radio 9090</span>
+        <div onClick={leaveRoomToLobby} style={{ color: currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+          <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
+          <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
         </div>
 
       </nav>
@@ -2021,7 +1992,7 @@ export default function App() {
       )}
 
       {showFriendsModal && (
-        <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: '60px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
             
             <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
@@ -2073,7 +2044,7 @@ export default function App() {
       )}
 
       {showOnlineModal && (
-        <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: '60px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
             
             <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
@@ -2455,7 +2426,6 @@ export default function App() {
                   {selectedProfileUser.role}
                 </div>
 
-                {/* 🔹 الاسم مع أيقونة القلم (تظهر حصراً لأصحاب الرتب) */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px', width: '100%' }}>
                   <span style={{ fontSize: '16px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
                     {selectedProfileUser.name}
@@ -2487,7 +2457,6 @@ export default function App() {
 
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
-              {/* 🔹 مربع تعديل الاسم يظهر عند الضغط على أيقونة القلم لأصحاب الرتب */}
               {isEditingNameActive && isSuperAdmin && (
                 <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>✏️ تعديل اسم المستخدم:</div>
