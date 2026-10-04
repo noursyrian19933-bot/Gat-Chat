@@ -207,6 +207,7 @@ export default function App() {
   const [nameStyle, setNameStyle] = useState('normal'); 
   const [profileBgColor, setProfileBgColor] = useState('#ffffff'); 
   const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
+  const [userJoinedDate, setUserJoinedDate] = useState<string>('');
 
   const [profileAvatar, setProfileAvatar] = useState<string>('');
   const [profileCover, setProfileCover] = useState<string>('');
@@ -215,7 +216,11 @@ export default function App() {
   const [profileSong, setProfileSong] = useState<string>('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
 
-  // 🔹 حالة مشغل اليوتيوب العائم القابل للتحريك
+  // 🔹 حالة الطرد والعد التنازلي
+  const [userKickedUntil, setUserKickedUntil] = useState<number | null>(null);
+  const [kickTimeLeft, setKickTimeLeft] = useState<number>(0);
+
+  // 🔹 مشغل يوتيوب العائم القابل للتحريك
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [isVideoMinimized, setIsVideoMinimized] = useState(false);
   const [videoPos, setVideoPos] = useState({ x: 20, y: 100 });
@@ -241,9 +246,9 @@ export default function App() {
   };
 
   const rolePermissions: Record<string, string[]> = {
-    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
-    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
-    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
+    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
+    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
+    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
     Premium: ['edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
     Member: ['edit_avatar'],
     Guest: []
@@ -328,21 +333,9 @@ export default function App() {
               activeRole = normalizeRole(roleDoc.data().role);
             } else if (userSnap.exists() && userSnap.data().role) {
               activeRole = normalizeRole(userSnap.data().role);
-            } else {
-              try {
-                const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
-                if (snapshot.exists()) {
-                  const rdbData = snapshot.val();
-                  if (rdbData?.role || rdbData?.rank) {
-                    activeRole = normalizeRole(rdbData.role || rdbData.rank);
-                  }
-                }
-              } catch (error) {
-                console.error(error);
-              }
             }
-          } catch (e) {
-            console.error(e);
+          } catch (error) {
+            console.error(error);
           }
         }
 
@@ -353,6 +346,7 @@ export default function App() {
         setCurrentUserRole(activeRole);
 
         if (!userSnap.exists()) {
+          // إنشاء وثيقة جديدة وتثبيت تاريخ الانضمام للأبد
           await setDoc(userRef, {
             email: currentUser.email || '',
             displayName: actualName,
@@ -374,30 +368,51 @@ export default function App() {
             joinedDate: todayDate,
             createdAt: new Date().toISOString()
           }, { merge: true });
-
-          if (currentUser.email && cleanEmail !== ownerEmail) {
-            try {
-              await setDoc(
-                doc(db, 'roles_by_email', cleanEmail),
-                {
-                  uid: currentUser.uid,
-                  email: cleanEmail,
-                  role: activeRole,
-                  previousRole: 'Member',
-                  permissions: rolePermissions[normalizeRole(activeRole)] || [],
-                  updatedAt: serverTimestamp()
-                },
-                { merge: true }
-              );
-            } catch (e) {
-              console.warn(e);
-            }
+          setUserJoinedDate(todayDate);
+        } else {
+          const data = userSnap.data();
+          if (data.joinedDate) {
+            setUserJoinedDate(data.joinedDate);
+          } else {
+            await updateDoc(userRef, { joinedDate: todayDate });
+            setUserJoinedDate(todayDate);
           }
         }
       }
     });
     return () => unsubscribeAuth();
   }, [guestName]);
+
+  // مراقبة الطرد والعد التنازلي
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.kickedUntil && data.kickedUntil > Date.now()) {
+          setUserKickedUntil(data.kickedUntil);
+        } else {
+          setUserKickedUntil(null);
+        }
+      }
+    });
+    return () => unsub();
+  }, [user]);
+
+  useEffect(() => {
+    if (!userKickedUntil) return;
+    const interval = setInterval(() => {
+      const diff = userKickedUntil - Date.now();
+      if (diff <= 0) {
+        setUserKickedUntil(null);
+        updateDoc(doc(db, 'users', user!.uid), { kickedUntil: 0 }).catch(() => {});
+        clearInterval(interval);
+      } else {
+        setKickTimeLeft(Math.ceil(diff / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [userKickedUntil]);
 
   useEffect(() => {
     if (!user) return;
@@ -413,7 +428,7 @@ export default function App() {
       if (data.role && cleanEmail !== ownerEmail && !cleanEmail) {
         setCurrentUserRole(normalizeRole(data.role));
       }
-
+      if (data.joinedDate) setUserJoinedDate(data.joinedDate);
       if (data.gender) setProfileGender(data.gender);
       if (data.country) {
         setProfileCountry(data.country);
@@ -468,7 +483,7 @@ export default function App() {
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
       
-      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0 }, { merge: true });
+      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, roomId: 'lobby', roomName: 'القائمة الرئيسية' }, { merge: true });
       await setDoc(userRef, { lastSeen: nowTime }, { merge: true });
     } catch (e) {
       console.error(e);
@@ -481,7 +496,7 @@ export default function App() {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
-      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0 }, { merge: true }).catch(() => {});
+      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, roomId: 'lobby', roomName: 'القائمة الرئيسية' }, { merge: true }).catch(() => {});
       setDoc(userRef, { lastSeen: nowTime }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -541,6 +556,7 @@ export default function App() {
     });
   }, [user]);
 
+  // إشعارات مع دعم isRead لإخفاء العداد عند الفتح وبقاء الإشعار محفوظاً
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -560,10 +576,10 @@ export default function App() {
     setShowNotificationsModal(true);
     if (!user || notificationsList.length === 0) return;
     try {
-      const notifSnapshot = await getDocs(collection(db, 'users', user.uid, 'notifications'));
-      const deletePromises = notifSnapshot.docs.map(d => deleteDoc(doc(db, 'users', user.uid, 'notifications', d.id)));
-      await Promise.all(deletePromises);
-      setNotificationsList([]);
+      const unreadNotes = notificationsList.filter(n => !n.isRead);
+      for (const note of unreadNotes) {
+        await updateDoc(doc(db, 'users', user.uid, 'notifications', note.id), { isRead: true });
+      }
     } catch (e) {
       console.error(e);
     }
@@ -786,7 +802,7 @@ export default function App() {
     const roomName = selectedRoom ? selectedRoom.name : 'القائمة الرئيسية';
     
     const presenceRef = doc(db, 'room_presence', user.uid);
-    const todayDate = new Date().toISOString().split('T')[0];
+    const todayDate = userJoinedDate || new Date().toISOString().split('T')[0];
 
     const updatePresence = async () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -821,8 +837,9 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor, userJoinedDate]);
 
+  // حساب الأعداد الحقيقية لكل غرفة بشكل مستقل تماماً
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
       const counts: { [roomId: string]: number } = {};
@@ -866,6 +883,7 @@ export default function App() {
       const activeUsersList = Array.from(uniqueUsersMap.values());
 
       activeUsersList.forEach(u => {
+        // حساب المتواجدين حصرياً داخل الغرفة المحددة
         if (u.roomId && u.roomId !== 'lobby') {
           counts[u.roomId] = (counts[u.roomId] || 0) + 1;
         }
@@ -874,7 +892,7 @@ export default function App() {
       setRoomCounts(counts);
       setOnlineUsersList(activeUsersList);
     });
-  }, [selectedRoom]);
+  }, []);
 
   useEffect(() => {
     if (!selectedRoom) return;
@@ -887,7 +905,6 @@ export default function App() {
         const data = docSnap.data();
         let isExpired = false;
 
-        // فلترة رسائل الإهداء أو السحب إذا مر عليها أكثر من 5 دقائق
         if (data.isSystemSpecial && data.createdAt) {
           const msgTime = data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now();
           if (now - msgTime > FIVE_MINUTES_MS) {
@@ -957,7 +974,6 @@ export default function App() {
     }
   };
 
-  // 🔹 رسالة الانضمام متضمنة الاسم ورتبة الشخص الفعلية
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setSelectedRoom(room);
     setCurrentView('chat');
@@ -998,7 +1014,6 @@ export default function App() {
     localStorage.removeItem('gat_current_room_flag');
   };
 
-  // استخراج رابط يوتيوب وتحويله لembed إن وجد
   const extractYouTubeEmbedUrl = (text: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = text.match(regExp);
@@ -1119,6 +1134,7 @@ export default function App() {
       await addDoc(collection(db, 'users', targetUserId, 'notifications'), {
         title: 'طلب صداقة جديد 👥',
         body: `أرسل لك ${currentUserName} طلب صداقة.`,
+        isRead: false,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
@@ -1153,6 +1169,7 @@ export default function App() {
       await addDoc(collection(db, 'users', request.fromUid, 'notifications'), {
         title: 'قبول طلب صداقة 🎉',
         body: `قام ${currentUserName} بقبول طلب الصداقة الخاص بك!`,
+        isRead: false,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
     } catch (e) {
@@ -1173,6 +1190,31 @@ export default function App() {
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'friends', friendUid));
       await deleteDoc(doc(db, 'users', friendUid, 'friends', user.uid));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // وظيفة الطرد للأدمن والأونر
+  const handleKickUser = async (targetUid: string, minutes: number) => {
+    if (!user || !isAdmin) return;
+    const kickUntilTime = Date.now() + minutes * 60 * 1000;
+    try {
+      await updateDoc(doc(db, 'users', targetUid), {
+        kickedUntil: kickUntilTime
+      });
+      await setDoc(doc(db, 'room_presence', targetUid), {
+        kickedUntil: kickUntilTime
+      }, { merge: true });
+
+      await addDoc(collection(db, 'users', targetUid, 'notifications'), {
+        title: 'تنبيه طرد 🚫',
+        body: `تم طردك مؤقتاً لمدة ${minutes} دقيقة بواسطة الإدارة.`,
+        isRead: false,
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      setSelectedProfileUser(null);
     } catch (e) {
       console.error(e);
     }
@@ -1302,6 +1344,7 @@ export default function App() {
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
         body: notifBody,
+        isRead: false,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
@@ -1354,7 +1397,7 @@ export default function App() {
       name: uData.name || uData.user || uData.userName || 'زائر',
       role: normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
       gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
-      joinedDate: uData.joinedDate || new Date().toISOString().split('T')[0],
+      joinedDate: uData.joinedDate || userJoinedDate || new Date().toISOString().split('T')[0],
       roomName: uData.roomName || 'القائمة الرئيسية',
       lastSeen: uData.lastSeen || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       points: uData.points || 0,
@@ -1440,6 +1483,7 @@ export default function App() {
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
 
   const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
+  const unreadNotificationsCount = notificationsList.filter(n => !n.isRead).length;
 
   const renderBadgeText = (text: string) => {
     const badgeRegex = /\(#\s*([^#]+)\s*#\)/g;
@@ -1551,6 +1595,22 @@ export default function App() {
     );
   }
 
+  // إذا كان المستخدم مطروداً، تظهر صفحة الطرد مع العد التنازلي الفعلي
+  if (userKickedUntil && userKickedUntil > Date.now()) {
+    const minutes = Math.floor(kickTimeLeft / 60);
+    const seconds = kickTimeLeft % 60;
+    return (
+      <div style={{ height: '100dvh', width: '100vw', backgroundColor: '#0b141a', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px', textAlign: 'center', direction: 'rtl' }}>
+        <div style={{ fontSize: '56px', marginBottom: '16px' }}>🚫</div>
+        <h2 style={{ color: '#ef4444', marginBottom: '10px', fontSize: '20px' }}>أنت مطرود من الشات مؤقتاً</h2>
+        <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '20px' }}>تم طردك من قبل إدارة الموقع. ستتمكن من العودة فور انتهاء الوقت أدناه.</p>
+        <div style={{ backgroundColor: '#1e293b', padding: '16px 28px', borderRadius: '12px', border: '1px solid #334155', fontSize: '18px', fontWeight: 'bold', color: '#38bdf8' }}>
+          ستعود بعد: {minutes} دقيقة و {seconds} ثانية
+        </div>
+      </div>
+    );
+  }
+
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
 
   const canEditAvatar = Boolean(
@@ -1596,56 +1656,61 @@ export default function App() {
         onChange={handleSongSelect} 
       />
 
-      <header style={{ height: '56px', minHeight: '56px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-        
-        <div style={{ cursor: 'pointer', fontSize: '20px', color: '#38bdf8', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          ☰
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+      {/* 🔹 الهيدر العلوي يظهر فقط عند الدخول للغرفة (chat)، ويتعطل في قائمة الغرف الرئيسية (rooms) */}
+      {currentView === 'chat' && (
+        <header style={{ height: '56px', minHeight: '56px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
           
-          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px' }}>
-            <span style={{ fontSize: '15px', color: '#38bdf8' }}>👤</span>
-            <span style={{ marginTop: '1px', fontWeight: '600' }}>اعدادات</span>
+          <div style={{ cursor: 'pointer', fontSize: '20px', color: '#38bdf8', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            ☰
           </div>
 
-          <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
-            <span style={{ fontSize: '15px', color: '#eab308' }}>🔔</span>
-            <span style={{ marginTop: '1px', fontWeight: '600' }}>إشعار</span>
-            {notificationsList.length > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#eab308', color: '#000000', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
-                {notificationsList.length}
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+            
+            <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px' }}>
+              <span style={{ fontSize: '15px', color: '#38bdf8' }}>👤</span>
+              <span style={{ marginTop: '1px', fontWeight: '600' }}>اعدادات</span>
+            </div>
+
+            <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+              <span style={{ fontSize: '15px', color: '#eab308' }}>🔔</span>
+              <span style={{ marginTop: '1px', fontWeight: '600' }}>إشعار</span>
+              {unreadNotificationsCount > 0 && (
+                <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#eab308', color: '#000000', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </div>
+
+            <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+              <span style={{ fontSize: '15px', color: '#22c55e' }}>👥⁺</span>
+              <span style={{ marginTop: '1px', fontWeight: '600' }}>طلب</span>
+              {pendingRequests.length > 0 && (
+                <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#dc2626', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
+                  {pendingRequests.length}
+                </span>
+              )}
+            </div>
+
+            <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+              <span style={{ fontSize: '15px', color: '#a855f7' }}>💬</span>
+              <span style={{ marginTop: '1px', fontWeight: '600' }}>رسالة</span>
+              {totalUnreadMessages > 0 && (
+                <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
+                  {totalUnreadMessages}
+                </span>
+              )}
+            </div>
+
           </div>
 
-          <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
-            <span style={{ fontSize: '15px', color: '#22c55e' }}>👥⁺</span>
-            <span style={{ marginTop: '1px', fontWeight: '600' }}>طلب</span>
-            {pendingRequests.length > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#dc2626', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
-                {pendingRequests.length}
-              </span>
-            )}
-          </div>
+        </header>
+      )}
 
-          <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
-            <span style={{ fontSize: '15px', color: '#a855f7' }}>💬</span>
-            <span style={{ marginTop: '1px', fontWeight: '600' }}>رسالة</span>
-            {totalUnreadMessages > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
-                {totalUnreadMessages}
-              </span>
-            )}
-          </div>
-
+      {currentView === 'chat' && (
+        <div style={{ backgroundColor: '#ffffff', color: '#000', fontSize: '12px', fontWeight: 'bold', padding: '2px 10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', flexShrink: 0, direction: 'rtl' }}>
+          .Points
         </div>
-
-      </header>
-
-      <div style={{ backgroundColor: '#ffffff', color: '#000', fontSize: '12px', fontWeight: 'bold', padding: '2px 10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', flexShrink: 0, direction: 'rtl' }}>
-        .Points
-      </div>
+      )}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#f1f5f9', minHeight: 0, position: 'relative' }}>
         
@@ -1694,7 +1759,7 @@ export default function App() {
                         style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
                         title="حذف الغرفة"
                       >
-                        🗑️ حذف
+                        🗑️️ حذف
                       </button>
                     )}
                   </div>
@@ -1713,7 +1778,6 @@ export default function App() {
         {currentView === 'chat' && selectedRoom && (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
             
-            {/* 🔹 مشغل يوتيوب العائم القابل للتحريك والتصغير والإغلاق */}
             {activeVideoUrl && (
               <div 
                 style={{
@@ -1730,7 +1794,6 @@ export default function App() {
                   transition: isDraggingVideo.current ? 'none' : 'width 0.2s'
                 }}
               >
-                {/* شريط السحب والتحكم */}
                 <div 
                   onMouseDown={(e) => {
                     isDraggingVideo.current = true;
@@ -2052,29 +2115,32 @@ export default function App() {
         </div>
       )}
 
-      <nav style={{ height: '60px', minHeight: '60px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.3)', padding: '0 8px' }}>
-        
-        <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ fontSize: '18px', color: '#38bdf8' }}>⚙</span>
-          <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
-        </div>
+      {/* 🔹 الفوتر السفلي يظهر فقط عند الدخول للغرفة (chat)، ويتعطل في قائمة الغرف الرئيسية (rooms) */}
+      {currentView === 'chat' && (
+        <nav style={{ height: '60px', minHeight: '60px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.3)', padding: '0 8px' }}>
+          
+          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '18px', color: '#38bdf8' }}>⚙</span>
+            <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
+          </div>
 
-        <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ fontSize: '18px', color: '#22c55e' }}>👥⁺</span>
-          <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
-        </div>
+          <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '18px', color: '#22c55e' }}>👥⁺</span>
+            <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
+          </div>
 
-        <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ fontSize: '18px', color: '#eab308' }}>👥</span>
-          <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
-        </div>
+          <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '18px', color: '#eab308' }}>👥</span>
+            <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
+          </div>
 
-        <div onClick={leaveRoomToLobby} style={{ color: currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-          <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
-          <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
-        </div>
+          <div onClick={leaveRoomToLobby} style={{ color: currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
+            <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
+          </div>
 
-      </nav>
+        </nav>
+      )}
 
       {showRequestsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
@@ -2650,6 +2716,21 @@ export default function App() {
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
+              {/* 🔹 خيار الطرد حصرياً للأدمن والأونر */}
+              {isAdmin && !isSelfProfile && (
+                <div style={{ marginTop: '10px', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#991b1b', marginBottom: '6px' }}>🚫 لوحة الطرد (للأدمن والأونر):</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 1)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>دقيقة 1</button>
+                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 5)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>5 دقائق</button>
+                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 30)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>30 دقيقة</button>
+                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 60)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>ساعة</button>
+                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 120)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>ساعتين</button>
+                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 180)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>3 ساعات</button>
+                  </div>
+                </div>
+              )}
+
               {isOwner && !isSelfProfile && (
                 <div style={{ marginTop: '10px', backgroundColor: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
@@ -2668,7 +2749,7 @@ export default function App() {
                     onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
                     style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
                   >
-                    محادثة خاصة ✉️️
+                    محادثة خاصة ✉
                   </button>
                   <button 
                     onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
