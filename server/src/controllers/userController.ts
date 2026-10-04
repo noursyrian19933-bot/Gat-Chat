@@ -9,8 +9,9 @@ import { NotCorrectParamsError } from './helpers/ErrorHandler';
 import { Result, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { TokenPayloadInterface } from '../models/Interfaces';
+import admin from 'firebase-admin'; // لاستخدام فايربيس أدمن في السيرفر
 
-export const registerUser: RequestHandler = async (req, res) => {
+export const registerUser: RequestHandler = async (req, res): Promise<any> => {
   const result: Result = validationResult(req);
   const errors = result.array();
   if (errors.length > 0) {
@@ -51,7 +52,7 @@ export const registerUser: RequestHandler = async (req, res) => {
   }
 };
 
-export const loginUser: RequestHandler = async (req, res) => {
+export const loginUser: RequestHandler = async (req, res): Promise<any> => {
   const result: Result = validationResult(req);
   const errors = result.array();
   if (errors.length > 0) {
@@ -101,5 +102,40 @@ export const loginUser: RequestHandler = async (req, res) => {
   } catch (error: unknown) {
     if (error instanceof Error)
       return res.status(500).json({ status: false, error: 'Internal server error' });
+  }
+};
+
+// وظيفة جديدة لإدارة وتحديث الرتب والإيميل تلقائياً في Firebase Realtime Database
+export const updateUserRole: RequestHandler = async (req, res): Promise<any> => {
+  try {
+    const { targetUid, targetEmail, role } = req.body;
+
+    if (!targetUid) {
+      return res.status(400).json({ status: false, error: 'Target UID is required' });
+    }
+
+    const dbRef = admin.database().ref(`users/${targetUid}`);
+
+    // في حال طلب سحب الرتبة
+    if (role === 'remove' || role === null) {
+      await dbRef.update({
+        email: targetEmail || null,
+        role: null
+      });
+      return res.json({ status: true, message: 'Role removed successfully' });
+    }
+
+    // تعيين أو تحديث الرتبة مع الإيميل تحت الـ UID مباشرة
+    await dbRef.update({
+      email: targetEmail,
+      role: role // (admin, super_admin, premium)
+    });
+
+    return res.json({ status: true, message: `Role ${role} assigned successfully` });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return res.status(500).json({ status: false, error: error.message });
+    }
+    return res.status(500).json({ status: false, error: 'Internal server error' });
   }
 };
