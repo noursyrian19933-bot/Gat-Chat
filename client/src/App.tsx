@@ -941,7 +941,6 @@ export default function App() {
       await updateProfile(userCredential.user, { displayName: displayName });
       await sendEmailVerification(userCredential.user);
       
-      // Save country and flag to Firestore immediately
       const userRef = doc(db, 'users', userCredential.user.uid);
       await setDoc(userRef, {
         email: email,
@@ -1569,21 +1568,21 @@ export default function App() {
   if (!user && !loading) {
     return (
       <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px', direction: 'rtl', boxSizing: 'border-box' }}>
-        <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', padding: '28px 24px', borderRadius: '20px', width: '100%', maxWidth: '380px', boxShadow: '0 15px 35px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ background: '#0b141a', padding: '28px 24px', borderRadius: '20px', width: '100%', maxWidth: '380px', border: '1px solid rgba(255,255,255,0.08)' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '22px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>منصة الدردشة العربية العصرية</p>
+            <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>منصة الدردشة العربية العصرية</p>
           </div>
 
-          {errorMessage && <div style={{ color: '#b91c1c', fontSize: '11px', background: '#fee2e2', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid #fca5a5' }}>{errorMessage}</div>}
-          {successMessage && <div style={{ color: '#15803d', fontSize: '11px', background: '#dcfce7', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid #bbf7d0' }}>{successMessage}</div>}
+          {errorMessage && <div style={{ color: '#ef4444', fontSize: '11px', background: 'rgba(239,68,68,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid rgba(239,68,68,0.3)' }}>{errorMessage}</div>}
+          {successMessage && <div style={{ color: '#22c55e', fontSize: '11px', background: 'rgba(34,197,94,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid rgba(34,197,94,0.3)' }}>{successMessage}</div>}
 
           {authMode === 'menu' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 
                 onClick={() => { setAuthMode('register'); setErrorMessage(''); setSuccessMessage(''); }}
-                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(22,163,74,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ width: '100%', padding: '12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
                 <span>✨</span>
                 <span>إنشاء حساب جديد</span>
@@ -1591,7 +1590,7 @@ export default function App() {
 
               <button 
                 onClick={() => { setAuthMode('login'); setErrorMessage(''); setSuccessMessage(''); }}
-                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #0b141a 0%, #1e293b 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(11,20,26,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ width: '100%', padding: '12px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
                 <span>🔑</span>
                 <span>تسجيل الدخول</span>
@@ -1599,7 +1598,7 @@ export default function App() {
 
               <button 
                 onClick={() => { setAuthMode('guest'); setErrorMessage(''); setSuccessMessage(''); }}
-                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2,132,199,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ width: '100%', padding: '12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
                 <span>👤</span>
                 <span>الدخول كزائر</span>
@@ -1610,19 +1609,19 @@ export default function App() {
           {authMode === 'register' && (
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>الاسم المستعار</label>
-                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required placeholder="اكتب اسمك..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>الاسم المستعار</label>
+                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required placeholder="اكتب اسمك..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>اختر الدولة</label>
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>اختر الدولة</label>
                 <select 
                   value={selectedCountry} 
                   onChange={(e) => setSelectedCountry(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff', cursor: 'pointer' }}
                 >
                   {COUNTRIES_LIST.filter(c => c !== 'عدم إظهار').map((c, i) => (
-                    <option key={i} value={c}>
+                    <option key={i} value={c} style={{ background: '#0b141a', color: '#fff' }}>
                       {c} {getCountryFlag(c)}
                     </option>
                   ))}
@@ -1630,63 +1629,63 @@ export default function App() {
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>كلمة المرور</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>كلمة المرور</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               
               <button type="submit" style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>إنشاء حساب</button>
-              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
 
           {authMode === 'login' && (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>كلمة المرور</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>كلمة المرور</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
 
               <div style={{ textAlign: 'left', marginTop: '-2px' }}>
-                <button type="button" onClick={() => { setAuthMode('forgot'); setErrorMessage(''); setSuccessMessage(''); }} style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}>
+                <button type="button" onClick={() => { setAuthMode('forgot'); setErrorMessage(''); setSuccessMessage(''); }} style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}>
                   هل نسيت كلمة المرور؟
                 </button>
               </div>
 
-              <button type="submit" style={{ background: '#0b141a', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '4px' }}>تسجيل الدخول</button>
-              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+              <button type="submit" style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '4px' }}>تسجيل الدخول</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
 
           {authMode === 'forgot' && (
             <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+              <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.5' }}>
                 أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لإعادة تعيين كلمة المرور فوراً.
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>إرسال رابط الاستعادة</button>
-              <button type="button" onClick={() => setAuthMode('login')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← العودة لتسجيل الدخول</button>
+              <button type="button" onClick={() => setAuthMode('login')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← العودة لتسجيل الدخول</button>
             </form>
           )}
 
           {authMode === 'guest' && (
             <form onSubmit={handleGuestLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>اسم الزائر</label>
-                <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} required placeholder="اكتب اسمك المستعار..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>اسم الزائر</label>
+                <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} required placeholder="اكتب اسمك المستعار..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               <button type="submit" style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>دخول زائر</button>
-              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
 
