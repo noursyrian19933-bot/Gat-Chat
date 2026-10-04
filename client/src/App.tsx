@@ -48,7 +48,7 @@ const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
-// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي وقائمة المتصلين ورسائل الشات بالكامل فورياً
+// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي وقائمة المتصلين واسم صاحب الرتبة
 const PROFILE_BG_COLORS = [
   { name: 'أبيض ناصع', value: '#ffffff' },
   { name: 'داكن أنيق', value: '#0b141a' },
@@ -937,7 +937,7 @@ export default function App() {
     let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
     try {
-      // 🔹 إرسال الرسالة مع تضمين لون الخلفية المختار (لأصحاب الرتب) وحفظه فوراً
+      // 🔹 إرسال الرسالة مع حفظ لون الخلفية الخاص باسم صاحب الرتبة
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName,
         userId: user.uid,
@@ -945,7 +945,7 @@ export default function App() {
         role: roleText,
         color: nameColor,
         nameStyle: nameStyle,
-        profileBgColor: hasRankForCustomization ? profileBgColor : '#ffffff',
+        profileBgColor: hasRankForCustomization ? profileBgColor : '',
         avatarUrl: profileAvatar || '',
         createdAt: serverTimestamp()
       });
@@ -1616,20 +1616,18 @@ export default function App() {
               ) : (
                 messages.map((m, idx) => {
                   const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
-                  // 🔹 لون المربع/الخلفية الخاص برسالة صاحب الرتبة
-                  const messageBgColor = m.profileBgColor || (idx % 2 === 0 ? '#ffffff' : '#f8fafc');
+                  const hasCustomBg = m.profileBgColor && m.profileBgColor !== '#ffffff';
                   return (
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: messageBgColor, 
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', // صف عادي وطبيعي مثل الباقي
                         padding: '8px 10px', 
                         borderBottom: '1px solid #e2e8f0', 
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: '10px', 
-                        direction: 'rtl',
-                        transition: 'background-color 0.3s ease'
+                        direction: 'rtl' 
                       }}
                     >
                       
@@ -1643,9 +1641,25 @@ export default function App() {
 
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
                         <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
-                        <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
-                          {m.user}:
+                        
+                        {/* 🔹 المربع واللون الخاص بالاسم والمربع حوالين الاسم فقط */}
+                        <span 
+                          style={{ 
+                            backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
+                            padding: hasCustomBg ? '3px 8px' : '0',
+                            borderRadius: hasCustomBg ? '6px' : '0',
+                            border: hasCustomBg ? '1px solid rgba(0,0,0,0.1)' : 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
+                            {m.user}:
+                          </span>
                         </span>
+
+                        {/* 🔹 كتابة الرسالة طبيعية وعادية */}
                         <span style={{ color: '#1e293b', fontWeight: '500' }}>
                           {renderBadgeText(m.text)}
                         </span>
@@ -1811,7 +1825,7 @@ export default function App() {
         </div>
 
         <div onClick={toggleRadio} style={{ color: isPlayingRadio ? '#22c55e' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️'}</span>
+          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️️'}</span>
           <span style={{ fontSize: '9px', fontWeight: 'bold' }}>Radio 9090</span>
         </div>
 
@@ -1969,7 +1983,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: u.profileBgColor || '#ffffff', // 🔹 لون كامل للمربع حول الاسم في المتصلين
+                      backgroundColor: u.profileBgColor || '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease'
@@ -2059,7 +2073,7 @@ export default function App() {
                       <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ إعدادات أصحاب الرتب (حفظ فوري):</div>
                       
                       <div>
-                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية المربع بالكامل (الملف والمتصلين ورسائل الشات):</label>
+                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية المربع (للملف والمتصلين ومربع الاسم بالشات):</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
                           {PROFILE_BG_COLORS.map((item) => (
                             <button
@@ -2195,7 +2209,7 @@ export default function App() {
             style={{ 
               width: '100%', 
               maxWidth: '360px', 
-              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', // 🔹 لون كامل للمربع بالكامل في الملف الشخصي
+              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', 
               borderRadius: '16px', 
               overflow: 'hidden', 
               display: 'flex', 
