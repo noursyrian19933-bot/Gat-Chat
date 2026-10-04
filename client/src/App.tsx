@@ -28,7 +28,6 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 
-// 🔹 استيراد Realtime Database
 import { getDatabase, ref, child, get, set, update } from 'firebase/database';
 
 const firebaseConfig = {
@@ -196,7 +195,6 @@ export default function App() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
   const [editingUserName, setEditingUserName] = useState('');
 
-  // States لإنشاء الغرف (للأونر فقط)
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomFlag, setNewRoomFlag] = useState('💬');
 
@@ -550,6 +548,7 @@ export default function App() {
     });
   }, [user]);
 
+  // 🔹 عند فتح الإشعارات يتم مسحها تلقائياً ليصبح مقروءاً ويختفي التنبيه
   const handleOpenNotifications = async () => {
     setShowNotificationsModal(true);
     if (!user || notificationsList.length === 0) return;
@@ -651,10 +650,7 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      alert('⚠️ حجم الأغنية كبير جداً. الحد الأقصى 3 ميجابايت.');
-      return;
-    }
+    if (file.size > 3 * 1024 * 1024) return;
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -663,7 +659,6 @@ export default function App() {
       setProfileSong(base64);
       setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: base64 } : null);
       await saveSettingToFirebase('profileSongUrl', base64);
-      alert('✅ تم حفظ الأغنية بنجاح!');
     };
     e.target.value = '';
   };
@@ -701,12 +696,10 @@ export default function App() {
 
   const handleDeleteSong = async () => {
     if (!user) return;
-    if (!confirm('هل تريد حذف الأغنية من ملفك الشخصي؟')) return;
     setProfileSong('');
     setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: '' } : null);
     await saveSettingToFirebase('profileSongUrl', '');
     stopProfileSong();
-    alert('🗑️ تم حذف الأغنية.');
   };
 
   useEffect(() => {
@@ -748,7 +741,6 @@ export default function App() {
     return () => { if (unsub) unsub(); };
   }, []);
 
-  // 🔹 وظائف إنشاء وحذف الغرف (للأونر فقط)
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isOwner || !newRoomName.trim()) return;
@@ -759,25 +751,20 @@ export default function App() {
       });
       setNewRoomName('');
       setNewRoomFlag('💬');
-      alert('✅ تم إنشاء الغرفة المستقلة بنجاح!');
     } catch (e: any) {
       console.error(e);
-      alert(`❌ خطأ في إنشاء الغرفة: ${e.message}`);
     }
   };
 
   const handleDeleteRoom = async (roomId: string) => {
     if (!isOwner) return;
-    if (!confirm('هل تريد حذف هذه الغرفة نهائياً؟')) return;
     try {
       await deleteDoc(doc(db, 'rooms', roomId));
       if (selectedRoom?.id === roomId) {
         leaveRoomToLobby();
       }
-      alert('🗑️ تم حذف الغرفة بنجاح.');
     } catch (e: any) {
       console.error(e);
-      alert(`❌ خطأ في حذف الغرفة: ${e.message}`);
     }
   };
 
@@ -945,12 +932,33 @@ export default function App() {
     }
   };
 
-  const enterRoom = (room: { id: string; name: string; flag?: string }) => {
+  // 🔹 عند دخول الغرفة، يكتب تلقائياً "تم الانضمام [اسم الشخص الفعلي]"
+  const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setSelectedRoom(room);
     setCurrentView('chat');
     localStorage.setItem('gat_current_room_id', room.id);
     localStorage.setItem('gat_current_room_name', room.name);
     localStorage.setItem('gat_current_room_flag', room.flag || '💬');
+
+    if (user) {
+      const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
+      const actualName = user.isAnonymous 
+        ? (user.displayName || storedGuest || 'زائر') 
+        : (user.displayName || user.email?.split('@')[0] || 'عضو');
+
+      try {
+        await addDoc(collection(db, 'rooms', room.id, 'messages'), {
+          user: 'نظام الشات',
+          userId: 'system',
+          text: `تم الانضمام ${actualName}`,
+          role: 'System',
+          color: '#16a34a',
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
   const leaveRoomToLobby = async () => {
@@ -1042,10 +1050,7 @@ export default function App() {
 
   const openPrivateChatWithUser = (peerId: string, peerName: string) => {
     if (!user) return;
-    if (peerId === user.uid) {
-      alert('لا يمكنك مراسلة نفسك!');
-      return;
-    }
+    if (peerId === user.uid) return;
     stopProfileSong();
     setActivePrivateChat({ peerId, peerName });
     setSelectedProfileUser(null);
@@ -1057,12 +1062,10 @@ export default function App() {
     setDoc(chatRef, { unreadCount: 0 }, { merge: true });
   };
 
+  // 🔹 طلب صداقة بدون أي نوافذ تحذير أو معلومات موقع (يتم إرساله بصمت)
   const handleSendFriendRequest = async (targetUserId: string, targetUserName: string) => {
     if (!user) return;
-    if (targetUserId === user.uid) {
-      alert('لا يمكنك إرسال طلب صداقة لنفسك!');
-      return;
-    }
+    if (targetUserId === user.uid) return;
     const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
     const currentUserName = user.isAnonymous 
       ? (user.displayName || storedGuest || 'زائر') 
@@ -1083,11 +1086,9 @@ export default function App() {
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
-      alert(`✅ تم إرسال طلب الصداقة إلى ${targetUserName}!`);
       setSelectedProfileUser(null);
     } catch (e) {
       console.error(e);
-      alert('حدث خطأ أثناء إرسال الطلب');
     }
   };
 
@@ -1118,8 +1119,6 @@ export default function App() {
         body: `قام ${currentUserName} بقبول طلب الصداقة الخاص بك!`,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
-
-      alert('🎉 تم قبول طلب الصداقة بنجاح!');
     } catch (e) {
       console.error(e);
     }
@@ -1138,12 +1137,12 @@ export default function App() {
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'friends', friendUid));
       await deleteDoc(doc(db, 'users', friendUid, 'friends', user.uid));
-      alert('تم إزالة الصديق من القائمة');
     } catch (e) {
       console.error(e);
     }
   };
 
+  // 🔹 تحديث الرتبة مع النص الدقيق المطلوب في الشات العام (من اسمي إلى اسم الشخص)
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
 
@@ -1171,23 +1170,11 @@ export default function App() {
             targetEmail = String(roleSnap.docs[0].data().email || '').trim().toLowerCase();
           }
         } catch (e) {
-          console.warn("تعذر البحث في roles_by_email:", e);
+          console.warn(e);
         }
       }
 
       if (!targetEmail) {
-        try {
-          const presenceSnap = await getDoc(doc(db, 'room_presence', targetUid));
-          if (presenceSnap.exists()) {
-            targetEmail = String(presenceSnap.data().email || '').trim().toLowerCase();
-          }
-        } catch (e) {
-          console.warn("تعذر البحث في room_presence:", e);
-        }
-      }
-
-      if (!targetEmail) {
-        alert('❌ لا يمكن تغيير الرتبة: هذا المستخدم لا يملك بريد إلكتروني مسجل (زائر).');
         return;
       }
 
@@ -1239,14 +1226,19 @@ export default function App() {
           email: targetEmail
         });
       } catch (rdbErr) {
-        console.warn("تنبيه: فشل تحديث Realtime DB (غير حرج):", rdbErr);
+        console.warn(rdbErr);
       }
+
+      const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
+      const currentAdminName = user.isAnonymous 
+        ? (user.displayName || storedGuest || 'المدير') 
+        : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
       if (selectedRoom) {
         const roomMsg =
           normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
-            ? `⚠️ تم سحب الرتبة من ${targetUserName} وأصبح ${normalizedNewRole}`
-            : `🎁 تم إهداء ${targetUserName} الرتبة: ${normalizedNewRole}`;
+            ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
+            : `تم إهداء رتبة ${normalizedNewRole} من ${currentAdminName} إلى ${targetUserName}`;
 
         await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
           user: 'نظام الشات',
@@ -1266,7 +1258,7 @@ export default function App() {
       const notifBody =
         normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
           ? `تم سحب الرتبة منك وتحديثها إلى ${normalizedNewRole}.`
-          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب وصورة الغلاف وزخرفة وتلوين الملف الشخصي.`;
+          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
@@ -1287,15 +1279,11 @@ export default function App() {
             }
           : null
       );
-
-      alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${normalizedNewRole}`);
     } catch (e: any) {
-      console.error("خطأ في تعديل الرتبة:", e);
-      alert(`❌ حدث خطأ أثناء تغيير الرتبة: ${e.message}`);
+      console.error(e);
     }
   };
 
-  // 🔹 دالة تغيير الاسم (متاحة حصراً لأصحاب الرتب: الأونر، الآدمن، السوبر آدمن)
   const handleUpdateUserName = async () => {
     if (!selectedProfileUser || !editingUserName.trim()) return;
     const targetUid = selectedProfileUser.userId;
@@ -1315,10 +1303,8 @@ export default function App() {
       }
 
       setSelectedProfileUser((prev: any) => prev ? { ...prev, name: cleanNewName } : null);
-      alert('✅ تم تغيير الاسم وحفظه بنجاح ودون التأثير على العضوية!');
     } catch (e: any) {
       console.error(e);
-      alert(`❌ حدث خطأ أثناء تغيير الاسم: ${e.message}`);
     }
   };
 
@@ -1391,11 +1377,11 @@ export default function App() {
               fetchedData.email = roleData.email || fetchedData.email;
             }
           } catch (e) {
-            console.warn("تعذر جلب الإيميل من roles_by_email:", e);
+            console.warn(e);
           }
         }
       } catch (err) {
-        console.error("خطأ أثناء جلب بيانات الملف الشخصي:", err);
+        console.error(err);
       }
     }
     setEditingUserName(fetchedData.name);
@@ -1648,7 +1634,6 @@ export default function App() {
         {currentView === 'rooms' && (
           <div style={{ padding: '12px', overflowY: 'auto', flex: 1, direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             
-            {/* 🔹 قسم إنشاء الغرف (يظهر حصراً لصاحب الموقع الأونر فقط) */}
             {isOwner && (
               <form onSubmit={handleCreateRoom} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                 <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a' }}>🛠️ لوحة تحكم الأونر: إنشاء غرفة جديدة مستقلة</div>
@@ -1685,7 +1670,6 @@ export default function App() {
                       <span>دخول الغرفة</span>
                       <span>🚪</span>
                     </button>
-                    {/* زر حذف الغرفة (يظهر حصراً للأونر فقط) */}
                     {isOwner && (
                       <button 
                         onClick={() => handleDeleteRoom(room.id)}
@@ -1767,16 +1751,14 @@ export default function App() {
                         </span>
                       </div>
 
-                      {/* 🔹 زر حذف الرسالة (إشارة x صغيرة تظهر لأصحاب الرتب حصراً) */}
+                      {/* 🔹 حذف الرسالة فوراً بدون نافذة تحذير وبدون معلومات الموقع */}
                       {isSuperAdmin && (
                         <button 
                           onClick={async () => {
-                            if (confirm('هل تريد حذف هذه الرسالة من العام؟')) {
-                              try {
-                                await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
-                              } catch (e) {
-                                console.error(e);
-                              }
+                            try {
+                              await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
+                            } catch (e) {
+                              console.error(e);
                             }
                           }}
                           style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px' }}
@@ -2475,7 +2457,6 @@ export default function App() {
 
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
-              {/* 🔹 خيار إعادة تسمية الاسم لأصحاب الرتب (الأونر، الآدمن، السوبر آدمن) */}
               {isSuperAdmin && (
                 <div style={{ backgroundColor: 'rgba(255,255,255,0.7)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '4px' }}>✏️ تعديل اسم المستخدم (حفظ فوري):</div>
