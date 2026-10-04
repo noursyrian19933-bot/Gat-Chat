@@ -28,7 +28,6 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 
-// 🔹 الخطوة أ: استيراد Realtime Database
 import { getDatabase, ref, child, get, set, update } from 'firebase/database';
 
 const firebaseConfig = {
@@ -102,6 +101,37 @@ const EMOJIS_LIST = [
   "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "😣", "😖", 
   "❤", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", 
   "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅"
+];
+
+// 🎨 قائمة تأثيرات الأسماء
+const NAME_EFFECTS_LIST = [
+  { id: 'none', label: 'عادي', emoji: '📝' },
+  { id: 'glow', label: 'متوهج', emoji: '✨' },
+  { id: 'fire', label: 'مشتعل', emoji: '🔥' },
+  { id: 'neon', label: 'نيون', emoji: '💡' },
+  { id: 'rainbow', label: 'قوس قزح', emoji: '🌈' },
+  { id: 'rainbow-glow', label: 'قوس قزح متوهج', emoji: '🌟' },
+  { id: 'gradient', label: 'متدرج', emoji: '🎨' },
+  { id: 'metallic', label: 'ذهبي', emoji: '🥇' }
+];
+
+// 🎨 قائمة ألوان خلفية الملف
+const PROFILE_BG_COLORS = [
+  { id: '#0b1724', label: 'أسود مزرق (افتراضي)' },
+  { id: '#0f172a', label: 'كحلي' },
+  { id: '#1e1b4b', label: 'بنفسجي داكن' },
+  { id: '#111827', label: 'رمادي داكن' },
+  { id: '#1c1917', label: 'بني داكن' },
+  { id: '#052e16', label: 'أخضر داكن' },
+  { id: '#450a0a', label: 'أحمر داكن' },
+  { id: '#431407', label: 'برتقالي داكن' },
+  { id: '#1e3a8a', label: 'أزرق ملكي' },
+  { id: '#4c1d95', label: 'بنفسجي ملكي' },
+  { id: '#831843', label: 'وردي داكن' },
+  { id: '#0c4a6e', label: 'سماوي داكن' },
+  { id: '#164e63', label: 'فيروزي داكن' },
+  { id: '#365314', label: 'زيتوني' },
+  { id: '#3f3f46', label: 'رمادي فحمي' }
 ];
 
 export default function App() {
@@ -239,6 +269,64 @@ export default function App() {
 
   const hasCurrentPermission = (permission: string) =>
     isOwner || (rolePermissions[normalizedCurrentRole] || []).includes(permission);
+
+  // 🎨 دالة توليد أسلوب الاسم
+  const getNameStyle = (color: string | undefined, effect: string | undefined, baseColor: string = '#0284c7'): React.CSSProperties => {
+    const c = color || baseColor;
+    const style: React.CSSProperties = {
+      fontWeight: 'bold',
+      cursor: 'pointer'
+    };
+    
+    switch (effect) {
+      case 'glow':
+        style.color = c;
+        style.textShadow = `0 0 6px ${c}, 0 0 12px ${c}, 0 0 18px ${c}`;
+        break;
+      case 'fire':
+        style.color = '#ff6b00';
+        style.textShadow = '0 0 6px #ffcc00, 0 0 12px #ff6600, 0 0 18px #ff0000';
+        break;
+      case 'neon':
+        style.color = c;
+        style.textShadow = `0 0 4px #fff, 0 0 8px #fff, 0 0 12px ${c}, 0 0 20px ${c}`;
+        break;
+      case 'rainbow':
+        style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)';
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        (style as any).animation = 'rainbowText 3s linear infinite';
+        break;
+      case 'rainbow-glow':
+        style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)';
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        (style as any).animation = 'rainbowText 3s linear infinite';
+        (style as any).filter = 'drop-shadow(0 0 6px rgba(255,255,255,0.6))';
+        break;
+      case 'gradient':
+        style.background = `linear-gradient(90deg, ${c}, #ffffff, ${c})`;
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        break;
+      case 'metallic':
+        style.background = 'linear-gradient(90deg, #b8860b, #ffd700, #fff8dc, #ffd700, #b8860b)';
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        break;
+      default:
+        style.color = c;
+    }
+    return style;
+  };
 
   // 🔹 مراقبة بيانات المستخدم الحالية
   useEffect(() => {
@@ -593,7 +681,6 @@ export default function App() {
     });
   };
 
-  // 🎵 اختيار الأغنية
   const handleSongSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -615,7 +702,6 @@ export default function App() {
     e.target.value = '';
   };
 
-  // 🎵 تشغيل الأغنية
   const playProfileSong = (songUrl: string) => {
     if (profileAudioRef.current) {
       profileAudioRef.current.pause();
@@ -638,7 +724,6 @@ export default function App() {
     profileAudioRef.current = audio;
   };
 
-  // 🎵 إيقاف الأغنية
   const stopProfileSong = () => {
     if (profileAudioRef.current) {
       profileAudioRef.current.pause();
@@ -648,7 +733,6 @@ export default function App() {
     setIsSongPlaying(false);
   };
 
-  // 🎵 حذف الأغنية
   const handleDeleteSong = async () => {
     if (!user) return;
     if (!confirm('هل تريد حذف الأغنية من ملفك الشخصي؟')) return;
@@ -731,6 +815,7 @@ export default function App() {
         profileSongUrl: profileSong,
         profileBgColor: profileBgColor,
         nameEffect: nameEffect,
+        nameColor: nameColor,
         joinedDate: todayDate,
         lastSeen: nowTime,
         lastActive: Date.now(),
@@ -744,7 +829,7 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, profileBgColor, nameEffect, currentUserRole]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, profileBgColor, nameEffect, nameColor, currentUserRole]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
@@ -774,6 +859,7 @@ export default function App() {
               profileSongUrl: data.profileSongUrl || '',
               profileBgColor: data.profileBgColor || '#0b1724',
               nameEffect: data.nameEffect || 'none',
+              nameColor: data.nameColor || '#2563eb',
               joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
               lastSeen: data.lastSeen || '01:00 AM',
               points: data.points || 0,
@@ -1059,7 +1145,6 @@ export default function App() {
     }
   };
 
-  // 👑 إدارة الرتب
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
 
@@ -1244,7 +1329,8 @@ export default function App() {
       coverUrl: uData.coverUrl || '',
       profileSongUrl: uData.profileSongUrl || '',
       profileBgColor: uData.profileBgColor || '#0b1724',
-      nameEffect: uData.nameEffect || 'none'
+      nameEffect: uData.nameEffect || 'none',
+      color: uData.nameColor || uData.color || '#2563eb'
     };
 
     if (targetId && targetId !== 'guest_id') {
@@ -1264,7 +1350,8 @@ export default function App() {
             coverUrl: data.coverUrl || fetchedData.coverUrl,
             profileSongUrl: data.profileSongUrl || fetchedData.profileSongUrl || '',
             profileBgColor: data.profileBgColor || fetchedData.profileBgColor || '#0b1724',
-            nameEffect: data.nameEffect || fetchedData.nameEffect || 'none'
+            nameEffect: data.nameEffect || fetchedData.nameEffect || 'none',
+            color: data.nameColor || fetchedData.color || '#2563eb'
           };
         }
 
@@ -1290,7 +1377,6 @@ export default function App() {
     setSelectedProfileUser(fetchedData);
   };
 
-  // 🎵 تشغيل/إيقاف الأغنية تلقائياً
   useEffect(() => {
     if (selectedProfileUser && selectedProfileUser.profileSongUrl) {
       const timer = setTimeout(() => {
@@ -1307,93 +1393,6 @@ export default function App() {
       stopProfileSong();
     };
   }, []);
-
-  // 🎨 دالة توليد أسلوب الاسم
-  const getNameStyle = (color: string | undefined, effect: string | undefined, baseColor: string = '#0284c7'): React.CSSProperties => {
-    const c = color || baseColor;
-    const style: React.CSSProperties = {
-      fontWeight: 'bold',
-      cursor: 'pointer'
-    };
-    
-    switch (effect) {
-      case 'glow':
-        style.color = c;
-        style.textShadow = `0 0 6px ${c}, 0 0 12px ${c}, 0 0 18px ${c}`;
-        break;
-      case 'fire':
-        style.color = '#ff6b00';
-        style.textShadow = '0 0 6px #ffcc00, 0 0 12px #ff6600, 0 0 18px #ff0000';
-        break;
-      case 'neon':
-        style.color = c;
-        style.textShadow = `0 0 4px #fff, 0 0 8px #fff, 0 0 12px ${c}, 0 0 20px ${c}`;
-        break;
-      case 'rainbow':
-        style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)';
-        style.backgroundSize = '200% auto';
-        style.WebkitBackgroundClip = 'text';
-        style.WebkitTextFillColor = 'transparent';
-        style.backgroundClip = 'text';
-        (style as any).animation = 'rainbowText 3s linear infinite';
-        break;
-      case 'rainbow-glow':
-        style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)';
-        style.backgroundSize = '200% auto';
-        style.WebkitBackgroundClip = 'text';
-        style.WebkitTextFillColor = 'transparent';
-        style.backgroundClip = 'text';
-        (style as any).animation = 'rainbowText 3s linear infinite';
-        (style as any).filter = 'drop-shadow(0 0 6px rgba(255,255,255,0.6))';
-        break;
-      case 'gradient':
-        style.background = `linear-gradient(90deg, ${c}, #ffffff, ${c})`;
-        style.backgroundSize = '200% auto';
-        style.WebkitBackgroundClip = 'text';
-        style.WebkitTextFillColor = 'transparent';
-        style.backgroundClip = 'text';
-        break;
-      case 'metallic':
-        style.background = 'linear-gradient(90deg, #b8860b, #ffd700, #fff8dc, #ffd700, #b8860b)';
-        style.backgroundSize = '200% auto';
-        style.WebkitBackgroundClip = 'text';
-        style.WebkitTextFillColor = 'transparent';
-        style.backgroundClip = 'text';
-        break;
-      default:
-        style.color = c;
-    }
-    return style;
-  };
-
-  const NAME_EFFECTS_LIST = [
-    { id: 'none', label: 'عادي', emoji: '📝' },
-    { id: 'glow', label: 'متوهج', emoji: '✨' },
-    { id: 'fire', label: 'مشتعل', emoji: '🔥' },
-    { id: 'neon', label: 'نيون', emoji: '💡' },
-    { id: 'rainbow', label: 'قوس قزح', emoji: '🌈' },
-    { id: 'rainbow-glow', label: 'قوس قزح متوهج', emoji: '🌟' },
-    { id: 'gradient', label: 'متدرج', emoji: '🎨' },
-    { id: 'metallic', label: 'ذهبي', emoji: '🥇' }
-  ];
-
-  const PROFILE_BG_COLORS = [
-    { id: '#0b1724', label: 'أسود مزرق (افتراضي)' },
-    { id: '#0f172a', label: 'كحلي' },
-    { id: '#1e1b4b', label: 'بنفسجي داكن' },
-    { id: '#111827', label: 'رمادي داكن' },
-    { id: '#1c1917', label: 'بني داكن' },
-    { id: '#052e16', label: 'أخضر داكن' },
-    { id: '#450a0a', label: 'أحمر داكن' },
-    { id: '#431407', label: 'برتقالي داكن' },
-    { id: '#1e3a8a', label: 'أزرق ملكي' },
-    { id: '#4c1d95', label: 'بنفسجي ملكي' },
-    { id: '#831843', label: 'وردي داكن' },
-    { id: '#0c4a6e', label: 'سماوي داكن' },
-    { id: '#164e63', label: 'فيروزي داكن' },
-    { id: '#365314', label: 'زيتوني' },
-    { id: '#3f3f46', label: 'رمادي فحمي' }
-  ];
 
   const filteredOnlineUsers = onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
@@ -2280,7 +2279,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* 🔹 الصورة والرتبة والاسم - في أسفل الغلاف مباشرة */}
               <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', textAlign: 'center', paddingBottom: '14px', width: '100%' }}>
                 
                 <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -2416,4 +2414,4 @@ export default function App() {
 
     </div>
   );
-          }
+            }
