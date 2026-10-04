@@ -216,11 +216,9 @@ export default function App() {
   const [profileSong, setProfileSong] = useState<string>('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
 
-  // 🔹 حالة الطرد والعد التنازلي
   const [userKickedUntil, setUserKickedUntil] = useState<number | null>(null);
   const [kickTimeLeft, setKickTimeLeft] = useState<number>(0);
 
-  // 🔹 مشغل يوتيوب العائم القابل للتحريك
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [isVideoMinimized, setIsVideoMinimized] = useState(false);
   const [videoPos, setVideoPos] = useState({ x: 20, y: 100 });
@@ -346,7 +344,6 @@ export default function App() {
         setCurrentUserRole(activeRole);
 
         if (!userSnap.exists()) {
-          // إنشاء وثيقة جديدة وتثبيت تاريخ الانضمام للأبد
           await setDoc(userRef, {
             email: currentUser.email || '',
             displayName: actualName,
@@ -383,7 +380,6 @@ export default function App() {
     return () => unsubscribeAuth();
   }, [guestName]);
 
-  // مراقبة الطرد والعد التنازلي
   useEffect(() => {
     if (!user) return;
     const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
@@ -556,7 +552,6 @@ export default function App() {
     });
   }, [user]);
 
-  // إشعارات مع دعم isRead لإخفاء العداد عند الفتح وبقاء الإشعار محفوظاً
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -839,7 +834,6 @@ export default function App() {
     };
   }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor, userJoinedDate]);
 
-  // حساب الأعداد الحقيقية لكل غرفة بشكل مستقل تماماً
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
       const counts: { [roomId: string]: number } = {};
@@ -883,7 +877,6 @@ export default function App() {
       const activeUsersList = Array.from(uniqueUsersMap.values());
 
       activeUsersList.forEach(u => {
-        // حساب المتواجدين حصرياً داخل الغرفة المحددة
         if (u.roomId && u.roomId !== 'lobby') {
           counts[u.roomId] = (counts[u.roomId] || 0) + 1;
         }
@@ -1195,9 +1188,14 @@ export default function App() {
     }
   };
 
-  // وظيفة الطرد للأدمن والأونر
+  // 🔹 وظيفة الطرد مع التحقق من أن المستهدف ليس صاحب رتبة (أونر، أدمن، سوبر أدمن)
   const handleKickUser = async (targetUid: string, minutes: number) => {
     if (!user || !isAdmin) return;
+    const targetRole = normalizeRole(selectedProfileUser?.role);
+    if (['owner', 'admin', 'super admin'].includes(targetRole.toLowerCase())) {
+      return; // لا يمكن طرد أصحاب الرتب
+    }
+
     const kickUntilTime = Date.now() + minutes * 60 * 1000;
     try {
       await updateDoc(doc(db, 'users', targetUid), {
@@ -1336,7 +1334,7 @@ export default function App() {
         });
       }
 
-      const notifTitle = isDemote ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
+      const notifTitle = isDemote ? 'تحديث الرتبة ⚠️️' : 'هدايا الرتب 🎁';
       const notifBody = isDemote 
         ? `تم سحب الرتبة منك وتحديثها إلى ${roleToSave}.`
         : `مبروك! تم إهداؤك رتبة (${roleToSave}) وتفعيل صلاحيات الحساب.`;
@@ -1595,7 +1593,6 @@ export default function App() {
     );
   }
 
-  // إذا كان المستخدم مطروداً، تظهر صفحة الطرد مع العد التنازلي الفعلي
   if (userKickedUntil && userKickedUntil > Date.now()) {
     const minutes = Math.floor(kickTimeLeft / 60);
     const seconds = kickTimeLeft % 60;
@@ -1656,7 +1653,6 @@ export default function App() {
         onChange={handleSongSelect} 
       />
 
-      {/* 🔹 الهيدر العلوي يظهر فقط عند الدخول للغرفة (chat)، ويتعطل في قائمة الغرف الرئيسية (rooms) */}
       {currentView === 'chat' && (
         <header style={{ height: '56px', minHeight: '56px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
           
@@ -1759,7 +1755,7 @@ export default function App() {
                         style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
                         title="حذف الغرفة"
                       >
-                        🗑️️ حذف
+                        🗑️ حذف
                       </button>
                     )}
                   </div>
@@ -2115,7 +2111,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔹 الفوتر السفلي يظهر فقط عند الدخول للغرفة (chat)، ويتعطل في قائمة الغرف الرئيسية (rooms) */}
       {currentView === 'chat' && (
         <nav style={{ height: '60px', minHeight: '60px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.3)', padding: '0 8px' }}>
           
@@ -2716,10 +2711,10 @@ export default function App() {
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
-              {/* 🔹 خيار الطرد حصرياً للأدمن والأونر */}
-              {isAdmin && !isSelfProfile && (
+              {/* 🔹 خيار الطرد يظهر فقط للأعضاء والزوار (غير أصحاب الرتب) */}
+              {isAdmin && !isSelfProfile && !['Owner', 'Admin', 'Super Admin'].includes(normalizeRole(selectedProfileUser?.role)) && (
                 <div style={{ marginTop: '10px', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#991b1b', marginBottom: '6px' }}>🚫 لوحة الطرد (للأدمن والأونر):</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#991b1b', marginBottom: '6px' }}>🚫 لوحة الطرد (للأعضاء والزوار فقط):</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     <button onClick={() => handleKickUser(selectedProfileUser.userId, 1)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>دقيقة 1</button>
                     <button onClick={() => handleKickUser(selectedProfileUser.userId, 5)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>5 دقائق</button>
@@ -2749,7 +2744,7 @@ export default function App() {
                     onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
                     style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
                   >
-                    محادثة خاصة ✉
+                    محادثة خاصة ✉️
                   </button>
                   <button 
                     onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
