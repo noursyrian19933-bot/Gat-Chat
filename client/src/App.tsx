@@ -1188,12 +1188,11 @@ export default function App() {
     }
   };
 
-  // 🔹 وظيفة الطرد مع التحقق من أن المستهدف ليس صاحب رتبة (أونر، أدمن، سوبر أدمن)
   const handleKickUser = async (targetUid: string, minutes: number) => {
     if (!user || !isAdmin) return;
     const targetRole = normalizeRole(selectedProfileUser?.role);
     if (['owner', 'admin', 'super admin'].includes(targetRole.toLowerCase())) {
-      return; // لا يمكن طرد أصحاب الرتب
+      return;
     }
 
     const kickUntilTime = Date.now() + minutes * 60 * 1000;
@@ -1334,7 +1333,7 @@ export default function App() {
         });
       }
 
-      const notifTitle = isDemote ? 'تحديث الرتبة ⚠️️' : 'هدايا الرتب 🎁';
+      const notifTitle = isDemote ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
       const notifBody = isDemote 
         ? `تم سحب الرتبة منك وتحديثها إلى ${roleToSave}.`
         : `مبروك! تم إهداؤك رتبة (${roleToSave}) وتفعيل صلاحيات الحساب.`;
@@ -1361,10 +1360,20 @@ export default function App() {
     }
   };
 
+  // 🔹 حماية صارمة: منع أي شخص من تعديل اسم صاحب الموقع نهائياً
   const handleUpdateUserName = async () => {
     if (!selectedProfileUser || !editingUserName.trim()) return;
     const targetUid = selectedProfileUser.userId;
     const cleanNewName = editingUserName.trim();
+    
+    const targetEmail = String(selectedProfileUser.email || '').trim().toLowerCase();
+    const ownerEmail = ADMIN_EMAIL.trim().toLowerCase();
+    const isTargetOwner = targetEmail === ownerEmail || selectedProfileUser.role === 'Owner';
+    const isCurrentOwner = user && (user.email || '').trim().toLowerCase() === ownerEmail;
+
+    if (isTargetOwner && !isCurrentOwner) {
+      return; // ممنوع منعاً باتاً تعديل اسم صاحب الموقع من قبل أي شخص آخر
+    }
 
     try {
       await updateDoc(doc(db, 'users', targetUid), {
@@ -1627,6 +1636,12 @@ export default function App() {
     !user?.isAnonymous &&
     hasRankForCustomization
   );
+
+  const targetUserEmail = String(selectedProfileUser?.email || '').trim().toLowerCase();
+  const ownerEmailClean = ADMIN_EMAIL.trim().toLowerCase();
+  const isTargetProfileOwner = targetUserEmail === ownerEmailClean || selectedProfileUser?.role === 'Owner';
+  const isViewerOwner = user && (user.email || '').trim().toLowerCase() === ownerEmailClean;
+  const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
 
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
@@ -2467,7 +2482,7 @@ export default function App() {
                             onClick={handleDeleteSong}
                             style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
                           >
-                            🗑️ حذف
+                            🗑️️ حذف
                           </button>
                         )}
                       </div>
@@ -2644,7 +2659,8 @@ export default function App() {
                   <span style={{ fontSize: '16px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
                     {selectedProfileUser.name}
                   </span>
-                  {isSuperAdmin && (
+                  {/* 🔹 منع ظهور زر التعديل إذا كان الملف لصاحب الموقع والمشاهد ليس صاحب الموقع نفسه */}
+                  {canModifyTargetName && (
                     <span 
                       onClick={() => setIsEditingNameActive(!isEditingNameActive)}
                       style={{ cursor: 'pointer', fontSize: '14px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
@@ -2671,7 +2687,7 @@ export default function App() {
 
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
-              {isEditingNameActive && isSuperAdmin && (
+              {isEditingNameActive && canModifyTargetName && (
                 <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>✏️ تعديل اسم المستخدم:</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -2711,7 +2727,6 @@ export default function App() {
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
-              {/* 🔹 خيار الطرد يظهر فقط للأعضاء والزوار (غير أصحاب الرتب) */}
               {isAdmin && !isSelfProfile && !['Owner', 'Admin', 'Super Admin'].includes(normalizeRole(selectedProfileUser?.role)) && (
                 <div style={{ marginTop: '10px', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#991b1b', marginBottom: '6px' }}>🚫 لوحة الطرد (للأعضاء والزوار فقط):</div>
