@@ -235,21 +235,16 @@ export default function App() {
         let activeRole = currentUser.isAnonymous ? 'Guest' : 'Member';
 
         // 🔑 الأولوية: roles_by_email (المصدر الموثوق) > users/{uid} > RealtimeDB
-        // 1) إذا كان المالك
         if (cleanEmail === ownerEmail) {
           activeRole = 'Owner';
-        }
-        // 2) جلب من roles_by_email أولاً (الأولوية القصوى)
-        else if (!currentUser.isAnonymous && cleanEmail) {
+        } else if (!currentUser.isAnonymous && cleanEmail) {
           try {
             const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
             if (roleDoc.exists() && roleDoc.data().role) {
               activeRole = normalizeRole(roleDoc.data().role);
             } else if (userSnap.exists() && userSnap.data().role) {
-              // 3) احتياطي: من users/{uid}
               activeRole = normalizeRole(userSnap.data().role);
             } else {
-              // 4) احتياطي أخير: من RealtimeDB
               try {
                 const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
                 if (snapshot.exists()) {
@@ -267,7 +262,6 @@ export default function App() {
           }
         }
 
-        // حماية المالك: يبقى Owner دائماً
         if (cleanEmail === ownerEmail) {
           activeRole = 'Owner';
         }
@@ -292,6 +286,25 @@ export default function App() {
             joinedDate: todayDate,
             createdAt: new Date().toISOString()
           }, { merge: true });
+
+          // 🔑 ربط الإيميل بالـ uid تلقائياً عند أول تسجيل
+          if (currentUser.email && cleanEmail !== ownerEmail) {
+            try {
+              await setDoc(
+                doc(db, 'roles_by_email', cleanEmail),
+                {
+                  uid: currentUser.uid,
+                  email: cleanEmail,
+                  role: activeRole,
+                  permissions: rolePermissions[normalizeRole(activeRole)] || [],
+                  updatedAt: serverTimestamp()
+                },
+                { merge: true }
+              );
+            } catch (e) {
+              console.warn("تعذر ربط الإيميل تلقائياً:", e);
+            }
+          }
         }
       }
     });
@@ -299,8 +312,6 @@ export default function App() {
   }, [guestName]);
 
   // 🔹 مستمع لحظي لملف المستخدم + مستمع لحظي للرتبة المرتبطة بالبريد
-  // أي تغيير في الرتبة من المالك ينعكس فوراً بدون تسجيل خروج
-  // ✅ الرتبة مرتبطة بالإيميل (roles_by_email) ولا تتأثر بتغيير الاسم أو الصورة
   useEffect(() => {
     if (!user) return;
 
@@ -312,7 +323,6 @@ export default function App() {
       if (!docSnap.exists()) return;
       const data = docSnap.data();
 
-      // تحديث الرتبة من users/{uid} كاحتياطي فقط (لا يطغى على roles_by_email)
       if (data.role && cleanEmail !== ownerEmail && !cleanEmail) {
         setCurrentUserRole(normalizeRole(data.role));
       }
@@ -329,11 +339,9 @@ export default function App() {
       if (data.coverUrl) setProfileCover(data.coverUrl);
     });
 
-    // 🔑 المستمع الأهم: الرتبة المحفوظة على الإيميل (مصدر الحقيقة)
     let unsubscribeRole = () => {};
 
     if (!user.isAnonymous && user.email) {
-      // حماية المالك: يبقى Owner دائماً
       if (cleanEmail === ownerEmail) {
         setCurrentUserRole('Owner');
       }
@@ -342,7 +350,6 @@ export default function App() {
       unsubscribeRole = onSnapshot(
         roleRef,
         (roleSnap) => {
-          // لا يمكن سحب Owner من المالك
           if (cleanEmail === ownerEmail) {
             setCurrentUserRole('Owner');
             return;
@@ -459,7 +466,6 @@ export default function App() {
     });
   }, [user]);
 
-  // 🔹 دالة فتح الإشعارات ومسحها لتختفي إشارة وجود إشعارات جديدة
   const handleOpenNotifications = async () => {
     setShowNotificationsModal(true);
     if (!user || notificationsList.length === 0) return;
@@ -619,6 +625,7 @@ export default function App() {
         roomName: roomName,
         userId: user.uid,
         userName: userName,
+        email: (user.email || '').trim().toLowerCase(),
         role: currentRole,
         flag: currentFlag,
         gender: profileGender,
@@ -658,6 +665,7 @@ export default function App() {
               id: docSnap.id,
               userId: uId,
               name: data.userName || 'زائر',
+              email: data.email || '',
               role: data.role || 'Guest',
               flag: data.flag || '🇯🇴',
               country: data.country || 'الأردن',
@@ -959,12 +967,38 @@ export default function App() {
       const targetUserSnap = await getDoc(targetUserRef);
       const targetUserData = targetUserSnap.exists() ? targetUserSnap.data() : {};
 
-      // 🔑 جلب الإيميل بأولوية: من Firestore (مصدر الحقيقة) ثم selectedProfileUser
-      const targetEmail = String(
+      // 🔑 جلب الإيميل من عدة مصادر
+      let targetEmail = String(
         targetUserData.email ||
         selectedProfileUser?.email ||
         ''
       ).trim().toLowerCase();
+
+      if (!targetEmail) {
+        try {
+          const roleQuery = query(
+            collection(db, 'roles_by_email'),
+            where('uid', '==', targetUid)
+          );
+          const roleSnap = await getDocs(roleQuery);
+          if (!roleSnap.empty) {
+            targetEmail = String(roleSnap.docs[0].data().email || '').trim().toLowerCase();
+          }
+        } catch (e) {
+          console.warn("تعذر البحث في roles_by_email:", e);
+        }
+      }
+
+      if (!targetEmail) {
+        try {
+          const presenceSnap = await getDoc(doc(db, 'room_presence', targetUid));
+          if (presenceSnap.exists()) {
+            targetEmail = String(presenceSnap.data().email || '').trim().toLowerCase();
+          }
+        } catch (e) {
+          console.warn("تعذر البحث في room_presence:", e);
+        }
+      }
 
       if (!targetEmail) {
         alert('❌ لا يمكن تغيير الرتبة: هذا المستخدم لا يملك بريد إلكتروني مسجل (زائر).');
@@ -978,8 +1012,6 @@ export default function App() {
 
       const permissions = rolePermissions[normalizedNewRole] || [];
 
-      // ✅ 1) الحفظ الرئيسي في roles_by_email (المفتاح = الإيميل)
-      //    هذا ما يضمن أن الرتبة تبقى محفوظة على الإيميل مهما غيّر المستخدم اسمه.
       await setDoc(
         doc(db, 'roles_by_email', targetEmail),
         {
@@ -993,10 +1025,10 @@ export default function App() {
         { merge: true }
       );
 
-      // ✅ 2) تحديث نسخة احتياطية في users/{uid} (لا نلمس الاسم/الصورة/الدولة/الأصدقاء/النقاط)
       await setDoc(
         targetUserRef,
         {
+          email: targetEmail,
           role: normalizedNewRole,
           permissions,
           canEditCover: permissions.includes('edit_cover'),
@@ -1006,17 +1038,16 @@ export default function App() {
         { merge: true }
       );
 
-      // ✅ 3) تحديث room_presence لكي يظهر اللون/الرتبة في الشات مباشرة
       await setDoc(
         doc(db, 'room_presence', targetUid),
         {
+          email: targetEmail,
           role: normalizedNewRole,
           permissions
         },
         { merge: true }
       );
 
-      // ✅ 4) مزامنة Realtime Database (اختياري لكن مفيد)
       try {
         await update(ref(rdb, `users/${targetUid}`), {
           role: normalizedNewRole,
@@ -1027,7 +1058,6 @@ export default function App() {
         console.warn("تنبيه: فشل تحديث Realtime DB (غير حرج):", rdbErr);
       }
 
-      // ✅ 5) رسالة نظام في الغرفة الحالية
       if (selectedRoom) {
         const roomMsg =
           normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
@@ -1044,7 +1074,6 @@ export default function App() {
         });
       }
 
-      // ✅ 6) إشعار للمستخدم المستهدف
       const notifTitle =
         normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
           ? 'تحديث الرتبة ⚠️'
@@ -1125,10 +1154,26 @@ export default function App() {
             gender: data.gender || fetchedData.gender,
             joinedDate: data.joinedDate || fetchedData.joinedDate,
             points: data.points ?? fetchedData.points,
-            email: data.email || fetchedData.email,
+            email: data.email || fetchedData.email || '',
             avatarUrl: data.avatarUrl || fetchedData.avatarUrl,
             coverUrl: data.coverUrl || fetchedData.coverUrl
           };
+        }
+
+        if (!fetchedData.email) {
+          try {
+            const roleQuery = query(
+              collection(db, 'roles_by_email'),
+              where('uid', '==', targetId)
+            );
+            const roleSnap = await getDocs(roleQuery);
+            if (!roleSnap.empty) {
+              const roleData = roleSnap.docs[0].data();
+              fetchedData.email = roleData.email || fetchedData.email;
+            }
+          } catch (e) {
+            console.warn("تعذر جلب الإيميل من roles_by_email:", e);
+          }
         }
       } catch (err) {
         console.error("خطأ أثناء جلب بيانات الملف الشخصي:", err);
