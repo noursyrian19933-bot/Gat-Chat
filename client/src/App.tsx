@@ -2019,7 +2019,7 @@ export default function App() {
             style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}
           >
             
-            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '260px', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '280px', overflow: 'hidden' }}>
               
               <div 
                 onClick={() => {
@@ -2084,8 +2084,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* الترتيب: صورة → رتبة → اسم (كلها في وسط أفقي) */}
-              <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingTop: '24px', paddingBottom: '60px', width: '100%' }}>
+              {/* 🔹 الصورة والرتبة والاسم - في أسفل الغلاف مباشرة */}
+              <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', textAlign: 'center', paddingBottom: '14px', width: '100%' }}>
                 
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <div 
@@ -2130,13 +2130,13 @@ export default function App() {
                   )}
                 </div>
 
-                {/* 🔹 الرتبة في الوسط تحت الصورة مباشرة */}
-                <div style={{ backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: 'bold', padding: '3px 12px', borderRadius: '12px', marginTop: '10px' }}>
+                {/* 🔹 الرتبة تحت الصورة مباشرة */}
+                <div style={{ backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: 'bold', padding: '2px 10px', borderRadius: '12px', marginTop: '6px' }}>
                   {selectedProfileUser.role}
                 </div>
 
-                {/* 🔹 الاسم في الوسط تحت الرتبة */}
-                <div style={{ color: '#ffffff', fontSize: '18px', fontWeight: 'bold', marginTop: '8px', textAlign: 'center', width: '100%' }}>
+                {/* 🔹 الاسم تحت الرتبة */}
+                <div style={{ color: '#ffffff', fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%' }}>
                   {selectedProfileUser.name}
                 </div>
 
@@ -2145,7 +2145,7 @@ export default function App() {
               {canEditCover && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
-                  style={{ position: 'absolute', bottom: '14px', right: '12px', background: 'rgba(0,0,0,0.75)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '5px 12px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px' }}
+                  style={{ position: 'absolute', top: '46px', right: '12px', background: 'rgba(0,0,0,0.75)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '5px 12px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   <span>📷</span>
                   <span>تغيير الغلاف</span>
@@ -2222,4 +2222,4 @@ export default function App() {
 
     </div>
   );
-      }
+              }
