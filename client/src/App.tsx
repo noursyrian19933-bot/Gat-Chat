@@ -9,6 +9,7 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
   User 
 } from 'firebase/auth';
 import { 
@@ -65,7 +66,7 @@ const PROFILE_BG_COLORS = [
 const getCountryFlag = (country: string) => {
   switch (country) {
     case 'الأردن': return '🇯🇴';
-    case 'سوريا': return '🇸🇾';
+    case 'سوريا': return '🟩⬜⬛ ⭐⭐⭐'; // العلم السوري الجديد (علم الاستقلال)
     case 'مصر': return '🇪🇬';
     case 'السودان': return '🇸🇩';
     case 'السعودية': return '🇸🇦';
@@ -140,11 +141,12 @@ const getNameStyleProps = (style: string, color: string) => {
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'guest'>('login');
+  const [authMode, setAuthMode] = useState<'menu' | 'register' | 'login' | 'guest' | 'forgot'>('menu');
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('الأردن');
   const [guestName, setGuestName] = useState(() => localStorage.getItem('gat_guest_name') || '');
   
   const [errorMessage, setErrorMessage] = useState('');
@@ -283,12 +285,6 @@ export default function App() {
     )
   );
 
-  const isPremium = Boolean(
-    user &&
-    !user.isAnonymous &&
-    normalizedCurrentRole === 'Premium'
-  );
-
   const hasRankForCustomization = Boolean(
     user &&
     !user.isAnonymous &&
@@ -350,8 +346,8 @@ export default function App() {
             role: activeRole,
             previousRole: 'Member',
             permissions: rolePermissions[normalizeRole(activeRole)] || [],
-            flag: '🇯🇴',
-            country: 'الأردن',
+            flag: getCountryFlag(selectedCountry),
+            country: selectedCountry,
             gender: 'ذكر',
             age: 'عدم إظهار',
             bio: 'أهلاً بك في ملفي الشخصي.',
@@ -730,7 +726,7 @@ export default function App() {
           { name: 'غرفة العامة', flag: '🌐' },
           { name: 'غرفة مصر', flag: '🇪🇬' },
           { name: 'غرفة الجزائر', flag: '🇩🇿' },
-          { name: 'غرفة سوريا', flag: '🇸🇾' },
+          { name: 'غرفة سوريا', flag: '🟩⬜⬛ ⭐⭐⭐' },
           { name: 'غرفة السعودية', flag: '🇸🇦' },
           { name: 'غرفة العراق', flag: '🇮🇶' },
           { name: 'غرفة فلسطين', flag: '🇵🇸' },
@@ -922,6 +918,7 @@ export default function App() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (!userCredential.user.emailVerified) {
@@ -938,13 +935,25 @@ export default function App() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: displayName });
       await sendEmailVerification(userCredential.user);
-      setSuccessMessage('✅ تم إنشاء الحساب! تفقد بريدك للتفعيل.');
+      
+      // Save country and flag to Firestore immediately
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userRef, {
+        email: email,
+        displayName: displayName,
+        country: selectedCountry,
+        flag: getCountryFlag(selectedCountry),
+        joinedDate: new Date().toISOString().split('T')[0]
+      }, { merge: true });
+
+      setSuccessMessage('✅ تم إنشاء الحساب بنجاح! تفقد بريدك الإلكتروني للتفعيل.');
       await signOut(auth);
-      setAuthMode('login');
+      setAuthMode('menu');
     } catch (error: any) {
       setErrorMessage(`❌ خطأ: ${error.message}`);
     }
@@ -962,6 +971,22 @@ export default function App() {
         await updateProfile(userCredential.user, { displayName: cleanGuestName });
       }
       setCurrentView('rooms');
+    } catch (error: any) {
+      setErrorMessage(`❌ خطأ: ${error.message}`);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+    if (!email.trim()) {
+      setErrorMessage('⚠️ يرجى إدخال البريد الإلكتروني الخاص بك أولاً.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setSuccessMessage('✅ تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني بنجاح!');
     } catch (error: any) {
       setErrorMessage(`❌ خطأ: ${error.message}`);
     }
@@ -1360,7 +1385,6 @@ export default function App() {
     }
   };
 
-  // 🔹 حماية صارمة: منع أي شخص من تعديل اسم صاحب الموقع نهائياً
   const handleUpdateUserName = async () => {
     if (!selectedProfileUser || !editingUserName.trim()) return;
     const targetUid = selectedProfileUser.userId;
@@ -1372,7 +1396,7 @@ export default function App() {
     const isCurrentOwner = user && (user.email || '').trim().toLowerCase() === ownerEmail;
 
     if (isTargetOwner && !isCurrentOwner) {
-      return; // ممنوع منعاً باتاً تعديل اسم صاحب الموقع من قبل أي شخص آخر
+      return;
     }
 
     try {
@@ -1544,59 +1568,128 @@ export default function App() {
 
   if (!user && !loading) {
     return (
-      <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px' }}>
-        <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '380px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', direction: 'rtl' }}>
+      <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px', direction: 'rtl', boxSizing: 'border-box' }}>
+        <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', padding: '28px 24px', borderRadius: '20px', width: '100%', maxWidth: '380px', boxShadow: '0 15px 35px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
           
-          <div style={{ display: 'flex', marginBottom: '16px', borderBottom: '2px solid #cbd5e1' }}>
-            <button style={{ flex: 1, padding: '8px', background: authMode === 'login' ? '#0b141a' : 'transparent', color: authMode === 'login' ? '#fff' : '#0b141a', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }} onClick={() => setAuthMode('login')}>دخول</button>
-            <button style={{ flex: 1, padding: '8px', background: authMode === 'register' ? '#0b141a' : 'transparent', color: authMode === 'register' ? '#fff' : '#0b141a', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }} onClick={() => setAuthMode('register')}>تسجيل حساب</button>
-            <button style={{ flex: 1, padding: '8px', background: authMode === 'guest' ? '#0b141a' : 'transparent', color: authMode === 'guest' ? '#fff' : '#0b141a', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }} onClick={() => setAuthMode('guest')}>زائر</button>
+          <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>منصة الدردشة العربية العصرية</p>
           </div>
 
-          {errorMessage && <div style={{ color: '#b91c1c', fontSize: '11px', background: '#fee2e2', padding: '8px', borderRadius: '4px', marginBottom: '10px' }}>{errorMessage}</div>}
-          {successMessage && <div style={{ color: '#15803d', fontSize: '11px', background: '#dcfce7', padding: '8px', borderRadius: '4px', marginBottom: '10px' }}>{successMessage}</div>}
+          {errorMessage && <div style={{ color: '#b91c1c', fontSize: '11px', background: '#fee2e2', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid #fca5a5' }}>{errorMessage}</div>}
+          {successMessage && <div style={{ color: '#15803d', fontSize: '11px', background: '#dcfce7', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid #bbf7d0' }}>{successMessage}</div>}
 
-          {authMode === 'login' && (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
-              </div>
-              <button type="submit" style={{ background: '#0b141a', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>تسجيل الدخول</button>
-            </form>
+          {authMode === 'menu' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button 
+                onClick={() => { setAuthMode('register'); setErrorMessage(''); setSuccessMessage(''); }}
+                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(22,163,74,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <span>✨</span>
+                <span>إنشاء حساب جديد</span>
+              </button>
+
+              <button 
+                onClick={() => { setAuthMode('login'); setErrorMessage(''); setSuccessMessage(''); }}
+                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #0b141a 0%, #1e293b 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(11,20,26,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <span>🔑</span>
+                <span>تسجيل الدخول</span>
+              </button>
+
+              <button 
+                onClick={() => { setAuthMode('guest'); setErrorMessage(''); setSuccessMessage(''); }}
+                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2,132,199,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <span>👤</span>
+                <span>الدخول كزائر</span>
+              </button>
+            </div>
           )}
 
           {authMode === 'register' && (
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>الاسم المستعار</label>
-                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>الاسم المستعار</label>
+                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required placeholder="اكتب اسمك..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+              </div>
+              
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>اختر الدولة</label>
+                <select 
+                  value={selectedCountry} 
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc', cursor: 'pointer' }}
+                >
+                  {COUNTRIES_LIST.filter(c => c !== 'عدم إظهار').map((c, i) => (
+                    <option key={i} value={c}>
+                      {c} {getCountryFlag(c)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>كلمة المرور</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+              </div>
+              
+              <button type="submit" style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>إنشاء حساب</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+            </form>
+          )}
+
+          {authMode === 'login' && (
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
               </div>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>كلمة المرور</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
               </div>
-              <button type="submit" style={{ background: '#15803d', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>إنشاء حساب</button>
+
+              <div style={{ textAlign: 'left', marginTop: '-2px' }}>
+                <button type="button" onClick={() => { setAuthMode('forgot'); setErrorMessage(''); setSuccessMessage(''); }} style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}>
+                  هل نسيت كلمة المرور؟
+                </button>
+              </div>
+
+              <button type="submit" style={{ background: '#0b141a', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '4px' }}>تسجيل الدخول</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+            </form>
+          )}
+
+          {authMode === 'forgot' && (
+            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لإعادة تعيين كلمة المرور فوراً.
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
+              </div>
+              <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>إرسال رابط الاستعادة</button>
+              <button type="button" onClick={() => setAuthMode('login')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← العودة لتسجيل الدخول</button>
             </form>
           )}
 
           {authMode === 'guest' && (
             <form onSubmit={handleGuestLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>اسم الزائر</label>
-                <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} required placeholder="اكتب اسمك..." style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>اسم الزائر</label>
+                <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} required placeholder="اكتب اسمك المستعار..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', background: '#f8fafc' }} />
               </div>
-              <button type="submit" style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>دخول زائر</button>
+              <button type="submit" style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>دخول زائر</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
+
         </div>
       </div>
     );
@@ -2356,7 +2449,7 @@ export default function App() {
                       }}
                       style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
                     >
-                      {COUNTRIES_LIST.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                      {COUNTRIES_LIST.map((c, i) => <option key={i} value={c}>{c} {getCountryFlag(c)}</option>)}
                     </select>
                   </div>
 
@@ -2482,7 +2575,7 @@ export default function App() {
                             onClick={handleDeleteSong}
                             style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
                           >
-                            🗑️️ حذف
+                            🗑 حذف
                           </button>
                         )}
                       </div>
@@ -2659,7 +2752,6 @@ export default function App() {
                   <span style={{ fontSize: '16px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
                     {selectedProfileUser.name}
                   </span>
-                  {/* 🔹 منع ظهور زر التعديل إذا كان الملف لصاحب الموقع والمشاهد ليس صاحب الموقع نفسه */}
                   {canModifyTargetName && (
                     <span 
                       onClick={() => setIsEditingNameActive(!isEditingNameActive)}
