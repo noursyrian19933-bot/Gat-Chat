@@ -9,7 +9,12 @@ import { NotCorrectParamsError } from './helpers/ErrorHandler';
 import { Result, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import { TokenPayloadInterface } from '../models/Interfaces';
-import admin from 'firebase-admin'; // لاستخدام فايربيس أدمن في السيرفر
+import admin from 'firebase-admin';
+
+// دالة لتحويل الإيميل إلى مفتاح صالح للاستخدام في Firebase Realtime Database
+const getEmailKey = (email: string): string => {
+  return email.trim().toLowerCase().replace(/\./g, '_');
+};
 
 export const registerUser: RequestHandler = async (req, res): Promise<any> => {
   const result: Result = validationResult(req);
@@ -19,7 +24,8 @@ export const registerUser: RequestHandler = async (req, res): Promise<any> => {
     return res.status(400).json(error);
   }
   try {
-    let { userName, password } = req.body;
+    let { userName, password, email } = req.body; // التأكد من استقبال الإيميل
+    
     const existingUser = await userRepository!.retrieveByName(userName);
     if (existingUser) {
       const error = new NotCorrectParamsError(
@@ -28,9 +34,26 @@ export const registerUser: RequestHandler = async (req, res): Promise<any> => {
       );
       return res.status(400).json(error);
     }
+
     const saltRounds = 10;
     const hashedPw = await bcrypt.hash(password, saltRounds);
     const newUser = await userRepository!.create(userName, hashedPw);
+
+    // [الحفظ عن طريق الإيميل] تهيئة بيانات المستخدم في فايربيس بناءً على الإيميل حصراً
+    if (email) {
+      try {
+        const emailKey = getEmailKey(email);
+        const userRef = admin.database().ref(`users/${emailKey}`);
+        await userRef.set({
+          userName: newUser.userName,
+          email: email,
+          role: 'user', // الرتبة الافتراضية
+          createdAt: new Date().toISOString()
+        });
+      } catch (firebaseErr) {
+        console.error('Error initializing user by email in Firebase:', firebaseErr);
+      }
+    }
 
     const tokenPayload: TokenPayloadInterface = {
       userName: newUser.userName,
@@ -105,33 +128,35 @@ export const loginUser: RequestHandler = async (req, res): Promise<any> => {
   }
 };
 
-// وظيفة جديدة لإدارة وتحديث الرتب والإيميل تلقائياً في Firebase Realtime Database
+// [إدارة وتحديث الرتب والحفظ بالكامل عبر الإيميل] حتى لو تغير الاسم يبقى كل شيء مرتبطاً بالإيميل
 export const updateUserRole: RequestHandler = async (req, res): Promise<any> => {
   try {
-    const { targetUid, targetEmail, role } = req.body;
+    const { targetEmail, role } = req.body;
 
-    if (!targetUid) {
-      return res.status(400).json({ status: false, error: 'Target UID is required' });
+    if (!targetEmail) {
+      return res.status(400).json({ status: false, error: 'Target Email is required' });
     }
 
-    const dbRef = admin.database().ref(`users/${targetUid}`);
+    // تحويل الإيميل إلى مفتاح آمن لقاعدة البيانات
+    const emailKey = getEmailKey(targetEmail);
+    const dbRef = admin.database().ref(`users/${emailKey}`);
 
-    // في حال طلب سحب الرتبة
-    if (role === 'remove' || role === null) {
+    // في حال طلب سحب الرتبة أو إرجاعها للعادي
+    if (role === 'remove' || role === null || role === 'user') {
       await dbRef.update({
-        email: targetEmail || null,
-        role: null
+        email: targetEmail,
+        role: role === 'remove' ? 'user' : role
       });
-      return res.json({ status: true, message: 'Role removed successfully' });
+      return res.json({ status: true, message: 'Role updated successfully based on email' });
     }
 
-    // تعيين أو تحديث الرتبة مع الإيميل تحت الـ UID مباشرة
+    // حفظ وتحديث الرتبة والصلاحيات مرتبطة حصراً بالإيميل
     await dbRef.update({
       email: targetEmail,
-      role: role // (admin, super_admin, premium)
+      role: role 
     });
 
-    return res.json({ status: true, message: `Role ${role} assigned successfully` });
+    return res.json({ status: true, message: `Role ${role} assigned successfully to email` });
   } catch (error: unknown) {
     if (error instanceof Error) {
       return res.status(500).json({ status: false, error: error.message });
