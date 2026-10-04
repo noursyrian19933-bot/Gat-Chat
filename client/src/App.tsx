@@ -48,7 +48,7 @@ const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
-// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي وقائمة المتصلين بالكامل فورياً
+// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي وقائمة المتصلين ورسائل الشات بالكامل فورياً
 const PROFILE_BG_COLORS = [
   { name: 'أبيض ناصع', value: '#ffffff' },
   { name: 'داكن أنيق', value: '#0b141a' },
@@ -170,7 +170,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; avatarUrl?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string }>>([]);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -937,6 +937,7 @@ export default function App() {
     let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
     try {
+      // 🔹 إرسال الرسالة مع تضمين لون الخلفية المختار (لأصحاب الرتب) وحفظه فوراً
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName,
         userId: user.uid,
@@ -944,6 +945,7 @@ export default function App() {
         role: roleText,
         color: nameColor,
         nameStyle: nameStyle,
+        profileBgColor: hasRankForCustomization ? profileBgColor : '#ffffff',
         avatarUrl: profileAvatar || '',
         createdAt: serverTimestamp()
       });
@@ -1614,8 +1616,22 @@ export default function App() {
               ) : (
                 messages.map((m, idx) => {
                   const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
+                  // 🔹 لون المربع/الخلفية الخاص برسالة صاحب الرتبة
+                  const messageBgColor = m.profileBgColor || (idx % 2 === 0 ? '#ffffff' : '#f8fafc');
                   return (
-                    <div key={m.id || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', padding: '8px 10px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px', direction: 'rtl' }}>
+                    <div 
+                      key={m.id || idx} 
+                      style={{ 
+                        backgroundColor: messageBgColor, 
+                        padding: '8px 10px', 
+                        borderBottom: '1px solid #e2e8f0', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px', 
+                        direction: 'rtl',
+                        transition: 'background-color 0.3s ease'
+                      }}
+                    >
                       
                       <div onClick={() => openUserProfile(m)} style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
                         {m.avatarUrl ? (
@@ -2043,7 +2059,7 @@ export default function App() {
                       <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ إعدادات أصحاب الرتب (حفظ فوري):</div>
                       
                       <div>
-                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية المربع بالكامل (الملف والمتصلين):</label>
+                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية المربع بالكامل (الملف والمتصلين ورسائل الشات):</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
                           {PROFILE_BG_COLORS.map((item) => (
                             <button
