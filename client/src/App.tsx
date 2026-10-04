@@ -44,9 +44,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
+const rdb = getDatabase(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
+
+// 🎨 CSS للأنيميشن
+if (typeof document !== 'undefined') {
+  const styleId = 'gat-custom-styles';
+  if (!document.getElementById(styleId)) {
+    const styleEl = document.createElement('style');
+    styleEl.id = styleId;
+    styleEl.innerHTML = `
+      @keyframes rainbowText {
+        0% { background-position: 0% center; }
+        100% { background-position: 200% center; }
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+}
 
 const getCountryFlag = (country: string) => {
   switch (country) {
@@ -118,7 +134,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; avatarUrl?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameEffect?: string; avatarUrl?: string }>>([]);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -160,6 +176,10 @@ export default function App() {
   const [profileSong, setProfileSong] = useState<string>('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
 
+  // 🎨 States للألوان والزخرفة
+  const [profileBgColor, setProfileBgColor] = useState<string>('#0b1724');
+  const [nameEffect, setNameEffect] = useState<string>('none');
+
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const songInputRef = useRef<HTMLInputElement | null>(null);
@@ -182,10 +202,10 @@ export default function App() {
   };
 
   const rolePermissions: Record<string, string[]> = {
-    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
-    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
-    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
-    Premium: ['edit_avatar', 'edit_cover', 'add_song'],
+    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_style'],
+    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_style'],
+    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_style'],
+    Premium: ['edit_avatar', 'edit_cover', 'add_song', 'custom_style'],
     Member: ['edit_avatar'],
     Guest: []
   };
@@ -285,6 +305,8 @@ export default function App() {
             age: 'عدم إظهار',
             bio: 'أهلاً بك في ملفي الشخصي.',
             nameColor: '#2563eb',
+            nameEffect: 'none',
+            profileBgColor: '#0b1724',
             points: 0,
             avatarUrl: '',
             coverUrl: '',
@@ -343,6 +365,8 @@ export default function App() {
       if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
       if (data.coverUrl) setProfileCover(data.coverUrl);
       if (data.profileSongUrl !== undefined) setProfileSong(data.profileSongUrl || '');
+      if (data.profileBgColor) setProfileBgColor(data.profileBgColor);
+      if (data.nameEffect) setNameEffect(data.nameEffect);
     });
 
     let unsubscribeRole = () => {};
@@ -705,6 +729,8 @@ export default function App() {
         avatarUrl: profileAvatar,
         coverUrl: profileCover,
         profileSongUrl: profileSong,
+        profileBgColor: profileBgColor,
+        nameEffect: nameEffect,
         joinedDate: todayDate,
         lastSeen: nowTime,
         lastActive: Date.now(),
@@ -718,7 +744,7 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, profileBgColor, nameEffect, currentUserRole]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
@@ -746,6 +772,8 @@ export default function App() {
               avatarUrl: data.avatarUrl || '',
               coverUrl: data.coverUrl || '',
               profileSongUrl: data.profileSongUrl || '',
+              profileBgColor: data.profileBgColor || '#0b1724',
+              nameEffect: data.nameEffect || 'none',
               joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
               lastSeen: data.lastSeen || '01:00 AM',
               points: data.points || 0,
@@ -867,6 +895,7 @@ export default function App() {
         text: inputText.trim(),
         role: roleText,
         color: nameColor,
+        nameEffect: nameEffect,
         avatarUrl: profileAvatar || '',
         createdAt: serverTimestamp()
       });
@@ -1155,7 +1184,7 @@ export default function App() {
       const notifBody =
         normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
           ? `تم سحب الرتبة منك وتحديثها إلى ${normalizedNewRole}.`
-          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب والصورة والغلاف والأغنية حسب الرتبة.`;
+          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب والصورة والغلاف والأغنية والألوان حسب الرتبة.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
@@ -1213,7 +1242,9 @@ export default function App() {
       email: userEmail,
       avatarUrl: uData.avatarUrl || '',
       coverUrl: uData.coverUrl || '',
-      profileSongUrl: uData.profileSongUrl || ''
+      profileSongUrl: uData.profileSongUrl || '',
+      profileBgColor: uData.profileBgColor || '#0b1724',
+      nameEffect: uData.nameEffect || 'none'
     };
 
     if (targetId && targetId !== 'guest_id') {
@@ -1231,7 +1262,9 @@ export default function App() {
             email: data.email || fetchedData.email || '',
             avatarUrl: data.avatarUrl || fetchedData.avatarUrl,
             coverUrl: data.coverUrl || fetchedData.coverUrl,
-            profileSongUrl: data.profileSongUrl || fetchedData.profileSongUrl || ''
+            profileSongUrl: data.profileSongUrl || fetchedData.profileSongUrl || '',
+            profileBgColor: data.profileBgColor || fetchedData.profileBgColor || '#0b1724',
+            nameEffect: data.nameEffect || fetchedData.nameEffect || 'none'
           };
         }
 
@@ -1274,6 +1307,93 @@ export default function App() {
       stopProfileSong();
     };
   }, []);
+
+  // 🎨 دالة توليد أسلوب الاسم
+  const getNameStyle = (color: string | undefined, effect: string | undefined, baseColor: string = '#0284c7'): React.CSSProperties => {
+    const c = color || baseColor;
+    const style: React.CSSProperties = {
+      fontWeight: 'bold',
+      cursor: 'pointer'
+    };
+    
+    switch (effect) {
+      case 'glow':
+        style.color = c;
+        style.textShadow = `0 0 6px ${c}, 0 0 12px ${c}, 0 0 18px ${c}`;
+        break;
+      case 'fire':
+        style.color = '#ff6b00';
+        style.textShadow = '0 0 6px #ffcc00, 0 0 12px #ff6600, 0 0 18px #ff0000';
+        break;
+      case 'neon':
+        style.color = c;
+        style.textShadow = `0 0 4px #fff, 0 0 8px #fff, 0 0 12px ${c}, 0 0 20px ${c}`;
+        break;
+      case 'rainbow':
+        style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)';
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        (style as any).animation = 'rainbowText 3s linear infinite';
+        break;
+      case 'rainbow-glow':
+        style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)';
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        (style as any).animation = 'rainbowText 3s linear infinite';
+        (style as any).filter = 'drop-shadow(0 0 6px rgba(255,255,255,0.6))';
+        break;
+      case 'gradient':
+        style.background = `linear-gradient(90deg, ${c}, #ffffff, ${c})`;
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        break;
+      case 'metallic':
+        style.background = 'linear-gradient(90deg, #b8860b, #ffd700, #fff8dc, #ffd700, #b8860b)';
+        style.backgroundSize = '200% auto';
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.backgroundClip = 'text';
+        break;
+      default:
+        style.color = c;
+    }
+    return style;
+  };
+
+  const NAME_EFFECTS_LIST = [
+    { id: 'none', label: 'عادي', emoji: '📝' },
+    { id: 'glow', label: 'متوهج', emoji: '✨' },
+    { id: 'fire', label: 'مشتعل', emoji: '🔥' },
+    { id: 'neon', label: 'نيون', emoji: '💡' },
+    { id: 'rainbow', label: 'قوس قزح', emoji: '🌈' },
+    { id: 'rainbow-glow', label: 'قوس قزح متوهج', emoji: '🌟' },
+    { id: 'gradient', label: 'متدرج', emoji: '🎨' },
+    { id: 'metallic', label: 'ذهبي', emoji: '🥇' }
+  ];
+
+  const PROFILE_BG_COLORS = [
+    { id: '#0b1724', label: 'أسود مزرق (افتراضي)' },
+    { id: '#0f172a', label: 'كحلي' },
+    { id: '#1e1b4b', label: 'بنفسجي داكن' },
+    { id: '#111827', label: 'رمادي داكن' },
+    { id: '#1c1917', label: 'بني داكن' },
+    { id: '#052e16', label: 'أخضر داكن' },
+    { id: '#450a0a', label: 'أحمر داكن' },
+    { id: '#431407', label: 'برتقالي داكن' },
+    { id: '#1e3a8a', label: 'أزرق ملكي' },
+    { id: '#4c1d95', label: 'بنفسجي ملكي' },
+    { id: '#831843', label: 'وردي داكن' },
+    { id: '#0c4a6e', label: 'سماوي داكن' },
+    { id: '#164e63', label: 'فيروزي داكن' },
+    { id: '#365314', label: 'زيتوني' },
+    { id: '#3f3f46', label: 'رمادي فحمي' }
+  ];
 
   const filteredOnlineUsers = onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
@@ -1551,7 +1671,7 @@ export default function App() {
 
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
                       <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
-                      <span style={{ fontWeight: 'bold', color: m.color || '#0284c7', cursor: 'pointer' }} onClick={() => openUserProfile(m)}>
+                      <span style={getNameStyle(m.color, m.nameEffect, '#0284c7')} onClick={() => openUserProfile(m)}>
                         {m.user}:
                       </span>
                       <span style={{ color: '#1e293b', fontWeight: '500' }}>
@@ -1958,6 +2078,82 @@ export default function App() {
                   </div>
 
                   {canAddSong && (
+                    <div style={{ marginTop: '6px', padding: '10px', borderRadius: '8px', backgroundColor: '#f0fdfa', border: '1px solid #5eead4' }}>
+                      <label style={{ fontSize: '11px', color: '#0f766e', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>🎨 لون خلفية ملفك الشخصي</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginBottom: '8px' }}>
+                        {PROFILE_BG_COLORS.map((color) => (
+                          <button
+                            key={color.id}
+                            onClick={() => {
+                              setProfileBgColor(color.id);
+                              saveSettingToFirebase('profileBgColor', color.id);
+                            }}
+                            title={color.label}
+                            style={{
+                              width: '100%',
+                              height: '32px',
+                              backgroundColor: color.id,
+                              border: profileBgColor === color.id ? '3px solid #14b8a6' : '2px solid #cbd5e1',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              boxShadow: profileBgColor === color.id ? '0 0 8px #14b8a6' : 'none'
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <input 
+                        type="color" 
+                        value={profileBgColor}
+                        onChange={(e) => {
+                          setProfileBgColor(e.target.value);
+                          saveSettingToFirebase('profileBgColor', e.target.value);
+                        }}
+                        style={{ width: '100%', height: '32px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                      />
+                      <div style={{ fontSize: '10px', color: '#0f766e', marginTop: '4px' }}>
+                        اختر لوناً جاهزاً أو أي لون مخصص
+                      </div>
+                    </div>
+                  )}
+
+                  {canAddSong && (
+                    <div style={{ marginTop: '6px', padding: '10px', borderRadius: '8px', backgroundColor: '#fef3c7', border: '1px solid #fcd34d' }}>
+                      <label style={{ fontSize: '11px', color: '#92400e', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>✨ زخرفة اسمك في الشات</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                        {NAME_EFFECTS_LIST.map((eff) => (
+                          <button
+                            key={eff.id}
+                            onClick={() => {
+                              setNameEffect(eff.id);
+                              saveSettingToFirebase('nameEffect', eff.id);
+                            }}
+                            style={{
+                              padding: '8px',
+                              backgroundColor: nameEffect === eff.id ? '#f59e0b' : '#ffffff',
+                              color: nameEffect === eff.id ? '#ffffff' : '#92400e',
+                              border: nameEffect === eff.id ? '2px solid #d97706' : '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span>{eff.emoji}</span>
+                            <span>{eff.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: '8px', textAlign: 'center', fontSize: '14px', padding: '6px', backgroundColor: '#ffffff', borderRadius: '6px' }}>
+                        معاينة: <span style={getNameStyle(nameColor, nameEffect, '#0284c7')}>اسمك هنا</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {canAddSong && (
                     <div style={{ marginTop: '6px', padding: '10px', borderRadius: '8px', backgroundColor: '#f5f3ff', border: '1px solid #c4b5fd' }}>
                       <label style={{ fontSize: '11px', color: '#6d28d9', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>🎵 أغنية الملف الشخصي</label>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -2019,7 +2215,7 @@ export default function App() {
             style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}
           >
             
-            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '280px', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '100%', backgroundColor: selectedProfileUser.profileBgColor || '#0b1724', minHeight: '280px', overflow: 'hidden', transition: 'background-color 0.5s ease' }}>
               
               <div 
                 onClick={() => {
@@ -2037,7 +2233,7 @@ export default function App() {
                   bottom: 0,
                   width: '100%',
                   height: '100%',
-                  backgroundImage: selectedProfileUser.coverUrl ? `url(${selectedProfileUser.coverUrl})` : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                  backgroundImage: selectedProfileUser.coverUrl ? `url(${selectedProfileUser.coverUrl})` : 'linear-gradient(135deg, rgba(15,23,42,0.5) 0%, rgba(30,41,59,0.3) 100%)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
@@ -2045,7 +2241,7 @@ export default function App() {
                 }}
               />
 
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.2) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%)', pointerEvents: 'none' }} />
 
               <button 
                 onClick={(e) => { e.stopPropagation(); stopProfileSong(); setSelectedProfileUser(null); }} 
@@ -2130,14 +2326,12 @@ export default function App() {
                   )}
                 </div>
 
-                {/* 🔹 الرتبة تحت الصورة مباشرة */}
                 <div style={{ backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: 'bold', padding: '2px 10px', borderRadius: '12px', marginTop: '6px' }}>
                   {selectedProfileUser.role}
                 </div>
 
-                {/* 🔹 الاسم تحت الرتبة */}
-                <div style={{ color: '#ffffff', fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%' }}>
-                  {selectedProfileUser.name}
+                <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%' }}>
+                  <span style={getNameStyle(selectedProfileUser.color, selectedProfileUser.nameEffect, '#ffffff')}>{selectedProfileUser.name}</span>
                 </div>
 
               </div>
@@ -2222,4 +2416,4 @@ export default function App() {
 
     </div>
   );
-              }
+          }
