@@ -48,6 +48,22 @@ const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
+// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي بالكامل فورياً
+const PROFILE_BG_COLORS = [
+  { name: 'أبيض ناصع', value: '#ffffff' },
+  { name: 'داكن أنيق', value: '#0b141a' },
+  { name: 'كحلي ليلي', value: '#0f172a' },
+  { name: 'رمادي فاتح', value: '#f8fafc' },
+  { name: 'ذهبي خفيف', value: '#fefce8' },
+  { name: 'أزرق سماوي', value: '#e0f2fe' },
+  { name: 'وردي ناعم', value: '#fdf4ff' },
+  { name: 'أخضر هادئ', value: '#dcfce7' },
+  { name: 'بنفسجي ملكي', value: '#f3e8ff' },
+  { name: 'برتقالي دافئ', value: '#ffedd5' },
+  { name: 'رمادي غامق', value: '#1e293b' },
+  { name: 'أحمر هادئ', value: '#fee2e2' }
+];
+
 const getCountryFlag = (country: string) => {
   switch (country) {
     case 'الأردن': return '🇯🇴';
@@ -186,8 +202,8 @@ export default function App() {
   const [profileBio, setProfileBio] = useState('');
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
   const [nameColor, setNameColor] = useState('#2563eb');
-  const [nameStyle, setNameStyle] = useState('normal'); // نوع الزخرفة للاسم
-  const [profileBgColor, setProfileBgColor] = useState('#ffffff'); // لون خلفية الملف الشخصي
+  const [nameStyle, setNameStyle] = useState('normal'); 
+  const [profileBgColor, setProfileBgColor] = useState('#ffffff'); 
   const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
 
   const [profileAvatar, setProfileAvatar] = useState<string>('');
@@ -2003,22 +2019,53 @@ export default function App() {
                     />
                   </div>
 
-                  {/* 🌟 خيارات أصحاب الرتب حصراً: لون خلفية الحساب الشخصي بالكامل + زخرفة الأسماء */}
+                  {/* 🌟 خيارات أصحاب الرتب حصراً: قائمة ألوان خلفية الملف الشخصي بالكامل + الحفظ الفوري */}
                   {hasRankForCustomization && (
                     <div style={{ backgroundColor: '#fdf4ff', border: '1px solid #f0abfc', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ خيارات أصحاب الرتب (تغيير فوري ودائم):</div>
+                      <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ إعدادات أصحاب الرتب (حفظ فوري):</div>
                       
                       <div>
-                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '4px' }}>لون خلفية الملف الشخصي الكامل</label>
-                        <input 
-                          type="color" 
-                          value={profileBgColor} 
-                          onChange={(e) => {
-                            setProfileBgColor(e.target.value);
-                            saveSettingToFirebase('profileBgColor', e.target.value);
-                          }}
-                          style={{ width: '100%', height: '36px', borderRadius: '6px', border: '1px solid #f0abfc', cursor: 'pointer' }}
-                        />
+                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية الملف الشخصي بالكامل (حفظ فوري):</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
+                          {PROFILE_BG_COLORS.map((item) => (
+                            <button
+                              key={item.value}
+                              onClick={() => {
+                                setProfileBgColor(item.value);
+                                saveSettingToFirebase('profileBgColor', item.value);
+                              }}
+                              style={{
+                                backgroundColor: item.value,
+                                border: profileBgColor === item.value ? '2px solid #86198f' : '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                padding: '10px 4px',
+                                cursor: 'pointer',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                color: ['#0b141a', '#0f172a', '#1e293b', '#3b0764'].includes(item.value) ? '#fff' : '#000',
+                                boxShadow: profileBgColor === item.value ? '0 0 0 2px #f0abfc' : 'none',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {item.name}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                          <span style={{ fontSize: '10px', color: '#701a75' }}>أو اختر لوناً مخصصاً:</span>
+                          <input 
+                            type="color" 
+                            value={profileBgColor} 
+                            onChange={(e) => {
+                              setProfileBgColor(e.target.value);
+                              saveSettingToFirebase('profileBgColor', e.target.value);
+                            }}
+                            style={{ flex: 1, height: '32px', borderRadius: '6px', border: '1px solid #f0abfc', cursor: 'pointer' }}
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -2114,7 +2161,7 @@ export default function App() {
             style={{ 
               width: '100%', 
               maxWidth: '360px', 
-              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', // 🔹 يتغير لون خلفية الحساب الشخصي بالكامل هنا فوراً
+              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', // 🔹 يتغير لون خلفية المربع بالكامل هنا فوراً
               borderRadius: '16px', 
               overflow: 'hidden', 
               display: 'flex', 
