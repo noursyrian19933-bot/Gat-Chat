@@ -29,7 +29,7 @@ import {
 } from 'firebase/firestore';
 
 // 🔹 الخطوة أ: استيراد Realtime Database
-import { getDatabase, ref, child, get, set } from 'firebase/database';
+import { getDatabase, ref, child, get, set, update } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -164,7 +164,55 @@ export default function App() {
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
 
-  const isAdmin = user && !user.isAnonymous && (user.email === ADMIN_EMAIL || currentUserRole === 'Owner' || currentUserRole === 'Admin');
+  // 🔐 نظام الرتب والصلاحيات: الرتبة مرتبطة بحساب Firebase (UID + البريد الإلكتروني)
+  const normalizeRole = (role: any): string => {
+    const value = String(role || '').trim().toLowerCase();
+    if (value === 'owner') return 'Owner';
+    if (value === 'admin') return 'Admin';
+    if (value === 'super admin' || value === 'super_admin' || value === 'superadmin') return 'Super Admin';
+    if (value === 'premium') return 'Premium';
+    if (value === 'guest') return 'Guest';
+    return 'Member';
+  };
+
+  const rolePermissions: Record<string, string[]> = {
+    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover'],
+    Admin: ['manage_users', 'edit_avatar', 'edit_cover'],
+    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover'],
+    Premium: ['edit_avatar', 'edit_cover'],
+    Member: ['edit_avatar'],
+    Guest: []
+  };
+
+  const normalizedCurrentRole = normalizeRole(currentUserRole);
+  const normalizedCurrentEmail = (user?.email || '').trim().toLowerCase();
+  const isOwner = Boolean(
+    user &&
+    !user.isAnonymous &&
+    (
+      normalizedCurrentEmail === ADMIN_EMAIL.trim().toLowerCase() ||
+      normalizedCurrentRole === 'Owner'
+    )
+  );
+
+  const isAdmin = Boolean(
+    user &&
+    !user.isAnonymous &&
+    (
+      isOwner ||
+      normalizedCurrentRole === 'Admin' ||
+      normalizedCurrentRole === 'Super Admin'
+    )
+  );
+
+  const isPremium = Boolean(
+    user &&
+    !user.isAnonymous &&
+    normalizedCurrentRole === 'Premium'
+  );
+
+  const hasCurrentPermission = (permission: string) =>
+    isOwner || (rolePermissions[normalizedCurrentRole] || []).includes(permission);
 
   // 🔹 مراقبة بيانات المستخدم الحالية لحظياً لتحديث الرتبة والصلاحيات فوراً
   useEffect(() => {
@@ -181,36 +229,53 @@ export default function App() {
         const userSnap = await getDoc(userRef);
         const todayDate = new Date().toISOString().split('T')[0];
 
-        let activeRole = currentUser.email === ADMIN_EMAIL ? 'Owner' : (currentUser.isAnonymous ? 'Guest' : 'Member');
+        const ownerEmail = ADMIN_EMAIL.trim().toLowerCase();
+        let activeRole = currentUser.isAnonymous
+          ? 'Guest'
+          : (currentUser.email?.trim().toLowerCase() === ownerEmail ? 'Owner' : 'Member');
 
-        if (currentUser.email) {
+        // أولوية الرتبة: البريد المرتبط بالرتبة، ثم UID، ثم Realtime Database.
+        // حساب المالك المحدد بالبريد يبقى Owner دائماً.
+        let hasEmailRole = false;
+
+        if (!currentUser.isAnonymous && currentUser.email) {
           const cleanEmail = currentUser.email.trim().toLowerCase();
           try {
             const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
-            if (roleDoc.exists() && roleDoc.data().role) {
-              activeRole = roleDoc.data().role;
+            if (
+              currentUser.email.trim().toLowerCase() !== ownerEmail &&
+              roleDoc.exists() &&
+              roleDoc.data().role
+            ) {
+              activeRole = normalizeRole(roleDoc.data().role);
+              hasEmailRole = true;
             }
           } catch (e) {
             console.error("خطأ أثناء جلب الرتبة المربوطة بالإيميل:", e);
           }
         }
 
-        if (activeRole === 'Member' || activeRole === 'Guest') {
-          if (userSnap.exists() && userSnap.data().role) {
-            activeRole = userSnap.data().role;
-          } else {
-            try {
-              const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
-              if (snapshot.exists()) {
-                const rdbData = snapshot.val();
-                if (rdbData?.role || rdbData?.rank) {
-                  activeRole = rdbData.role || rdbData.rank;
-                }
-              }
-            } catch (error) {
-              console.error("حدث خطأ أثناء جلب البيانات من Realtime Database:", error);
-            }
+        if (!currentUser.isAnonymous && !hasEmailRole && userSnap.exists() && userSnap.data().role) {
+          const uidRole = normalizeRole(userSnap.data().role);
+          if (currentUser.email?.trim().toLowerCase() !== ownerEmail) {
+            activeRole = uidRole;
           }
+        } else if (!currentUser.isAnonymous && !hasEmailRole) {
+          try {
+            const snapshot = await get(child(ref(rdb), `users/${currentUser.uid}`));
+            if (snapshot.exists()) {
+              const rdbData = snapshot.val();
+              if (rdbData?.role || rdbData?.rank) {
+                activeRole = normalizeRole(rdbData.role || rdbData.rank);
+              }
+            }
+          } catch (error) {
+            console.error("حدث خطأ أثناء جلب البيانات من Realtime Database:", error);
+          }
+        }
+
+        if (currentUser.email?.trim().toLowerCase() === ownerEmail) {
+          activeRole = 'Owner';
         }
 
         setCurrentUserRole(activeRole);
@@ -220,6 +285,7 @@ export default function App() {
             email: currentUser.email || '',
             displayName: actualName,
             role: activeRole,
+            permissions: rolePermissions[normalizeRole(activeRole)] || [],
             flag: '🇯🇴',
             country: 'الأردن',
             gender: 'ذكر',
@@ -238,26 +304,57 @@ export default function App() {
     return () => unsubscribeAuth();
   }, [guestName]);
 
-  // 🔹 مستمع لحظي لتحديثات ملف المستخدم الحالي (لضمان تفاعل الرتب والغلاف فوراً)
+  // 🔹 مستمع لحظي لملف المستخدم + مستمع لحظي للرتبة المرتبطة بالبريد
+  // أي تغيير في الرتبة ينعكس فوراً على الصلاحيات بدون تسجيل خروج أو دخول.
   useEffect(() => {
     if (!user) return;
+
     const userRef = doc(db, 'users', user.uid);
-    return onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.role) setCurrentUserRole(data.role);
-        if (data.gender) setProfileGender(data.gender);
-        if (data.country) {
-          setProfileCountry(data.country);
-          setCurrentFlag(getCountryFlag(data.country));
-        }
-        if (data.flag) setCurrentFlag(data.flag);
-        if (data.bio) setProfileBio(data.bio);
-        if (data.nameColor) setNameColor(data.nameColor);
-        if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
-        if (data.coverUrl) setProfileCover(data.coverUrl);
+    const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+      if (!docSnap.exists()) return;
+
+      const data = docSnap.data();
+
+      if (data.role && user.email?.trim().toLowerCase() !== ADMIN_EMAIL.trim().toLowerCase()) {
+        setCurrentUserRole(normalizeRole(data.role));
       }
+
+      if (data.gender) setProfileGender(data.gender);
+      if (data.country) {
+        setProfileCountry(data.country);
+        setCurrentFlag(getCountryFlag(data.country));
+      }
+      if (data.flag) setCurrentFlag(data.flag);
+      if (data.bio) setProfileBio(data.bio);
+      if (data.nameColor) setNameColor(data.nameColor);
+      if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
+      if (data.coverUrl) setProfileCover(data.coverUrl);
     });
+
+    let unsubscribeRole = () => {};
+
+    if (!user.isAnonymous && user.email) {
+      const cleanEmail = user.email.trim().toLowerCase();
+      const roleRef = doc(db, 'roles_by_email', cleanEmail);
+
+      unsubscribeRole = onSnapshot(roleRef, (roleSnap) => {
+        if (cleanEmail === ADMIN_EMAIL.trim().toLowerCase()) {
+          setCurrentUserRole('Owner');
+          return;
+        }
+
+        if (roleSnap.exists() && roleSnap.data().role) {
+          setCurrentUserRole(normalizeRole(roleSnap.data().role));
+        }
+      }, (error) => {
+        console.error("خطأ في المستمع اللحظي لرتبة البريد:", error);
+      });
+    }
+
+    return () => {
+      unsubscribeUser();
+      unsubscribeRole();
+    };
   }, [user]);
 
   const updateLastSeenOnExit = async () => {
@@ -508,7 +605,7 @@ export default function App() {
     const updatePresence = async () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
-      let currentRole = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : currentUserRole);
+      let currentRole = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
       setDoc(presenceRef, {
         roomId: roomId,
@@ -672,7 +769,7 @@ export default function App() {
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
-    let roleText = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : currentUserRole);
+    let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
     try {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
@@ -843,46 +940,82 @@ export default function App() {
     }
   };
 
-  // 👑 دالة منح وسحب الرتب مع تفعيل صلاحيات الصورة والغلاف فوراً
+  // 👑 إدارة الرتب: المالك فقط يستطيع منح/سحب الرتب الإدارية
+  // يتم حفظ الرتبة والصلاحيات على UID وعلى البريد الإلكتروني معاً.
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
-    if (!user || !isAdmin) return;
+    if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
+
+    const normalizedNewRole = normalizeRole(newRole);
+
     try {
-      const targetUserName = selectedProfileUser?.name || 'المستخدم';
+      const targetUserRef = doc(db, 'users', targetUid);
+      const targetUserSnap = await getDoc(targetUserRef);
+      const targetUserData = targetUserSnap.exists() ? targetUserSnap.data() : {};
 
-      const userRef = doc(db, 'users', targetUid);
-      const updateData: any = { role: newRole };
+      const targetEmail = String(
+        selectedProfileUser?.email ||
+        targetUserData.email ||
+        ''
+      ).trim().toLowerCase();
 
-      if (newRole !== 'Member' && newRole !== 'Guest') {
-        updateData.canEditCover = true;
-      }
+      const targetUserName =
+        selectedProfileUser?.name ||
+        targetUserData.displayName ||
+        'المستخدم';
 
-      await setDoc(userRef, updateData, { merge: true });
+      const permissions = rolePermissions[normalizedNewRole] || [];
 
-      const presenceRef = doc(db, 'room_presence', targetUid);
-      await setDoc(presenceRef, { role: newRole }, { merge: true });
+      const updateData: any = {
+        role: normalizedNewRole,
+        permissions,
+        canEditCover: permissions.includes('edit_cover'),
+        canEditAvatar: permissions.includes('edit_avatar'),
+        roleUpdatedAt: new Date().toISOString()
+      };
 
-      const targetEmail = selectedProfileUser?.email;
+      // لا نلمس الاسم أو الصورة أو الغلاف أو الدولة أو الأصدقاء أو النقاط.
+      await setDoc(targetUserRef, updateData, { merge: true });
+
+      await setDoc(
+        doc(db, 'room_presence', targetUid),
+        {
+          role: normalizedNewRole,
+          permissions
+        },
+        { merge: true }
+      );
+
       if (targetEmail) {
-        const cleanEmail = targetEmail.trim().toLowerCase();
-        if (cleanEmail) {
-          await setDoc(doc(db, 'roles_by_email', cleanEmail), {
-            role: newRole,
-            email: cleanEmail,
+        await setDoc(
+          doc(db, 'roles_by_email', targetEmail),
+          {
+            uid: targetUid,
+            email: targetEmail,
+            role: normalizedNewRole,
+            permissions,
             updatedAt: serverTimestamp()
-          }, { merge: true });
-        }
+          },
+          { merge: true }
+        );
       }
 
       try {
-        await set(ref(rdb, `users/${targetUid}/role`), newRole);
+        await update(
+          ref(rdb, `users/${targetUid}`),
+          {
+            role: normalizedNewRole,
+            permissions
+          }
+        );
       } catch (rdbErr) {
         console.error("خطأ أثناء التحديث في Realtime Database:", rdbErr);
       }
 
       if (selectedRoom) {
-        const roomMsg = (newRole === 'Member' || newRole === 'Guest') 
-          ? `⚠️ تم سحب الرتبة من ${targetUserName} وأصبح ${newRole}`
-          : `🎁 تم إهداء ${targetUserName} الرتبة: ${newRole}`;
+        const roomMsg =
+          normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
+            ? `⚠️ تم سحب الرتبة من ${targetUserName} وأصبح ${normalizedNewRole}`
+            : `🎁 تم إهداء ${targetUserName} الرتبة: ${normalizedNewRole}`;
 
         await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
           user: 'نظام الشات',
@@ -894,20 +1027,37 @@ export default function App() {
         });
       }
 
-      const notifTitle = (newRole === 'Member' || newRole === 'Guest') ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
-      const notifBody = (newRole === 'Member' || newRole === 'Guest')
-        ? `تم سحب الرتبة منك وتحديثها إلى ${newRole}.`
-        : `مبروك! تم إهداؤك رتبة (${newRole}) وتفعيل صلاحيات الغلاف والصورة بنجاح.`;
+      const notifTitle =
+        normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
+          ? 'تحديث الرتبة ⚠️'
+          : 'هدايا الرتب 🎁';
+
+      const notifBody =
+        normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
+          ? `تم سحب الرتبة منك وتحديثها إلى ${normalizedNewRole}.`
+          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب والصورة والغلاف حسب الرتبة.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
         body: notifBody,
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        createdAt: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
       });
 
-      setSelectedProfileUser((prev: any) => prev ? { ...prev, role: newRole } : null);
+      setSelectedProfileUser((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              role: normalizedNewRole,
+              email: targetEmail || prev.email,
+              permissions
+            }
+          : null
+      );
 
-      alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${newRole}`);
+      alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${normalizedNewRole}`);
     } catch (e: any) {
       console.error("خطأ في تعديل الرتبة:", e);
       alert(`❌ حدث خطأ أثناء تغيير الرتبة: ${e.message}`);
@@ -934,7 +1084,7 @@ export default function App() {
     let fetchedData = {
       userId: targetId,
       name: uData.name || uData.user || uData.userName || 'زائر',
-      role: uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member'),
+      role: normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
       gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
       joinedDate: uData.joinedDate || new Date().toISOString().split('T')[0],
       roomName: uData.roomName || 'القائمة الرئيسية',
@@ -953,7 +1103,7 @@ export default function App() {
           fetchedData = {
             ...fetchedData,
             name: data.displayName || fetchedData.name,
-            role: data.role || fetchedData.role,
+            role: normalizeRole(data.role || fetchedData.role),
             gender: data.gender || fetchedData.gender,
             joinedDate: data.joinedDate || fetchedData.joinedDate,
             points: data.points ?? fetchedData.points,
@@ -1085,18 +1235,26 @@ export default function App() {
   }
 
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
-  const profileUserRole = (selectedProfileUser?.role || '').toLowerCase();
-  
+  const profileUserRole = normalizeRole(selectedProfileUser?.role);
+
   const hasSpecialRank = Boolean(
-    isAdmin || 
-    ['owner', 'admin', 'super_admin', 'premium'].some(r => profileUserRole.includes(r.toLowerCase())) ||
-    ['owner', 'admin', 'super_admin', 'premium'].some(r => currentUserRole.toLowerCase().includes(r.toLowerCase()))
+    ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(profileUserRole) ||
+    ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
   );
-  
+
   const isGuestUser = Boolean(user?.isAnonymous);
 
-  const canEditAvatar = Boolean(isSelfProfile && !isGuestUser);
-  const canEditCover = Boolean(isSelfProfile && !isGuestUser && hasSpecialRank);
+  const canEditAvatar = Boolean(
+    isSelfProfile &&
+    !isGuestUser &&
+    hasCurrentPermission('edit_avatar')
+  );
+
+  const canEditCover = Boolean(
+    isSelfProfile &&
+    !isGuestUser &&
+    hasCurrentPermission('edit_cover')
+  );
 
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
@@ -1782,7 +1940,7 @@ export default function App() {
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
-              {isAdmin && !isSelfProfile && (
+              {isOwner && !isSelfProfile && (
                 <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
