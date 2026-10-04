@@ -167,7 +167,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string; isSystemSpecial?: boolean }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string; isSystemSpecial?: boolean; createdAt?: any }>>([]);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -214,6 +214,13 @@ export default function App() {
   
   const [profileSong, setProfileSong] = useState<string>('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
+
+  // 🔹 حالة مشغل اليوتيوب العائم القابل للتحريك
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [isVideoMinimized, setIsVideoMinimized] = useState(false);
+  const [videoPos, setVideoPos] = useState({ x: 20, y: 100 });
+  const isDraggingVideo = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
 
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
@@ -873,10 +880,28 @@ export default function App() {
     if (!selectedRoom) return;
     const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'));
     return onSnapshot(msgQuery, (snapshot) => {
-      const msgs = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
+      const now = Date.now();
+      const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+      const msgs = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        let isExpired = false;
+
+        // فلترة رسائل الإهداء أو السحب إذا مر عليها أكثر من 5 دقائق
+        if (data.isSystemSpecial && data.createdAt) {
+          const msgTime = data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now();
+          if (now - msgTime > FIVE_MINUTES_MS) {
+            isExpired = true;
+          }
+        }
+
+        return {
+          id: docSnap.id,
+          isExpired,
+          ...data
+        };
+      }).filter(m => !m.isExpired);
+
       setMessages(msgs);
       setTimeout(() => {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -932,6 +957,7 @@ export default function App() {
     }
   };
 
+  // 🔹 رسالة الانضمام متضمنة الاسم ورتبة الشخص الفعلية
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setSelectedRoom(room);
     setCurrentView('chat');
@@ -945,11 +971,13 @@ export default function App() {
         ? (user.displayName || storedGuest || 'زائر') 
         : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
+      const currentRoleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+
       try {
         await addDoc(collection(db, 'rooms', room.id, 'messages'), {
           user: 'نظام الشات',
           userId: 'system',
-          text: `تم الانضمام ${actualName}`,
+          text: `تم الانضمام ${actualName} (${currentRoleText})`,
           role: 'System',
           color: '#16a34a',
           isSystemSpecial: false,
@@ -970,6 +998,13 @@ export default function App() {
     localStorage.removeItem('gat_current_room_flag');
   };
 
+  // استخراج رابط يوتيوب وتحويله لembed إن وجد
+  const extractYouTubeEmbedUrl = (text: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = text.match(regExp);
+    return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !selectedRoom || !user) return;
@@ -979,12 +1014,13 @@ export default function App() {
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
     let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+    const textMsg = inputText.trim();
 
     try {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName,
         userId: user.uid,
-        text: inputText.trim(),
+        text: textMsg,
         role: roleText,
         color: nameColor,
         nameStyle: nameStyle,
@@ -1560,7 +1596,6 @@ export default function App() {
         onChange={handleSongSelect} 
       />
 
-      {/* 🔹 شريط العلوي العصري والأنيق (بدون الأثرياء والكبار وبأيقونات مميزة) */}
       <header style={{ height: '56px', minHeight: '56px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
         
         <div style={{ cursor: 'pointer', fontSize: '20px', color: '#38bdf8', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1569,7 +1604,7 @@ export default function App() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
           
-          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', transition: 'all 0.2s' }}>
+          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px' }}>
             <span style={{ fontSize: '15px', color: '#38bdf8' }}>👤</span>
             <span style={{ marginTop: '1px', fontWeight: '600' }}>اعدادات</span>
           </div>
@@ -1676,8 +1711,102 @@ export default function App() {
         )}
 
         {currentView === 'chat' && selectedRoom && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
             
+            {/* 🔹 مشغل يوتيوب العائم القابل للتحريك والتصغير والإغلاق */}
+            {activeVideoUrl && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: `${videoPos.y}px`,
+                  left: `${videoPos.x}px`,
+                  zIndex: 100,
+                  backgroundColor: '#0f172a',
+                  borderRadius: '10px',
+                  boxShadow: '0 8px 25px rgba(0,0,0,0.5)',
+                  border: '2px solid #ef4444',
+                  overflow: 'hidden',
+                  width: isVideoMinimized ? '180px' : '300px',
+                  transition: isDraggingVideo.current ? 'none' : 'width 0.2s'
+                }}
+              >
+                {/* شريط السحب والتحكم */}
+                <div 
+                  onMouseDown={(e) => {
+                    isDraggingVideo.current = true;
+                    dragOffset.current = { x: e.clientX - videoPos.x, y: e.clientY - videoPos.y };
+                    const onMouseMove = (ev: MouseEvent) => {
+                      if (!isDraggingVideo.current) return;
+                      setVideoPos({ x: ev.clientX - dragOffset.current.x, y: ev.clientY - dragOffset.current.y });
+                    };
+                    const onMouseUp = () => {
+                      isDraggingVideo.current = false;
+                      window.removeEventListener('mousemove', onMouseMove);
+                      window.removeEventListener('mouseup', onMouseUp);
+                    };
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                  }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0];
+                    isDraggingVideo.current = true;
+                    dragOffset.current = { x: touch.clientX - videoPos.x, y: touch.clientY - videoPos.y };
+                    const onTouchMove = (ev: TouchEvent) => {
+                      if (!isDraggingVideo.current) return;
+                      const t = ev.touches[0];
+                      setVideoPos({ x: t.clientX - dragOffset.current.x, y: t.clientY - dragOffset.current.y });
+                    };
+                    const onTouchEnd = () => {
+                      isDraggingVideo.current = false;
+                      window.removeEventListener('touchmove', onTouchMove);
+                      window.removeEventListener('touchend', onTouchEnd);
+                    };
+                    window.addEventListener('touchmove', onTouchMove);
+                    window.addEventListener('touchend', onTouchEnd);
+                  }}
+                  style={{
+                    backgroundColor: '#1e293b',
+                    color: '#fff',
+                    padding: '6px 10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'grab',
+                    fontSize: '11px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  <span>📺 مشغل يوتيوب</span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                      onClick={() => setIsVideoMinimized(!isVideoMinimized)}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      {isVideoMinimized ? '+' : '-'}
+                    </button>
+                    <button 
+                      onClick={() => setActiveVideoUrl(null)}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {!isVideoMinimized && (
+                  <div style={{ width: '100%', height: '170px', background: '#000' }}>
+                    <iframe 
+                      src={`${activeVideoUrl}?autoplay=1`} 
+                      title="YouTube player" 
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl' }}>
               
               {messages.length === 0 ? (
@@ -1698,6 +1827,8 @@ export default function App() {
                       </div>
                     );
                   }
+
+                  const youtubeEmbedUrl = extractYouTubeEmbedUrl(m.text);
 
                   return (
                     <div 
@@ -1740,9 +1871,32 @@ export default function App() {
                           </span>
                         </span>
 
-                        <span style={{ color: '#1e293b', fontWeight: '500' }}>
-                          {renderBadgeText(m.text)}
-                        </span>
+                        {youtubeEmbedUrl ? (
+                          <button 
+                            onClick={() => setActiveVideoUrl(youtubeEmbedUrl)}
+                            style={{ 
+                              backgroundColor: '#ef4444', 
+                              color: '#fff', 
+                              border: 'none', 
+                              padding: '4px 12px', 
+                              borderRadius: '16px', 
+                              fontSize: '11px', 
+                              fontWeight: 'bold', 
+                              cursor: 'pointer', 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                            }}
+                          >
+                            <span>▶</span>
+                            <span>يوتيوب</span>
+                          </button>
+                        ) : (
+                          <span style={{ color: '#1e293b', fontWeight: '500' }}>
+                            {renderBadgeText(m.text)}
+                          </span>
+                        )}
                       </div>
 
                       {isSuperAdmin && (
@@ -1789,7 +1943,7 @@ export default function App() {
                   type="text" 
                   value={inputText} 
                   onChange={(e) => setInputText(e.target.value)} 
-                  placeholder="اكتب هنا..." 
+                  placeholder="اكتب هنا أو ألصق رابط يوتيوب..." 
                   style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '12px' }}
                 />
                 <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '0' }}>😊</button>
@@ -1807,7 +1961,7 @@ export default function App() {
       </div>
 
       {activePrivateChat && (
-        <div style={{ position: 'fixed', top: '50%', bottom: '52px', left: 0, right: 0, backgroundColor: '#ffffff', zIndex: 130, display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 25px rgba(0,0,0,0.3)', borderTop: '2px solid #0b141a', overflow: 'hidden', direction: 'rtl' }}>
+        <div style={{ position: 'fixed', top: '50%', bottom: '60px', left: 0, right: 0, backgroundColor: '#ffffff', zIndex: 130, display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 25px rgba(0,0,0,0.3)', borderTop: '2px solid #0b141a', overflow: 'hidden', direction: 'rtl' }}>
           
           <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{activePrivateChat.peerName}</span>
@@ -1898,25 +2052,24 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔹 شريط التنقل السفلي العصري والأنيق (بدون الراديو، بـ 4 أيقونات مصممة بشكل عصري) */}
       <nav style={{ height: '60px', minHeight: '60px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.3)', padding: '0 8px' }}>
         
-        <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+        <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <span style={{ fontSize: '18px', color: '#38bdf8' }}>⚙</span>
           <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
         </div>
 
-        <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+        <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
           <span style={{ fontSize: '18px', color: '#22c55e' }}>👥⁺</span>
           <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
         </div>
 
-        <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+        <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
           <span style={{ fontSize: '18px', color: '#eab308' }}>👥</span>
           <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
         </div>
 
-        <div onClick={leaveRoomToLobby} style={{ color: currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s' }}>
+        <div onClick={leaveRoomToLobby} style={{ color: currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
           <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
           <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
         </div>
@@ -2515,7 +2668,7 @@ export default function App() {
                     onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
                     style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
                   >
-                    محادثة خاصة ✉️
+                    محادثة خاصة ✉️️
                   </button>
                   <button 
                     onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
