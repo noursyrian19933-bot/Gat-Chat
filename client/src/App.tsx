@@ -48,7 +48,7 @@ const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
-// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي بالكامل فورياً
+// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي وقائمة المتصلين بالكامل فورياً
 const PROFILE_BG_COLORS = [
   { name: 'أبيض ناصع', value: '#ffffff' },
   { name: 'داكن أنيق', value: '#0b141a' },
@@ -271,9 +271,16 @@ export default function App() {
     normalizedCurrentRole === 'Premium'
   );
 
-  // هل المستخدم يمتلك رتبة تؤهله لتخصيص لون الخلفية والزخرفة (صاحب الموقع، آدمن، سوبر آدمن، بريميوم)
+  // 🔒 متاح حصراً لأصحاب الرتب الحقيقية (المالك، الآدمن، السوبر آدمن، البريميوم) ولا يظهر للأعضاء أو الزوار
   const hasRankForCustomization = Boolean(
-    isOwner || isAdmin || isPremium || ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
+    user &&
+    !user.isAnonymous &&
+    (
+      isOwner ||
+      isAdmin ||
+      isPremium ||
+      ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
+    )
   );
 
   const hasCurrentPermission = (permission: string) =>
@@ -1932,14 +1939,25 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
               {filteredOnlineUsers.map((u) => {
                 const uStyleProps = getNameStyleProps(u.nameStyle || 'normal', u.nameColor || '#2563eb');
                 return (
                   <div 
                     key={u.id} 
                     onClick={() => openUserProfile(u)}
-                    style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', backgroundColor: '#fff' }}
+                    style={{ 
+                      padding: '8px 12px', 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      cursor: 'pointer', 
+                      backgroundColor: u.profileBgColor || '#ffffff', // 🔹 لون كامل للمربع حول الاسم في المتصلين
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      transition: 'background-color 0.3s ease'
+                    }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
@@ -2019,13 +2037,13 @@ export default function App() {
                     />
                   </div>
 
-                  {/* 🌟 خيارات أصحاب الرتب حصراً: قائمة ألوان خلفية الملف الشخصي بالكامل + الحفظ الفوري */}
+                  {/* 🌟 تخصيص الألوان الكاملة يظهر حصراً لأصحاب الرتب الحقيقية */}
                   {hasRankForCustomization && (
                     <div style={{ backgroundColor: '#fdf4ff', border: '1px solid #f0abfc', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ إعدادات أصحاب الرتب (حفظ فوري):</div>
                       
                       <div>
-                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية الملف الشخصي بالكامل (حفظ فوري):</label>
+                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>اختر لون خلفية المربع بالكامل (الملف والمتصلين):</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
                           {PROFILE_BG_COLORS.map((item) => (
                             <button
@@ -2055,7 +2073,7 @@ export default function App() {
                           ))}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                          <span style={{ fontSize: '10px', color: '#701a75' }}>أو اختر لوناً مخصصاً:</span>
+                          <span style={{ fontSize: '10px', color: '#701a75' }}>أو لون مخصص:</span>
                           <input 
                             type="color" 
                             value={profileBgColor} 
@@ -2161,7 +2179,7 @@ export default function App() {
             style={{ 
               width: '100%', 
               maxWidth: '360px', 
-              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', // 🔹 يتغير لون خلفية المربع بالكامل هنا فوراً
+              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', // 🔹 لون كامل للمربع بالكامل في الملف الشخصي
               borderRadius: '16px', 
               overflow: 'hidden', 
               display: 'flex', 
