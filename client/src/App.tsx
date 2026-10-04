@@ -28,7 +28,7 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 
-// 🔹 الخطوة أ: استيراد Realtime Database
+// 🔹 استيراد Realtime Database
 import { getDatabase, ref, child, get, set, update } from 'firebase/database';
 
 const firebaseConfig = {
@@ -44,11 +44,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const rdb = getDatabase(app); // 🔹 تهيئة Realtime Database
+const rdb = getDatabase(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
-// قائمة الألوان الجاهزة لتغيير لون مربع الملف الشخصي وقائمة المتصلين واسم صاحب الرتبة
 const PROFILE_BG_COLORS = [
   { name: 'أبيض ناصع', value: '#ffffff' },
   { name: 'داكن أنيق', value: '#0b141a' },
@@ -104,7 +103,6 @@ const EMOJIS_LIST = [
   "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅"
 ];
 
-// دالة لتطبيق تأثيرات زخرفة الأسماء
 const getNameStyleProps = (style: string, color: string) => {
   switch (style) {
     case 'glowing':
@@ -196,6 +194,11 @@ export default function App() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
+  const [editingUserName, setEditingUserName] = useState('');
+
+  // States لإنشاء الغرف (للأونر فقط)
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomFlag, setNewRoomFlag] = useState('💬');
 
   const [profileGender, setProfileGender] = useState('ذكر');
   const [profileCountry, setProfileCountry] = useState('الأردن');
@@ -210,7 +213,6 @@ export default function App() {
   const [profileCover, setProfileCover] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
-  // 🎵 States للأغنية
   const [profileSong, setProfileSong] = useState<string>('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
 
@@ -224,7 +226,6 @@ export default function App() {
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
 
-  // 🔐 نظام الرتب والصلاحيات
   const normalizeRole = (role: any): string => {
     const value = String(role || '').trim().toLowerCase();
     if (value === 'owner') return 'Owner';
@@ -265,13 +266,22 @@ export default function App() {
     )
   );
 
+  const isSuperAdmin = Boolean(
+    user &&
+    !user.isAnonymous &&
+    (
+      isOwner ||
+      normalizedCurrentRole === 'Super Admin' ||
+      normalizedCurrentRole === 'Admin'
+    )
+  );
+
   const isPremium = Boolean(
     user &&
     !user.isAnonymous &&
     normalizedCurrentRole === 'Premium'
   );
 
-  // 🔒 متاح حصراً لأصحاب الرتب الحقيقية (المالك، الآدمن، السوبر آدمن، البريميوم) ولا يظهر للأعضاء أو الزوار
   const hasRankForCustomization = Boolean(
     user &&
     !user.isAnonymous &&
@@ -286,7 +296,6 @@ export default function App() {
   const hasCurrentPermission = (permission: string) =>
     isOwner || (rolePermissions[normalizedCurrentRole] || []).includes(permission);
 
-  // 🔹 مراقبة بيانات المستخدم الحالية
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -384,7 +393,6 @@ export default function App() {
     return () => unsubscribeAuth();
   }, [guestName]);
 
-  // 🔹 مستمع لحظي لملف المستخدم + الرتبة
   useEffect(() => {
     if (!user) return;
 
@@ -639,7 +647,6 @@ export default function App() {
     });
   };
 
-  // 🎵 اختيار الأغنية
   const handleSongSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -661,7 +668,6 @@ export default function App() {
     e.target.value = '';
   };
 
-  // 🎵 تشغيل الأغنية
   const playProfileSong = (songUrl: string) => {
     if (profileAudioRef.current) {
       profileAudioRef.current.pause();
@@ -684,7 +690,6 @@ export default function App() {
     profileAudioRef.current = audio;
   };
 
-  // 🎵 إيقاف الأغنية
   const stopProfileSong = () => {
     if (profileAudioRef.current) {
       profileAudioRef.current.pause();
@@ -694,7 +699,6 @@ export default function App() {
     setIsSongPlaying(false);
   };
 
-  // 🎵 حذف الأغنية
   const handleDeleteSong = async () => {
     if (!user) return;
     if (!confirm('هل تريد حذف الأغنية من ملفك الشخصي؟')) return;
@@ -744,6 +748,39 @@ export default function App() {
     return () => { if (unsub) unsub(); };
   }, []);
 
+  // 🔹 وظائف إنشاء وحذف الغرف (للأونر فقط)
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isOwner || !newRoomName.trim()) return;
+    try {
+      await addDoc(collection(db, 'rooms'), {
+        name: newRoomName.trim(),
+        flag: newRoomFlag || '💬'
+      });
+      setNewRoomName('');
+      setNewRoomFlag('💬');
+      alert('✅ تم إنشاء الغرفة المستقلة بنجاح!');
+    } catch (e: any) {
+      console.error(e);
+      alert(`❌ خطأ في إنشاء الغرفة: ${e.message}`);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!isOwner) return;
+    if (!confirm('هل تريد حذف هذه الغرفة نهائياً؟')) return;
+    try {
+      await deleteDoc(doc(db, 'rooms', roomId));
+      if (selectedRoom?.id === roomId) {
+        leaveRoomToLobby();
+      }
+      alert('🗑️ تم حذف الغرفة بنجاح.');
+    } catch (e: any) {
+      console.error(e);
+      alert(`❌ خطأ في حذف الغرفة: ${e.message}`);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
@@ -759,7 +796,6 @@ export default function App() {
 
     const updatePresence = async () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
       let currentRole = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
       setDoc(presenceRef, {
@@ -937,7 +973,6 @@ export default function App() {
     let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
     try {
-      // 🔹 إرسال الرسالة مع حفظ لون الخلفية الخاص باسم صاحب الرتبة
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName,
         userId: user.uid,
@@ -1109,7 +1144,6 @@ export default function App() {
     }
   };
 
-  // 👑 إدارة الرتب
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
 
@@ -1261,6 +1295,33 @@ export default function App() {
     }
   };
 
+  // 🔹 دالة تغيير الاسم (متاحة حصراً لأصحاب الرتب: الأونر، الآدمن، السوبر آدمن)
+  const handleUpdateUserName = async () => {
+    if (!selectedProfileUser || !editingUserName.trim()) return;
+    const targetUid = selectedProfileUser.userId;
+    const cleanNewName = editingUserName.trim();
+
+    try {
+      await updateDoc(doc(db, 'users', targetUid), {
+        displayName: cleanNewName
+      });
+
+      await setDoc(doc(db, 'room_presence', targetUid), {
+        userName: cleanNewName
+      }, { merge: true });
+
+      if (user && user.uid === targetUid && !user.isAnonymous) {
+        await updateProfile(user, { displayName: cleanNewName });
+      }
+
+      setSelectedProfileUser((prev: any) => prev ? { ...prev, name: cleanNewName } : null);
+      alert('✅ تم تغيير الاسم وحفظه بنجاح ودون التأثير على العضوية!');
+    } catch (e: any) {
+      console.error(e);
+      alert(`❌ حدث خطأ أثناء تغيير الاسم: ${e.message}`);
+    }
+  };
+
   const toggleRadio = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio('https://stream.radio9090.com/9090fm');
@@ -1337,10 +1398,16 @@ export default function App() {
         console.error("خطأ أثناء جلب بيانات الملف الشخصي:", err);
       }
     }
+    setEditingUserName(fetchedData.name);
     setSelectedProfileUser(fetchedData);
   };
 
-  // 🎵 تشغيل/إيقاف الأغنية تلقائياً
+  useEffect(() => {
+    if (selectedProfileUser) {
+      setEditingUserName(selectedProfileUser.name || '');
+    }
+  }, [selectedProfileUser]);
+
   useEffect(() => {
     if (selectedProfileUser && selectedProfileUser.profileSongUrl) {
       const timer = setTimeout(() => {
@@ -1474,7 +1541,6 @@ export default function App() {
   }
 
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
-  const profileUserRole = normalizeRole(selectedProfileUser?.role);
 
   const canEditAvatar = Boolean(
     isSelfProfile &&
@@ -1580,18 +1646,56 @@ export default function App() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#f1f5f9', minHeight: 0, position: 'relative' }}>
         
         {currentView === 'rooms' && (
-          <div style={{ padding: '8px', overflowY: 'auto', flex: 1, direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ padding: '12px', overflowY: 'auto', flex: 1, direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            
+            {/* 🔹 قسم إنشاء الغرف (يظهر حصراً لصاحب الموقع الأونر فقط) */}
+            {isOwner && (
+              <form onSubmit={handleCreateRoom} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a' }}>🛠️ لوحة تحكم الأونر: إنشاء غرفة جديدة مستقلة</div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="اسم الغرفة..." 
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    required
+                    style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="الإيموجي/العلم" 
+                    value={newRoomFlag}
+                    onChange={(e) => setNewRoomFlag(e.target.value)}
+                    style={{ width: '60px', padding: '8px', textAlign: 'center', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                  />
+                  <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>إنشاء</button>
+                </div>
+              </form>
+            )}
+
             {rooms.map((room) => {
               const count = roomCounts[room.id] || 0;
               return (
                 <div key={room.id} style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <button 
-                    onClick={() => enterRoom(room)}
-                    style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <span>دخول الغرفة</span>
-                    <span>🚪</span>
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button 
+                      onClick={() => enterRoom(room)}
+                      style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <span>دخول الغرفة</span>
+                      <span>🚪</span>
+                    </button>
+                    {/* زر حذف الغرفة (يظهر حصراً للأونر فقط) */}
+                    {isOwner && (
+                      <button 
+                        onClick={() => handleDeleteRoom(room.id)}
+                        style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        title="حذف الغرفة"
+                      >
+                        🗑️ حذف
+                      </button>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#1e293b', fontSize: '13px' }}>
                     <span>{room.flag}</span>
                     <span>{room.name}</span>
@@ -1621,7 +1725,7 @@ export default function App() {
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', // صف عادي وطبيعي مثل الباقي
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', 
                         padding: '8px 10px', 
                         borderBottom: '1px solid #e2e8f0', 
                         display: 'flex', 
@@ -1642,7 +1746,6 @@ export default function App() {
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
                         <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
                         
-                        {/* 🔹 المربع واللون الخاص بالاسم والمربع حوالين الاسم فقط */}
                         <span 
                           style={{ 
                             backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
@@ -1659,11 +1762,29 @@ export default function App() {
                           </span>
                         </span>
 
-                        {/* 🔹 كتابة الرسالة طبيعية وعادية */}
                         <span style={{ color: '#1e293b', fontWeight: '500' }}>
                           {renderBadgeText(m.text)}
                         </span>
                       </div>
+
+                      {/* 🔹 زر حذف الرسالة (إشارة x صغيرة تظهر لأصحاب الرتب حصراً) */}
+                      {isSuperAdmin && (
+                        <button 
+                          onClick={async () => {
+                            if (confirm('هل تريد حذف هذه الرسالة من العام؟')) {
+                              try {
+                                await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
+                              } catch (e) {
+                                console.error(e);
+                              }
+                            }
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px' }}
+                          title="حذف الكلام"
+                        >
+                          ✕
+                        </button>
+                      )}
 
                     </div>
                   );
@@ -1825,7 +1946,7 @@ export default function App() {
         </div>
 
         <div onClick={toggleRadio} style={{ color: isPlayingRadio ? '#22c55e' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️️'}</span>
+          <span style={{ fontSize: '18px' }}>{isPlayingRadio ? '⏸' : '🎛️'}</span>
           <span style={{ fontSize: '9px', fontWeight: 'bold' }}>Radio 9090</span>
         </div>
 
@@ -2067,7 +2188,6 @@ export default function App() {
                     />
                   </div>
 
-                  {/* 🌟 تخصيص الألوان الكاملة يظهر حصراً لأصحاب الرتب الحقيقية */}
                   {hasRankForCustomization && (
                     <div style={{ backgroundColor: '#fdf4ff', border: '1px solid #f0abfc', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ إعدادات أصحاب الرتب (حفظ فوري):</div>
@@ -2286,7 +2406,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* 🔹 الصورة والرتبة والاسم - في أسفل الغلاف مباشرة */}
               <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', textAlign: 'center', paddingBottom: '14px', width: '100%' }}>
                 
                 <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -2332,12 +2451,10 @@ export default function App() {
                   )}
                 </div>
 
-                {/* 🔹 الرتبة تحت الصورة مباشرة */}
                 <div style={{ backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: 'bold', padding: '2px 10px', borderRadius: '12px', marginTop: '6px' }}>
                   {selectedProfileUser.role}
                 </div>
 
-                {/* 🔹 الاسم المزخرف تحت الرتبة */}
                 <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
                   {selectedProfileUser.name}
                 </div>
@@ -2358,6 +2475,27 @@ export default function App() {
 
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
+              {/* 🔹 خيار إعادة تسمية الاسم لأصحاب الرتب (الأونر، الآدمن، السوبر آدمن) */}
+              {isSuperAdmin && (
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.7)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '4px' }}>✏️ تعديل اسم المستخدم (حفظ فوري):</div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input 
+                      type="text" 
+                      value={editingUserName} 
+                      onChange={(e) => setEditingUserName(e.target.value)}
+                      style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    />
+                    <button 
+                      onClick={handleUpdateUserName}
+                      style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      حفظ
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
                 <span style={{ opacity: 0.7 }}>الجنس:</span>
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.gender}</span>
