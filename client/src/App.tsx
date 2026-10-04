@@ -1515,15 +1515,154 @@ export default function App() {
         </div>
       )}
 
+      {/* 🔴 نافذة المتصلين */}
+      {showOnlineModal && (
+        <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+          <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
+            
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
+              <button onClick={() => setShowOnlineModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}>✕</button>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '4px 10px' }}>
+                <span style={{ color: '#0284c7', marginLeft: '6px', fontSize: '13px' }}>🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="البحث في المتصلين" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '12px', textAlign: 'right', background: 'transparent' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+              {filteredOnlineUsers.map((u) => (
+                <div 
+                  key={u.id} 
+                  onClick={() => openUserProfile(u)}
+                  style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', backgroundColor: '#fff' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
+                      {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{u.name}</span>
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>{u.role}</span>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '14px' }}>{u.flag}</span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🔴 نافذة الإعدادات */}
+      {showSettingsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '380px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', maxHeight: '85dvh' }}>
+            
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>إعدادات الحساب ⚙</span>
+              <button onClick={() => setShowSettingsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', borderBottom: '1px solid #cbd5e1', backgroundColor: '#f8fafc' }}>
+              <button onClick={() => setSettingsTab('info')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'info' ? '#ffffff' : 'transparent', color: settingsTab === 'info' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'info' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>المعلومات</button>
+              <button onClick={() => setSettingsTab('options')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'options' ? '#ffffff' : 'transparent', color: settingsTab === 'options' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'options' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>الخيارات</button>
+            </div>
+
+            <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
+              {settingsTab === 'info' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>الدولة / العلم</label>
+                    <select 
+                      value={profileCountry} 
+                      onChange={(e) => {
+                        setProfileCountry(e.target.value);
+                        saveSettingToFirebase('country', e.target.value);
+                      }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    >
+                      {COUNTRIES_LIST.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>الجنس</label>
+                    <select 
+                      value={profileGender} 
+                      onChange={(e) => {
+                        setProfileGender(e.target.value);
+                        saveSettingToFirebase('gender', e.target.value);
+                      }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    >
+                      <option value="ذكر">ذكر</option>
+                      <option value="أنثى">أنثى</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>لون الاسم في المحادثة</label>
+                    <input 
+                      type="color" 
+                      value={nameColor} 
+                      onChange={(e) => {
+                        setNameColor(e.target.value);
+                        saveSettingToFirebase('nameColor', e.target.value);
+                      }}
+                      style={{ width: '100%', height: '36px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>نبذة شخصية (Bio)</label>
+                    <textarea 
+                      value={profileBio} 
+                      onChange={(e) => setProfileBio(e.target.value)}
+                      onBlur={() => saveSettingToFirebase('bio', profileBio)}
+                      rows={3}
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'options' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button 
+                    onClick={async () => {
+                      await updateLastSeenOnExit();
+                      await signOut(auth);
+                      setShowSettingsModal(false);
+                      localStorage.clear();
+                      window.location.reload();
+                    }} 
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    تسجيل الخروج 🚪
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* 🔴 نافذة الملف الشخصي */}
       {selectedProfileUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}>
             
-            {/* 🖼️ قسم الغلاف والصورة الشخصية (تم زيادة الارتفاع لـ 220px ليصبح موضع الغلاف واضحاً) */}
+            {/* 🖼️ قسم الغلاف والصورة الشخصية */}
             <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '220px', overflow: 'hidden' }}>
               
-              {/* الغلاف (Cover) يتمدد ليغطي المربع الأسود كاملاً */}
+              {/* الغلاف (Cover) */}
               <div 
                 onClick={() => {
                   if (canEditCover) {
@@ -1544,11 +1683,11 @@ export default function App() {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
-                  cursor: 'pointer'
+                  cursor: (canEditCover || selectedProfileUser.coverUrl) ? 'pointer' : 'default'
                 }}
               />
 
-              {/* طبقة خفيفة لضمان وضوح النصوص والأيقونات فوق صورة الغلاف */}
+              {/* طبقة تظليل فوق صورة الغلاف */}
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.2) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
 
               {/* زر الإغلاق */}
@@ -1559,7 +1698,7 @@ export default function App() {
                 ✕
               </button>
 
-              {/* زر تغيير الغلاف متاح فقط لصاحب الموقع والرتب المشابهة (أدمن، سوبر أدمن، بريميوم) */}
+              {/* 🔹 زر تغيير الغلاف متاح فقط لـ (صاحب الموقع والادمن والسوبر ادمن والبريميوم) */}
               {canEditCover && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
@@ -1573,7 +1712,7 @@ export default function App() {
               {/* محتوى الصورة الشخصية والرتبة والاسم */}
               <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px', paddingBottom: '14px' }}>
                 
-                {/* الصورة الشخصية (Avatar) + أيقونة التغيير */}
+                {/* 🔹 الصورة الشخصية (Avatar) */}
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <div 
                     onClick={() => {
@@ -1584,344 +1723,119 @@ export default function App() {
                       }
                     }}
                     style={{
-                      width: '80px',
-                      height: '80px',
+                      width: '76px',
+                      height: '76px',
                       borderRadius: '50%',
-                      border: '3px solid #ffffff',
                       backgroundColor: '#0284c7',
+                      color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justify: 'center',
-                      fontSize: '30px',
-                      cursor: 'pointer',
+                      fontSize: '32px',
+                      fontWeight: 'bold',
+                      border: '3px solid #ffffff',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
                       overflow: 'hidden',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                      position: 'relative'
+                      cursor: (canEditAvatar || selectedProfileUser.avatarUrl) ? 'pointer' : 'default'
                     }}
                   >
                     {selectedProfileUser.avatarUrl ? (
-                      <img src={selectedProfileUser.avatarUrl} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={selectedProfileUser.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       '👤'
                     )}
                   </div>
 
-                  {/* زر الكاميرا على الصورة الشخصية للتغيير (متاح للأعضاء المسجلين والرتب، وغير متاح للزائر) */}
+                  {/* أيقونة رفع صورة مخصصة للمسجلين والرتب العليا وتختفي تماماً عن الزائر */}
                   {canEditAvatar && (
-                    <button 
+                    <div 
                       onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
-                      style={{
-                        position: 'absolute',
-                        bottom: '0',
-                        right: '0',
-                        backgroundColor: '#0284c7',
-                        color: '#ffffff',
-                        border: '2px solid #ffffff',
-                        borderRadius: '50%',
-                        width: '26px',
-                        height: '26px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justify: 'center',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                        zIndex: 5
-                      }}
-                      title="تغيير الصورة الشخصية"
+                      style={{ position: 'absolute', bottom: '0', right: '0', backgroundColor: '#0284c7', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', border: '2px solid #ffffff', cursor: 'pointer' }}
                     >
                       📷
-                    </button>
+                    </div>
                   )}
                 </div>
 
-                <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 'bold', marginTop: '8px', backgroundColor: 'rgba(30, 41, 59, 0.85)', padding: '2px 10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                  {selectedProfileUser.role || 'زائر'}
-                </div>
-                
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px', marginTop: '4px', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                <div style={{ color: '#ffffff', fontSize: '16px', fontWeight: 'bold', marginTop: '8px' }}>
                   {selectedProfileUser.name}
                 </div>
 
+                <div style={{ backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: 'bold', padding: '2px 10px', borderRadius: '12px', marginTop: '4px' }}>
+                  {selectedProfileUser.role}
+                </div>
+
               </div>
 
             </div>
 
-            <div style={{ padding: '0 16px', backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', fontSize: '12px', color: '#1e293b', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>⚧️</span>
-                  <span>تحديد الجنس</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#475569' }}>
-                  {selectedProfileUser.gender || 'ذكر'}
-                </span>
+            {/* تفاصيل الحساب والمعلومات */}
+            <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+                <span style={{ color: '#64748b' }}>الجنس:</span>
+                <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.gender}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👤</span>
-                  <span>تاريخ الإنضمام</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
-                  {selectedProfileUser.joinedDate || new Date().toISOString().split('T')[0]}
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+                <span style={{ color: '#64748b' }}>تاريخ الانضمام:</span>
+                <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.joinedDate}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>🏠</span>
-                  <span>الغرفة الحالية</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#0284c7' }}>
-                  {selectedProfileUser.roomName || 'القائمة الرئيسية'}
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+                <span style={{ color: '#64748b' }}>المتواجد حالياً في:</span>
+                <span style={{ fontWeight: 'bold', color: '#0284c7' }}>{selectedProfileUser.roomName}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>👁</span>
-                  <span>آخر تواجد</span>
-                </div>
-                <span style={{ fontWeight: '600', color: '#475569', direction: 'ltr' }}>
-                  {selectedProfileUser.lastSeen || '01:00 AM'}
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+                <span style={{ color: '#64748b' }}>آخر ظهور:</span>
+                <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>🪙</span>
-                  <span>النقاط</span>
+              {/* لوحة تحكم الأدمن لترقية المستخدمين */}
+              {isAdmin && !isSelfProfile && (
+                <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'أدمن')} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>منح أدمن 👑</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'سوبر أدمن')} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>منح سوبر أدمن ⚡</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'بريميوم')} style={{ backgroundColor: '#eab308', color: '#000', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>منح بريميوم 💎</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'عضو')} style={{ backgroundColor: '#64748b', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>تجريد إلى عضو 👤</button>
+                  </div>
                 </div>
-                <span style={{ fontWeight: '700', color: '#16a34a' }}>
-                  {selectedProfileUser.points || 0}
-                </span>
-              </div>
+              )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '10px 0 12px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '14px' }}>🔗</span>
-                  <span>رابط الملف الشخصي</span>
-                </div>
-                <a 
-                  href={`https://gat-chat-b7187.web.app/#id${selectedProfileUser.userId}`} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  style={{ color: '#d97706', fontSize: '11px', textDecoration: 'underline', wordBreak: 'break-all', direction: 'ltr', textAlign: 'right', fontWeight: '500' }}
-                >
-                  {`https://gat-chat-b7187.web.app/#id${selectedProfileUser.userId.substring(0, 8)}`}
-                </a>
-              </div>
-
-            </div>
-
-            {/* 👑 لوحة تحكم الأدمن لـ Owner فقط (إدارة الرتب) */}
-            {isAdmin && (
-              <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px' }}>
-                  👑 لوحة التحكم بالرتب (Owner)
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              {/* أزرار التفاعل والإجراءات */}
+              {!isSelfProfile && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                   <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'admin')}
-                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                    onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
+                    style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
                   >
-                    🛡️ منح admin
+                    محادثة خاصة ✉️
                   </button>
                   <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'super_admin')}
-                    style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                    onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
+                    style={{ flex: 1, backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
                   >
-                    🌟 منح super_admin
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'premium')}
-                    style={{ backgroundColor: '#d97706', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    💎 منح premium
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'user')}
-                    style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    🔄 سحب الرتبة (user)
+                    إضافة صديق 👤⁺
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-around', gap: '8px' }}>
-              <button 
-                onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
-                style={{ flex: 1, backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                محادثة خاصة
-              </button>
-              <button 
-                onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
-                style={{ flex: 1, backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                إضافة صديق
-              </button>
             </div>
 
           </div>
         </div>
       )}
 
-      {/* 🔴 نافذة عرض الصورة المكبرة عند النقر عليها */}
+      {/* 🔴 نافذة تكبير/معاينة الصورة */}
       {previewImage && (
         <div 
           onClick={() => setPreviewImage(null)} 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 150, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 200, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', cursor: 'pointer' }}
         >
-          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
-            <img src={previewImage} alt="عرض الصورة" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
-            <button 
-              onClick={() => setPreviewImage(null)} 
-              style={{ position: 'absolute', top: '-12px', right: '-12px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* نافذة الإعدادات */}
-      {showSettingsModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '10px' }}>
-          <div style={{ width: '100%', maxWidth: '420px', backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90dvh', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
-            
-            <div style={{ backgroundColor: '#0b141a', color: '#fff', padding: '12px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              <button onClick={() => setShowSettingsModal(false)} style={{ position: 'absolute', top: '10px', left: '10px', background: 'transparent', border: 'none', color: '#fff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '2px solid #fff', overflow: 'hidden' }}>
-                  {profileAvatar ? (
-                    <img src={profileAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    '👤'
-                  )}
-                </div>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold' }}>
-                    {user?.isAnonymous ? (localStorage.getItem('gat_guest_name') || guestName || 'زائر') : (user?.displayName || user?.email?.split('@')[0])}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{user?.isAnonymous ? 'زائر' : 'عضو'}</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', backgroundColor: '#f1f5f9', borderBottom: '1px solid #cbd5e1', overflowX: 'auto', flexShrink: 0 }}>
-              <button onClick={() => setSettingsTab('info')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'info' ? '#0b141a' : 'transparent', color: settingsTab === 'info' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>معلوماتي</button>
-              <button onClick={() => { setShowSettingsModal(false); setShowFriendsModal(true); }} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'friends' ? '#0b141a' : 'transparent', color: settingsTab === 'friends' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>الأصدقاء</button>
-              <button onClick={() => setSettingsTab('ignore')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'ignore' ? '#0b141a' : 'transparent', color: settingsTab === 'ignore' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>تجاهل</button>
-              <button onClick={() => setSettingsTab('options')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'options' ? '#0b141a' : 'transparent', color: settingsTab === 'options' ? '#fff' : '#1e293b', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>خيارات</button>
-              <button onClick={() => setSettingsTab('more')} style={{ flex: 1, padding: '10px 6px', background: settingsTab === 'more' ? '#0b141a' : 'transparent', color: settingsTab === 'more' ? '#fff' : '#1e293b', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>المزيد</button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: '14px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {settingsTab === 'info' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '4px', textAlign: 'right' }}>الجنس</label>
-                      <select value={profileGender} onChange={(e) => { setProfileGender(e.target.value); saveSettingToFirebase('gender', e.target.value); }} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px' }}>
-                        <option value="ذكر">ذكر</option>
-                        <option value="أنثى">أنثى</option>
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '4px', textAlign: 'right' }}>البلد</label>
-                      <select value={profileCountry} onChange={(e) => { setProfileCountry(e.target.value); saveSettingToFirebase('country', e.target.value); }} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px' }}>
-                        {COUNTRIES_LIST.map((country) => (
-                          <option key={country} value={country}>{country}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '4px', textAlign: 'right' }}>نبذة عني</label>
-                    <textarea rows={3} value={profileBio} onChange={(e) => { setProfileBio(e.target.value); saveSettingToFirebase('bio', e.target.value); }} placeholder="اكتب نبذة عنك..." style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'right', fontSize: '12px', boxSizing: 'border-box' }} />
-                  </div>
-                  <button onClick={() => { alert('✅ تم الحفظ بنجاح!'); setShowSettingsModal(false); }} style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'center', fontSize: '12px' }}>حفظ</button>
-                </div>
-              )}
-
-              {settingsTab === 'options' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', color: '#475569', marginBottom: '2px', textAlign: 'right' }}>لون الاسم المميز</label>
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                      {['#2563eb', '#16a34a', '#dc2626', '#d97706', '#7c3aed', '#db2777'].map(color => (
-                        <div key={color} onClick={() => { setNameColor(color); saveSettingToFirebase('nameColor', color); }} style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: color, cursor: 'pointer', border: nameColor === color ? '2px solid #000' : 'none' }}></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {settingsTab === 'more' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'center', padding: '10px' }}>
-                  <button onClick={async () => { await updateLastSeenOnExit(); leaveRoomToLobby(); signOut(auth); localStorage.removeItem('gat_guest_name'); setShowSettingsModal(false); }} style={{ background: '#dc2626', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
-                    تسجيل الخروج
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* 🔴 قائمة المتصلين الجانبية */}
-      {showOnlineModal && (
-        <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
-          <div style={{ width: '68%', maxWidth: '340px', minWidth: '260px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
-            <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc' }}>
-              <button onClick={() => setShowOnlineModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}>✕</button>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '3px 8px' }}>
-                <input 
-                  type="text" 
-                  placeholder="البحث عن أشخاص" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '11px', textAlign: 'right', background: 'transparent' }}
-                />
-              </div>
-            </div>
-            
-            <div style={{ backgroundColor: '#15803d', color: '#fff', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>👥</span>
-              <span>متصل ({filteredOnlineUsers.length})</span>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-              {filteredOnlineUsers.map((u, idx) => (
-                <div key={u.userId || idx} onClick={() => openUserProfile(u)} style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
-                      {u.avatarUrl ? (
-                        <img src={u.avatarUrl} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        u.flag || '🇯🇴'
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', lineHeight: '1.2' }}>
-                        {u.role || 'زائر'}
-                      </span>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', lineHeight: '1.3' }}>
-                        {u.name}
-                      </span>
-                    </div>
-
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <img src={previewImage} alt="معاينة" style={{ maxWidth: '90%', maxHeight: '80dvh', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
         </div>
       )}
 
