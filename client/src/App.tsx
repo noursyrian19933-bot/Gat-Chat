@@ -88,6 +88,42 @@ const EMOJIS_LIST = [
   "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅"
 ];
 
+// دالة لتطبيق تأثيرات زخرفة الأسماء
+const getNameStyleProps = (style: string, color: string) => {
+  switch (style) {
+    case 'glowing':
+      return {
+        color: color || '#2563eb',
+        textShadow: `0 0 8px ${color || '#2563eb'}, 0 0 14px ${color || '#2563eb'}`
+      };
+    case 'icy':
+      return {
+        background: 'linear-gradient(135deg, #38bdf8, #e0f2fe)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        filter: 'drop-shadow(0 0 3px rgba(56, 189, 248, 0.9))'
+      };
+    case 'fire':
+      return {
+        background: 'linear-gradient(135deg, #ef4444, #f97316)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        filter: 'drop-shadow(0 0 3px rgba(239, 68, 68, 0.9))'
+      };
+    case 'gold':
+      return {
+        background: 'linear-gradient(135deg, #eab308, #fef08a)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        filter: 'drop-shadow(0 0 3px rgba(234, 179, 8, 0.9))'
+      };
+    default:
+      return {
+        color: color || '#0284c7'
+      };
+  }
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
@@ -118,7 +154,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; avatarUrl?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; avatarUrl?: string }>>([]);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -150,6 +186,8 @@ export default function App() {
   const [profileBio, setProfileBio] = useState('');
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
   const [nameColor, setNameColor] = useState('#2563eb');
+  const [nameStyle, setNameStyle] = useState('normal'); // نوع الزخرفة للاسم
+  const [profileBgColor, setProfileBgColor] = useState('#ffffff'); // لون خلفية الملف الشخصي
   const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
 
   const [profileAvatar, setProfileAvatar] = useState<string>('');
@@ -182,10 +220,10 @@ export default function App() {
   };
 
   const rolePermissions: Record<string, string[]> = {
-    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
-    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
-    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
-    Premium: ['edit_avatar', 'edit_cover', 'add_song'],
+    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
+    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
+    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
+    Premium: ['edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
     Member: ['edit_avatar'],
     Guest: []
   };
@@ -215,6 +253,11 @@ export default function App() {
     user &&
     !user.isAnonymous &&
     normalizedCurrentRole === 'Premium'
+  );
+
+  // هل المستخدم يمتلك رتبة تؤهله لتخصيص لون الخلفية والزخرفة (صاحب الموقع، آدمن، سوبر آدمن، بريميوم)
+  const hasRankForCustomization = Boolean(
+    isOwner || isAdmin || isPremium || ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
   );
 
   const hasCurrentPermission = (permission: string) =>
@@ -285,6 +328,8 @@ export default function App() {
             age: 'عدم إظهار',
             bio: 'أهلاً بك في ملفي الشخصي.',
             nameColor: '#2563eb',
+            nameStyle: 'normal',
+            profileBgColor: '#ffffff',
             points: 0,
             avatarUrl: '',
             coverUrl: '',
@@ -340,6 +385,8 @@ export default function App() {
       if (data.flag) setCurrentFlag(data.flag);
       if (data.bio) setProfileBio(data.bio);
       if (data.nameColor) setNameColor(data.nameColor);
+      if (data.nameStyle) setNameStyle(data.nameStyle);
+      if (data.profileBgColor) setProfileBgColor(data.profileBgColor);
       if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
       if (data.coverUrl) setProfileCover(data.coverUrl);
       if (data.profileSongUrl !== undefined) setProfileSong(data.profileSongUrl || '');
@@ -705,6 +752,9 @@ export default function App() {
         avatarUrl: profileAvatar,
         coverUrl: profileCover,
         profileSongUrl: profileSong,
+        nameColor: nameColor,
+        nameStyle: nameStyle,
+        profileBgColor: profileBgColor,
         joinedDate: todayDate,
         lastSeen: nowTime,
         lastActive: Date.now(),
@@ -718,7 +768,7 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
@@ -746,6 +796,9 @@ export default function App() {
               avatarUrl: data.avatarUrl || '',
               coverUrl: data.coverUrl || '',
               profileSongUrl: data.profileSongUrl || '',
+              nameColor: data.nameColor || '#2563eb',
+              nameStyle: data.nameStyle || 'normal',
+              profileBgColor: data.profileBgColor || '#ffffff',
               joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
               lastSeen: data.lastSeen || '01:00 AM',
               points: data.points || 0,
@@ -867,6 +920,7 @@ export default function App() {
         text: inputText.trim(),
         role: roleText,
         color: nameColor,
+        nameStyle: nameStyle,
         avatarUrl: profileAvatar || '',
         createdAt: serverTimestamp()
       });
@@ -1104,8 +1158,6 @@ export default function App() {
           email: targetEmail,
           role: normalizedNewRole,
           permissions,
-          canEditCover: permissions.includes('edit_cover'),
-          canEditAvatar: permissions.includes('edit_avatar'),
           roleUpdatedAt: new Date().toISOString()
         },
         { merge: true }
@@ -1155,7 +1207,7 @@ export default function App() {
       const notifBody =
         normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
           ? `تم سحب الرتبة منك وتحديثها إلى ${normalizedNewRole}.`
-          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب والصورة والغلاف والأغنية حسب الرتبة.`;
+          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب وصورة الغلاف وزخرفة وتلوين الملف الشخصي.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
@@ -1213,7 +1265,10 @@ export default function App() {
       email: userEmail,
       avatarUrl: uData.avatarUrl || '',
       coverUrl: uData.coverUrl || '',
-      profileSongUrl: uData.profileSongUrl || ''
+      profileSongUrl: uData.profileSongUrl || '',
+      nameColor: uData.nameColor || '#2563eb',
+      nameStyle: uData.nameStyle || 'normal',
+      profileBgColor: uData.profileBgColor || '#ffffff'
     };
 
     if (targetId && targetId !== 'guest_id') {
@@ -1231,7 +1286,10 @@ export default function App() {
             email: data.email || fetchedData.email || '',
             avatarUrl: data.avatarUrl || fetchedData.avatarUrl,
             coverUrl: data.coverUrl || fetchedData.coverUrl,
-            profileSongUrl: data.profileSongUrl || fetchedData.profileSongUrl || ''
+            profileSongUrl: data.profileSongUrl || fetchedData.profileSongUrl || '',
+            nameColor: data.nameColor || fetchedData.nameColor,
+            nameStyle: data.nameStyle || fetchedData.nameStyle,
+            profileBgColor: data.profileBgColor || fetchedData.profileBgColor
           };
         }
 
@@ -1393,29 +1451,22 @@ export default function App() {
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
   const profileUserRole = normalizeRole(selectedProfileUser?.role);
 
-  const hasSpecialRank = Boolean(
-    ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(profileUserRole) ||
-    ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
-  );
-
-  const isGuestUser = Boolean(user?.isAnonymous);
-
   const canEditAvatar = Boolean(
     isSelfProfile &&
-    !isGuestUser &&
+    !user?.isAnonymous &&
     hasCurrentPermission('edit_avatar')
   );
 
   const canEditCover = Boolean(
     isSelfProfile &&
-    !isGuestUser &&
+    !user?.isAnonymous &&
     hasCurrentPermission('edit_cover')
   );
 
   const canAddSong = Boolean(
     isSelfProfile &&
-    !isGuestUser &&
-    (isOwner || normalizedCurrentRole === 'Admin' || normalizedCurrentRole === 'Super Admin' || normalizedCurrentRole === 'Premium')
+    !user?.isAnonymous &&
+    hasRankForCustomization
   );
 
   return (
@@ -1538,29 +1589,32 @@ export default function App() {
                   لا توجد رسائل في هذه الغرفة بعد. اكتب شيئاً وابدأ المحادثة! 💬
                 </div>
               ) : (
-                messages.map((m, idx) => (
-                  <div key={m.id || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', padding: '8px 10px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px', direction: 'rtl' }}>
-                    
-                    <div onClick={() => openUserProfile(m)} style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                      {m.avatarUrl ? (
-                        <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        '👤'
-                      )}
-                    </div>
+                messages.map((m, idx) => {
+                  const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
+                  return (
+                    <div key={m.id || idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', padding: '8px 10px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px', direction: 'rtl' }}>
+                      
+                      <div onClick={() => openUserProfile(m)} style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        {m.avatarUrl ? (
+                          <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          '👤'
+                        )}
+                      </div>
 
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
-                      <span style={{ fontWeight: 'bold', color: m.color || '#0284c7', cursor: 'pointer' }} onClick={() => openUserProfile(m)}>
-                        {m.user}:
-                      </span>
-                      <span style={{ color: '#1e293b', fontWeight: '500' }}>
-                        {renderBadgeText(m.text)}
-                      </span>
-                    </div>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
+                        <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
+                          {m.user}:
+                        </span>
+                        <span style={{ color: '#1e293b', fontWeight: '500' }}>
+                          {renderBadgeText(m.text)}
+                        </span>
+                      </div>
 
-                  </div>
-                ))
+                    </div>
+                  );
+                })
               )}
               <div ref={chatBottomRef} />
             </div>
@@ -1863,24 +1917,27 @@ export default function App() {
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-              {filteredOnlineUsers.map((u) => (
-                <div 
-                  key={u.id} 
-                  onClick={() => openUserProfile(u)}
-                  style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', backgroundColor: '#fff' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
-                      {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+              {filteredOnlineUsers.map((u) => {
+                const uStyleProps = getNameStyleProps(u.nameStyle || 'normal', u.nameColor || '#2563eb');
+                return (
+                  <div 
+                    key={u.id} 
+                    onClick={() => openUserProfile(u)}
+                    style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', backgroundColor: '#fff' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
+                        {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps }}>{u.name}</span>
+                        <span style={{ fontSize: '10px', color: '#64748b' }}>{u.role}</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{u.name}</span>
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>{u.role}</span>
-                    </div>
+                    <span style={{ fontSize: '14px' }}>{u.flag}</span>
                   </div>
-                  <span style={{ fontSize: '14px' }}>{u.flag}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
           </div>
@@ -1945,6 +2002,44 @@ export default function App() {
                       style={{ width: '100%', height: '36px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer' }}
                     />
                   </div>
+
+                  {/* 🌟 خيارات أصحاب الرتب حصراً: لون خلفية الحساب الشخصي بالكامل + زخرفة الأسماء */}
+                  {hasRankForCustomization && (
+                    <div style={{ backgroundColor: '#fdf4ff', border: '1px solid #f0abfc', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#86198f' }}>✨ خيارات أصحاب الرتب (تغيير فوري ودائم):</div>
+                      
+                      <div>
+                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '4px' }}>لون خلفية الملف الشخصي الكامل</label>
+                        <input 
+                          type="color" 
+                          value={profileBgColor} 
+                          onChange={(e) => {
+                            setProfileBgColor(e.target.value);
+                            saveSettingToFirebase('profileBgColor', e.target.value);
+                          }}
+                          style={{ width: '100%', height: '36px', borderRadius: '6px', border: '1px solid #f0abfc', cursor: 'pointer' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '11px', color: '#701a75', display: 'block', marginBottom: '4px' }}>زخرفة وتأثير الاسم</label>
+                        <select 
+                          value={nameStyle} 
+                          onChange={(e) => {
+                            setNameStyle(e.target.value);
+                            saveSettingToFirebase('nameStyle', e.target.value);
+                          }}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #f0abfc', fontSize: '12px' }}
+                        >
+                          <option value="normal">عادي (بدون زخرفة)</option>
+                          <option value="glowing">متوهج 🌟</option>
+                          <option value="icy">جليدي 🧊</option>
+                          <option value="fire">ناري 🔥</option>
+                          <option value="gold">ذهبي 👑</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>نبذة شخصية (Bio)</label>
@@ -2016,7 +2111,19 @@ export default function App() {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}
+            style={{ 
+              width: '100%', 
+              maxWidth: '360px', 
+              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', // 🔹 يتغير لون خلفية الحساب الشخصي بالكامل هنا فوراً
+              borderRadius: '16px', 
+              overflow: 'hidden', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              boxShadow: '0 12px 30px rgba(0,0,0,0.4)', 
+              border: '1px solid #1e293b', 
+              maxHeight: '90dvh',
+              transition: 'background-color 0.3s ease'
+            }}
           >
             
             <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '280px', overflow: 'hidden' }}>
@@ -2135,8 +2242,8 @@ export default function App() {
                   {selectedProfileUser.role}
                 </div>
 
-                {/* 🔹 الاسم تحت الرتبة */}
-                <div style={{ color: '#ffffff', fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%' }}>
+                {/* 🔹 الاسم المزخرف تحت الرتبة */}
+                <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
                   {selectedProfileUser.name}
                 </div>
 
@@ -2156,28 +2263,28 @@ export default function App() {
 
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                <span style={{ color: '#64748b' }}>الجنس:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
+                <span style={{ opacity: 0.7 }}>الجنس:</span>
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.gender}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                <span style={{ color: '#64748b' }}>تاريخ الانضمام:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
+                <span style={{ opacity: 0.7 }}>تاريخ الانضمام:</span>
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.joinedDate}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                <span style={{ color: '#64748b' }}>المتواجد حالياً في:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
+                <span style={{ opacity: 0.7 }}>المتواجد حالياً في:</span>
                 <span style={{ fontWeight: 'bold', color: '#0284c7' }}>{selectedProfileUser.roomName}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-                <span style={{ color: '#64748b' }}>آخر ظهور:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
+                <span style={{ opacity: 0.7 }}>آخر ظهور:</span>
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
               {isOwner && !isSelfProfile && (
-                <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                <div style={{ marginTop: '10px', backgroundColor: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
                     <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Admin')} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Admin 👑</button>
