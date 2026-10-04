@@ -1568,15 +1568,15 @@ export default function App() {
   if (!user && !loading) {
     return (
       <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px', direction: 'rtl', boxSizing: 'border-box' }}>
-        <div style={{ background: '#0b141a', padding: '28px 24px', borderRadius: '20px', width: '100%', maxWidth: '380px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ width: '100%', maxWidth: '380px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
             <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
             <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>منصة الدردشة العربية العصرية</p>
           </div>
 
-          {errorMessage && <div style={{ color: '#ef4444', fontSize: '11px', background: 'rgba(239,68,68,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid rgba(239,68,68,0.3)' }}>{errorMessage}</div>}
-          {successMessage && <div style={{ color: '#22c55e', fontSize: '11px', background: 'rgba(34,197,94,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '14px', border: '1px solid rgba(34,197,94,0.3)' }}>{successMessage}</div>}
+          {errorMessage && <div style={{ color: '#ef4444', fontSize: '11px', background: 'rgba(239,68,68,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(239,68,68,0.3)' }}>{errorMessage}</div>}
+          {successMessage && <div style={{ color: '#22c55e', fontSize: '11px', background: 'rgba(34,197,94,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(34,197,94,0.3)' }}>{successMessage}</div>}
 
           {authMode === 'menu' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
