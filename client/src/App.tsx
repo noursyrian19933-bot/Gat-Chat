@@ -167,7 +167,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string; isSystemSpecial?: boolean }>>([]);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -194,6 +194,7 @@ export default function App() {
   
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
   const [editingUserName, setEditingUserName] = useState('');
+  const [isEditingNameActive, setIsEditingNameActive] = useState(false);
 
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomFlag, setNewRoomFlag] = useState('💬');
@@ -332,11 +333,11 @@ export default function App() {
                   }
                 }
               } catch (error) {
-                console.error("خطأ في Realtime DB:", error);
+                console.error(error);
               }
             }
           } catch (e) {
-            console.error("خطأ أثناء جلب الرتبة المربوطة بالإيميل:", e);
+            console.error(e);
           }
         }
 
@@ -351,6 +352,7 @@ export default function App() {
             email: currentUser.email || '',
             displayName: actualName,
             role: activeRole,
+            previousRole: 'Member', // الاحتفاظ بالرتبة السابقة
             permissions: rolePermissions[normalizeRole(activeRole)] || [],
             flag: '🇯🇴',
             country: 'الأردن',
@@ -376,13 +378,14 @@ export default function App() {
                   uid: currentUser.uid,
                   email: cleanEmail,
                   role: activeRole,
+                  previousRole: 'Member',
                   permissions: rolePermissions[normalizeRole(activeRole)] || [],
                   updatedAt: serverTimestamp()
                 },
                 { merge: true }
               );
             } catch (e) {
-              console.warn("تعذر ربط الإيميل تلقائياً:", e);
+              console.warn(e);
             }
           }
         }
@@ -442,7 +445,7 @@ export default function App() {
           }
         },
         (error) => {
-          console.error("خطأ في المستمع اللحظي لرتبة البريد:", error);
+          console.error(error);
         }
       );
     }
@@ -548,7 +551,6 @@ export default function App() {
     });
   }, [user]);
 
-  // 🔹 عند فتح الإشعارات يتم مسحها تلقائياً ليصبح مقروءاً ويختفي التنبيه
   const handleOpenNotifications = async () => {
     setShowNotificationsModal(true);
     if (!user || notificationsList.length === 0) return;
@@ -558,7 +560,7 @@ export default function App() {
       await Promise.all(deletePromises);
       setNotificationsList([]);
     } catch (e) {
-      console.error("خطأ أثناء مسح الإشعارات:", e);
+      console.error(e);
     }
   };
 
@@ -678,7 +680,7 @@ export default function App() {
     audio.play()
       .then(() => setIsSongPlaying(true))
       .catch((err) => {
-        console.warn('تعذر تشغيل الأغنية:', err);
+        console.warn(err);
         setIsSongPlaying(false);
       });
     audio.onended = () => setIsSongPlaying(false);
@@ -932,7 +934,6 @@ export default function App() {
     }
   };
 
-  // 🔹 عند دخول الغرفة، يكتب تلقائياً "تم الانضمام [اسم الشخص الفعلي]"
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setSelectedRoom(room);
     setCurrentView('chat');
@@ -953,6 +954,7 @@ export default function App() {
           text: `تم الانضمام ${actualName}`,
           role: 'System',
           color: '#16a34a',
+          isSystemSpecial: false,
           createdAt: serverTimestamp()
         });
       } catch (e) {
@@ -990,6 +992,7 @@ export default function App() {
         nameStyle: nameStyle,
         profileBgColor: hasRankForCustomization ? profileBgColor : '',
         avatarUrl: profileAvatar || '',
+        isSystemSpecial: false,
         createdAt: serverTimestamp()
       });
       setInputText('');
@@ -1062,7 +1065,6 @@ export default function App() {
     setDoc(chatRef, { unreadCount: 0 }, { merge: true });
   };
 
-  // 🔹 طلب صداقة بدون أي نوافذ تحذير أو معلومات موقع (يتم إرساله بصمت)
   const handleSendFriendRequest = async (targetUserId: string, targetUserName: string) => {
     if (!user) return;
     if (targetUserId === user.uid) return;
@@ -1142,7 +1144,7 @@ export default function App() {
     }
   };
 
-  // 🔹 تحديث الرتبة مع النص الدقيق المطلوب في الشات العام (من اسمي إلى اسم الشخص)
+  // 🔹 تحديث الرتبة مع استعادة الرتبة السابقة الحقيقية عند السحب
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
 
@@ -1174,23 +1176,32 @@ export default function App() {
         }
       }
 
-      if (!targetEmail) {
-        return;
-      }
+      if (!targetEmail) return;
 
       const targetUserName =
         targetUserData.displayName ||
         selectedProfileUser?.name ||
         'المستخدم';
 
-      const permissions = rolePermissions[normalizedNewRole] || [];
+      const oldRole = targetUserData.role || 'Member';
+      let roleToSave = normalizedNewRole;
+
+      // إذا كانت العملية سحب رتبة (أي تعيين إلى Member أو Guest)
+      if (normalizedNewRole === 'Member' || normalizedNewRole === 'Guest') {
+        // العودة الحرفية للرتبة السابقة المخزنة، وإن لم تكن موجودة فتعود إلى Member
+        roleToSave = targetUserData.previousRole && !['Member', 'Guest'].includes(targetUserData.previousRole) 
+          ? targetUserData.previousRole 
+          : 'Member';
+      }
+
+      const permissions = rolePermissions[roleToSave] || [];
 
       await setDoc(
         doc(db, 'roles_by_email', targetEmail),
         {
           uid: targetUid,
           email: targetEmail,
-          role: normalizedNewRole,
+          role: roleToSave,
           permissions,
           updatedAt: serverTimestamp(),
           updatedBy: user.email || user.uid
@@ -1202,7 +1213,8 @@ export default function App() {
         targetUserRef,
         {
           email: targetEmail,
-          role: normalizedNewRole,
+          role: roleToSave,
+          previousRole: oldRole !== 'Member' && oldRole !== 'Guest' ? oldRole : 'Member',
           permissions,
           roleUpdatedAt: new Date().toISOString()
         },
@@ -1213,7 +1225,7 @@ export default function App() {
         doc(db, 'room_presence', targetUid),
         {
           email: targetEmail,
-          role: normalizedNewRole,
+          role: roleToSave,
           permissions
         },
         { merge: true }
@@ -1221,7 +1233,7 @@ export default function App() {
 
       try {
         await update(ref(rdb, `users/${targetUid}`), {
-          role: normalizedNewRole,
+          role: roleToSave,
           permissions,
           email: targetEmail
         });
@@ -1235,45 +1247,38 @@ export default function App() {
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
       if (selectedRoom) {
-        const roomMsg =
-          normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
-            ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
-            : `تم إهداء رتبة ${normalizedNewRole} من ${currentAdminName} إلى ${targetUserName}`;
+        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
+        const roomMsg = isDemote
+          ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
+          : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
 
         await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
           user: 'نظام الشات',
           userId: 'system',
           text: roomMsg,
           role: 'System',
-          color: '#eab308',
+          color: isDemote ? '#ef4444' : '#eab308',
+          isSystemSpecial: true, // رسالة ملونة وعصرية
           createdAt: serverTimestamp()
         });
       }
 
-      const notifTitle =
-        normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
-          ? 'تحديث الرتبة ⚠️'
-          : 'هدايا الرتب 🎁';
-
-      const notifBody =
-        normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
-          ? `تم سحب الرتبة منك وتحديثها إلى ${normalizedNewRole}.`
-          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب.`;
+      const notifTitle = isDemote ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
+      const notifBody = isDemote 
+        ? `تم سحب الرتبة منك وتحديثها إلى ${roleToSave}.`
+        : `مبروك! تم إهداؤك رتبة (${roleToSave}) وتفعيل صلاحيات الحساب.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
         body: notifBody,
-        createdAt: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
       setSelectedProfileUser((prev: any) =>
         prev
           ? {
               ...prev,
-              role: normalizedNewRole,
+              role: roleToSave,
               email: targetEmail,
               permissions
             }
@@ -1303,6 +1308,7 @@ export default function App() {
       }
 
       setSelectedProfileUser((prev: any) => prev ? { ...prev, name: cleanNewName } : null);
+      setIsEditingNameActive(false);
     } catch (e: any) {
       console.error(e);
     }
@@ -1385,6 +1391,7 @@ export default function App() {
       }
     }
     setEditingUserName(fetchedData.name);
+    setIsEditingNameActive(false);
     setSelectedProfileUser(fetchedData);
   };
 
@@ -1705,6 +1712,18 @@ export default function App() {
                 messages.map((m, idx) => {
                   const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
                   const hasCustomBg = m.profileBgColor && m.profileBgColor !== '#ffffff';
+
+                  // 🔹 تصميم رسائل الرتب الملونة والعصرية في الشات العام
+                  if (m.isSystemSpecial) {
+                    return (
+                      <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
+                        <div style={{ backgroundColor: '#fefce8', border: '1px solid #fef08a', color: '#854d0e', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+                          📢 {m.text}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div 
                       key={m.id || idx} 
@@ -1751,7 +1770,6 @@ export default function App() {
                         </span>
                       </div>
 
-                      {/* 🔹 حذف الرسالة فوراً بدون نافذة تحذير وبدون معلومات الموقع */}
                       {isSuperAdmin && (
                         <button 
                           onClick={async () => {
@@ -2437,8 +2455,20 @@ export default function App() {
                   {selectedProfileUser.role}
                 </div>
 
-                <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', width: '100%', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
-                  {selectedProfileUser.name}
+                {/* 🔹 الاسم مع أيقونة القلم (تظهر حصراً لأصحاب الرتب) */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px', width: '100%' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
+                    {selectedProfileUser.name}
+                  </span>
+                  {isSuperAdmin && (
+                    <span 
+                      onClick={() => setIsEditingNameActive(!isEditingNameActive)}
+                      style={{ cursor: 'pointer', fontSize: '14px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      title="تعديل الاسم"
+                    >
+                      ✏️
+                    </span>
+                  )}
                 </div>
 
               </div>
@@ -2457,19 +2487,20 @@ export default function App() {
 
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
-              {isSuperAdmin && (
-                <div style={{ backgroundColor: 'rgba(255,255,255,0.7)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '4px' }}>✏️ تعديل اسم المستخدم (حفظ فوري):</div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+              {/* 🔹 مربع تعديل الاسم يظهر عند الضغط على أيقونة القلم لأصحاب الرتب */}
+              {isEditingNameActive && isSuperAdmin && (
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>✏️ تعديل اسم المستخدم:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <input 
                       type="text" 
                       value={editingUserName} 
                       onChange={(e) => setEditingUserName(e.target.value)}
-                      style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
                     />
                     <button 
                       onClick={handleUpdateUserName}
-                      style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                      style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}
                     >
                       حفظ
                     </button>
