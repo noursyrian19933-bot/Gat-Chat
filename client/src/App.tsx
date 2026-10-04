@@ -150,6 +150,7 @@ export default function App() {
   const [profileBio, setProfileBio] = useState('');
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
   const [nameColor, setNameColor] = useState('#2563eb');
+  const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
 
   const [profileAvatar, setProfileAvatar] = useState<string>('');
   const [profileCover, setProfileCover] = useState<string>('');
@@ -163,8 +164,9 @@ export default function App() {
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
 
-  const isAdmin = user && !user.isAnonymous && user.email === ADMIN_EMAIL;
+  const isAdmin = user && !user.isAnonymous && (user.email === ADMIN_EMAIL || currentUserRole === 'Owner' || currentUserRole === 'Admin');
 
+  // 🔹 مراقبة بيانات المستخدم الحالية لحظياً لتحديث الرتبة والصلاحيات فوراً
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -211,21 +213,9 @@ export default function App() {
           }
         }
 
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          if (data.gender) setProfileGender(data.gender);
-          if (data.country) {
-            setProfileCountry(data.country);
-            setCurrentFlag(getCountryFlag(data.country));
-          }
-          if (data.flag) setCurrentFlag(data.flag);
-          if (data.bio) setProfileBio(data.bio);
-          if (data.nameColor) setNameColor(data.nameColor);
-          if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
-          if (data.coverUrl) setProfileCover(data.coverUrl);
+        setCurrentUserRole(activeRole);
 
-          await updateDoc(userRef, { role: activeRole, email: currentUser.email || '' });
-        } else {
+        if (!userSnap.exists()) {
           await setDoc(userRef, {
             email: currentUser.email || '',
             displayName: actualName,
@@ -247,6 +237,28 @@ export default function App() {
     });
     return () => unsubscribeAuth();
   }, [guestName]);
+
+  // 🔹 مستمع لحظي لتحديثات ملف المستخدم الحالي (لضمان تفاعل الرتب والغلاف فوراً)
+  useEffect(() => {
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    return onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.role) setCurrentUserRole(data.role);
+        if (data.gender) setProfileGender(data.gender);
+        if (data.country) {
+          setProfileCountry(data.country);
+          setCurrentFlag(getCountryFlag(data.country));
+        }
+        if (data.flag) setCurrentFlag(data.flag);
+        if (data.bio) setProfileBio(data.bio);
+        if (data.nameColor) setNameColor(data.nameColor);
+        if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
+        if (data.coverUrl) setProfileCover(data.coverUrl);
+      }
+    });
+  }, [user]);
 
   const updateLastSeenOnExit = async () => {
     if (!user) return;
@@ -342,6 +354,20 @@ export default function App() {
       setNotificationsList(notes);
     });
   }, [user]);
+
+  // 🔹 دالة فتح الإشعارات ومسحها لتختفي إشارة وجود إشعارات جديدة
+  const handleOpenNotifications = async () => {
+    setShowNotificationsModal(true);
+    if (!user || notificationsList.length === 0) return;
+    try {
+      const notifSnapshot = await getDocs(collection(db, 'users', user.uid, 'notifications'));
+      const deletePromises = notifSnapshot.docs.map(d => deleteDoc(doc(db, 'users', user.uid, 'notifications', d.id)));
+      await Promise.all(deletePromises);
+      setNotificationsList([]);
+    } catch (e) {
+      console.error("خطأ أثناء مسح الإشعارات:", e);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -482,22 +508,7 @@ export default function App() {
     const updatePresence = async () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
-      let currentRole = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : 'Member');
-      try {
-        if (user.email) {
-          const cleanEmail = user.email.trim().toLowerCase();
-          const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
-          if (roleDoc.exists() && roleDoc.data().role) {
-            currentRole = roleDoc.data().role;
-          }
-        }
-        if (currentRole === 'Member' || currentRole === 'Guest') {
-          const userSnap = await getDoc(doc(db, 'users', user.uid));
-          if (userSnap.exists() && userSnap.data().role) {
-            currentRole = userSnap.data().role;
-          }
-        }
-      } catch (e) {}
+      let currentRole = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : currentUserRole);
 
       setDoc(presenceRef, {
         roomId: roomId,
@@ -523,7 +534,7 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, currentUserRole]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
@@ -661,22 +672,7 @@ export default function App() {
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
-    let roleText = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : 'Member');
-    try {
-      if (user.email) {
-        const cleanEmail = user.email.trim().toLowerCase();
-        const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
-        if (roleDoc.exists() && roleDoc.data().role) {
-          roleText = roleDoc.data().role;
-        }
-      }
-      if (roleText === 'Member' || roleText === 'Guest') {
-        const uSnap = await getDoc(doc(db, 'users', user.uid));
-        if (uSnap.exists() && uSnap.data().role) {
-          roleText = uSnap.data().role;
-        }
-      }
-    } catch (e) {}
+    let roleText = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : currentUserRole);
 
     try {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
@@ -847,29 +843,24 @@ export default function App() {
     }
   };
 
-  // 👑 دالة منح وسحب الرتب مع إرسال إشعارات ونظام وتفعيل تلقائي
+  // 👑 دالة منح وسحب الرتب مع تفعيل صلاحيات الصورة والغلاف فوراً
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isAdmin) return;
     try {
       const targetUserName = selectedProfileUser?.name || 'المستخدم';
 
-      // 1. تحديث Firestore مجموعة users
       const userRef = doc(db, 'users', targetUid);
       const updateData: any = { role: newRole };
 
-      // إذا كانت الرتبة الجديدة ليست Member أو Guest (أي تم إعطاؤه رتبة إدارية أو مميزة) نفعل صلاحيات الغلاف والصورة تلقائياً
       if (newRole !== 'Member' && newRole !== 'Guest') {
-        // يمكننا وضع قيم افتراضية للغلاف أو تفعيل صلاحيات كاملة عبر تخزين flag في الـ user
         updateData.canEditCover = true;
       }
 
       await setDoc(userRef, updateData, { merge: true });
 
-      // 2. تحديث Firestore مجموعة التواجد room_presence
       const presenceRef = doc(db, 'room_presence', targetUid);
       await setDoc(presenceRef, { role: newRole }, { merge: true });
 
-      // 3. ربط الرتبة بالبريد الإلكتروني للـ User في مجموعة خاصة roles_by_email
       const targetEmail = selectedProfileUser?.email;
       if (targetEmail) {
         const cleanEmail = targetEmail.trim().toLowerCase();
@@ -882,16 +873,13 @@ export default function App() {
         }
       }
 
-      // 4. تحديث في Realtime Database
       try {
         await set(ref(rdb, `users/${targetUid}/role`), newRole);
       } catch (rdbErr) {
         console.error("خطأ أثناء التحديث في Realtime Database:", rdbErr);
       }
 
-      // 5. إرسال رسالة نظام تلقائية في الغرفة العامة الحالية (إذا كانت محددة) تظهر لجميع المتواجدين
       if (selectedRoom) {
-        const actionText = (newRole === 'Member' || newRole === 'Guest') ? 'تم سحب الرتبة من' : 'تم إهداء';
         const roomMsg = (newRole === 'Member' || newRole === 'Guest') 
           ? `⚠️ تم سحب الرتبة من ${targetUserName} وأصبح ${newRole}`
           : `🎁 تم إهداء ${targetUserName} الرتبة: ${newRole}`;
@@ -906,7 +894,6 @@ export default function App() {
         });
       }
 
-      // 6. إرسال إشعار شخصي للمستخدم المستهدف في قائمة إشعاراته
       const notifTitle = (newRole === 'Member' || newRole === 'Guest') ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
       const notifBody = (newRole === 'Member' || newRole === 'Guest')
         ? `تم سحب الرتبة منك وتحديثها إلى ${newRole}.`
@@ -918,7 +905,6 @@ export default function App() {
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
-      // 7. تحديث الواجهة المنبثقة فوراً
       setSelectedProfileUser((prev: any) => prev ? { ...prev, role: newRole } : null);
 
       alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${newRole}`);
@@ -1099,11 +1085,12 @@ export default function App() {
   }
 
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
-  const currentUserRole = (selectedProfileUser?.role || '').toLowerCase();
+  const profileUserRole = (selectedProfileUser?.role || '').toLowerCase();
   
   const hasSpecialRank = Boolean(
     isAdmin || 
-    ['owner', 'admin', 'super_admin', 'premium'].some(r => currentUserRole.includes(r.toLowerCase()))
+    ['owner', 'admin', 'super_admin', 'premium'].some(r => profileUserRole.includes(r.toLowerCase())) ||
+    ['owner', 'admin', 'super_admin', 'premium'].some(r => currentUserRole.toLowerCase().includes(r.toLowerCase()))
   );
   
   const isGuestUser = Boolean(user?.isAnonymous);
@@ -1141,7 +1128,7 @@ export default function App() {
             <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>اعدادات</span>
           </div>
 
-          <div onClick={() => setShowNotificationsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px', position: 'relative' }}>
+          <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '9px', color: '#cbd5e1', minWidth: '36px', position: 'relative' }}>
             <span style={{ fontSize: '16px', lineHeight: '1' }}>🔔</span>
             <span style={{ marginTop: '2px', whiteSpace: 'nowrap' }}>إشعار</span>
             {notificationsList.length > 0 && (
@@ -1344,7 +1331,7 @@ export default function App() {
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
             
             <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>قائمة الرسائل الخاصة ✉️️</span>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>قائمة الرسائل الخاصة ✉</span>
               <button onClick={() => setShowMessagesModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
 
@@ -1735,7 +1722,7 @@ export default function App() {
                       color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
-                      justify: 'center',
+                      justifyContent: 'center',
                       fontSize: '32px',
                       fontWeight: 'bold',
                       border: '3px solid #ffffff',
