@@ -151,7 +151,6 @@ export default function App() {
   const [currentFlag, setCurrentFlag] = useState('🇯🇴');
   const [nameColor, setNameColor] = useState('#2563eb');
 
-  // 🔹 حالة الصور الشخصية والغلاف لرفعها وحفظها
   const [profileAvatar, setProfileAvatar] = useState<string>('');
   const [profileCover, setProfileCover] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -180,9 +179,8 @@ export default function App() {
         const userSnap = await getDoc(userRef);
         const todayDate = new Date().toISOString().split('T')[0];
 
-        let activeRole = currentUser.email === ADMIN_EMAIL ? 'صاحب الموقع' : (currentUser.isAnonymous ? 'زائر' : 'عضو');
+        let activeRole = currentUser.email === ADMIN_EMAIL ? 'Owner' : (currentUser.isAnonymous ? 'Guest' : 'Member');
 
-        // 🔹 1. التحقق من الرتبة المربوطة بالبريد الإلكتروني في مجموعة roles_by_email
         if (currentUser.email) {
           const cleanEmail = currentUser.email.trim().toLowerCase();
           try {
@@ -195,8 +193,7 @@ export default function App() {
           }
         }
 
-        // 🔹 2. إذا لم توجد رتبة بالإيميل، نقرأ من Firestore أو Realtime DB
-        if (activeRole === 'عضو' || activeRole === 'زائر') {
+        if (activeRole === 'Member' || activeRole === 'Guest') {
           if (userSnap.exists() && userSnap.data().role) {
             activeRole = userSnap.data().role;
           } else {
@@ -227,7 +224,6 @@ export default function App() {
           if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
           if (data.coverUrl) setProfileCover(data.coverUrl);
 
-          // تحديث الرتبة والمستند للتأكد من حفظ الرتبة
           await updateDoc(userRef, { role: activeRole, email: currentUser.email || '' });
         } else {
           await setDoc(userRef, {
@@ -378,7 +374,6 @@ export default function App() {
     }
   };
 
-  // 🔹 دالة معالجة ضغط ورفع الصور
   const compressAndUploadImage = (file: File, maxWidth: number, maxHeight: number, callback: (base64: string) => void) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -487,7 +482,7 @@ export default function App() {
     const updatePresence = async () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
-      let currentRole = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
+      let currentRole = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : 'Member');
       try {
         if (user.email) {
           const cleanEmail = user.email.trim().toLowerCase();
@@ -496,7 +491,7 @@ export default function App() {
             currentRole = roleDoc.data().role;
           }
         }
-        if (currentRole === 'عضو' || currentRole === 'زائر') {
+        if (currentRole === 'Member' || currentRole === 'Guest') {
           const userSnap = await getDoc(doc(db, 'users', user.uid));
           if (userSnap.exists() && userSnap.data().role) {
             currentRole = userSnap.data().role;
@@ -548,7 +543,7 @@ export default function App() {
               id: docSnap.id,
               userId: uId,
               name: data.userName || 'زائر',
-              role: data.role || 'زائر',
+              role: data.role || 'Guest',
               flag: data.flag || '🇯🇴',
               country: data.country || 'الأردن',
               gender: data.gender || 'ذكر',
@@ -666,7 +661,7 @@ export default function App() {
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
-    let roleText = isAdmin ? 'صاحب الموقع' : (user.isAnonymous ? 'زائر' : 'عضو');
+    let roleText = isAdmin ? 'Owner' : (user.isAnonymous ? 'Guest' : 'Member');
     try {
       if (user.email) {
         const cleanEmail = user.email.trim().toLowerCase();
@@ -675,7 +670,7 @@ export default function App() {
           roleText = roleDoc.data().role;
         }
       }
-      if (roleText === 'عضو' || roleText === 'زائر') {
+      if (roleText === 'Member' || roleText === 'Guest') {
         const uSnap = await getDoc(doc(db, 'users', user.uid));
         if (uSnap.exists() && uSnap.data().role) {
           roleText = uSnap.data().role;
@@ -852,13 +847,23 @@ export default function App() {
     }
   };
 
-  // 👑 دالة منح وسحب الرتب المربوطة بالإيميل بشكل دائم
+  // 👑 دالة منح وسحب الرتب مع إرسال إشعارات ونظام وتفعيل تلقائي
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isAdmin) return;
     try {
+      const targetUserName = selectedProfileUser?.name || 'المستخدم';
+
       // 1. تحديث Firestore مجموعة users
       const userRef = doc(db, 'users', targetUid);
-      await setDoc(userRef, { role: newRole }, { merge: true });
+      const updateData: any = { role: newRole };
+
+      // إذا كانت الرتبة الجديدة ليست Member أو Guest (أي تم إعطاؤه رتبة إدارية أو مميزة) نفعل صلاحيات الغلاف والصورة تلقائياً
+      if (newRole !== 'Member' && newRole !== 'Guest') {
+        // يمكننا وضع قيم افتراضية للغلاف أو تفعيل صلاحيات كاملة عبر تخزين flag في الـ user
+        updateData.canEditCover = true;
+      }
+
+      await setDoc(userRef, updateData, { merge: true });
 
       // 2. تحديث Firestore مجموعة التواجد room_presence
       const presenceRef = doc(db, 'room_presence', targetUid);
@@ -884,7 +889,36 @@ export default function App() {
         console.error("خطأ أثناء التحديث في Realtime Database:", rdbErr);
       }
 
-      // 5. تحديث الواجهة المنبثقة فوراً
+      // 5. إرسال رسالة نظام تلقائية في الغرفة العامة الحالية (إذا كانت محددة) تظهر لجميع المتواجدين
+      if (selectedRoom) {
+        const actionText = (newRole === 'Member' || newRole === 'Guest') ? 'تم سحب الرتبة من' : 'تم إهداء';
+        const roomMsg = (newRole === 'Member' || newRole === 'Guest') 
+          ? `⚠️ تم سحب الرتبة من ${targetUserName} وأصبح ${newRole}`
+          : `🎁 تم إهداء ${targetUserName} الرتبة: ${newRole}`;
+
+        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
+          user: 'نظام الشات',
+          userId: 'system',
+          text: roomMsg,
+          role: 'System',
+          color: '#eab308',
+          createdAt: serverTimestamp()
+        });
+      }
+
+      // 6. إرسال إشعار شخصي للمستخدم المستهدف في قائمة إشعاراته
+      const notifTitle = (newRole === 'Member' || newRole === 'Guest') ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
+      const notifBody = (newRole === 'Member' || newRole === 'Guest')
+        ? `تم سحب الرتبة منك وتحديثها إلى ${newRole}.`
+        : `مبروك! تم إهداؤك رتبة (${newRole}) وتفعيل صلاحيات الغلاف والصورة بنجاح.`;
+
+      await addDoc(collection(db, 'users', targetUid, 'notifications'), {
+        title: notifTitle,
+        body: notifBody,
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // 7. تحديث الواجهة المنبثقة فوراً
       setSelectedProfileUser((prev: any) => prev ? { ...prev, role: newRole } : null);
 
       alert(`✅ تم تعديل رتبة المستخدم بنجاح إلى: ${newRole}`);
@@ -914,7 +948,7 @@ export default function App() {
     let fetchedData = {
       userId: targetId,
       name: uData.name || uData.user || uData.userName || 'زائر',
-      role: uData.role || (targetId === user?.uid && user?.isAnonymous ? 'زائر' : 'عضو'),
+      role: uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member'),
       gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
       joinedDate: uData.joinedDate || new Date().toISOString().split('T')[0],
       roomName: uData.roomName || 'القائمة الرئيسية',
@@ -1064,28 +1098,22 @@ export default function App() {
     );
   }
 
-  // 🔹 فحص صلاحية التعديل حسب نوع المستخدم ورتبته
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
   const currentUserRole = (selectedProfileUser?.role || '').toLowerCase();
   
-  // هل يملك رتبة خاصة (صاحب الموقع، أدمن، سوبر أدمن، بريميوم)
   const hasSpecialRank = Boolean(
     isAdmin || 
-    ['صاحب الموقع', 'admin', 'أدمن', 'ادمن', 'super_admin', 'سوبر أدمن', 'سوبر ادمن', 'premium', 'بريميوم'].some(r => currentUserRole.includes(r.toLowerCase()))
+    ['owner', 'admin', 'super_admin', 'premium'].some(r => currentUserRole.includes(r.toLowerCase()))
   );
   
   const isGuestUser = Boolean(user?.isAnonymous);
 
-  // 1. الزائر: لا يستطيع وضع صورة شخصية ولا غلاف
-  // 2. العضو المسجل: صورة شخصية فقط بدون غلاف
-  // 3. صاحب الموقع والرتب: صورة شخصية وغلاف
   const canEditAvatar = Boolean(isSelfProfile && !isGuestUser);
   const canEditCover = Boolean(isSelfProfile && !isGuestUser && hasSpecialRank);
 
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       
-      {/* 🔹 مدخلات خفية لاختيار الصور من استوديو الجهاز */}
       <input 
         type="file" 
         ref={avatarInputRef} 
@@ -1101,7 +1129,6 @@ export default function App() {
         onChange={(e) => handleFileSelect(e, 'cover')} 
       />
 
-      {/* 🔴 الشريط العلوي */}
       <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, backgroundColor: '#0b141a', color: '#fff', padding: '0 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
         
         <div style={{ cursor: 'pointer', fontSize: '22px', color: '#fff', padding: '0 4px', lineHeight: '1' }}>
@@ -1156,15 +1183,12 @@ export default function App() {
 
       </header>
 
-      {/* شريط النقاط */}
       <div style={{ backgroundColor: '#ffffff', color: '#000', fontSize: '12px', fontWeight: 'bold', padding: '2px 10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', flexShrink: 0, direction: 'rtl' }}>
         .Points
       </div>
 
-      {/* الوسط */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#f1f5f9', minHeight: 0, position: 'relative' }}>
         
-        {/* قائمة الغرف الرئيسية */}
         {currentView === 'rooms' && (
           <div style={{ padding: '8px', overflowY: 'auto', flex: 1, direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {rooms.map((room) => {
@@ -1190,7 +1214,6 @@ export default function App() {
           </div>
         )}
 
-        {/* شاشة المحادثة العامة داخل الغرفة */}
         {currentView === 'chat' && selectedRoom && (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             
@@ -1228,7 +1251,6 @@ export default function App() {
               <div ref={chatBottomRef} />
             </div>
 
-            {/* قائمة الإيموجي */}
             {showEmojiPicker && (
               <div style={{ backgroundColor: '#f1f5f9', borderTop: '1px solid #cbd5e1', padding: '8px', display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '4px', maxHeight: '120px', overflowY: 'auto', flexShrink: 0 }}>
                 {EMOJIS_LIST.map((emoji, idx) => (
@@ -1239,7 +1261,6 @@ export default function App() {
               </div>
             )}
 
-            {/* شريط الإدخال */}
             <form onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#f1f5f9', padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
               
               <button type="submit" style={{ background: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>
@@ -1268,7 +1289,6 @@ export default function App() {
 
       </div>
 
-      {/* 🔴 نافذة المحادثة الخاصة */}
       {activePrivateChat && (
         <div style={{ position: 'fixed', top: '50%', bottom: '52px', left: 0, right: 0, backgroundColor: '#ffffff', zIndex: 130, display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 25px rgba(0,0,0,0.3)', borderTop: '2px solid #0b141a', overflow: 'hidden', direction: 'rtl' }}>
           
@@ -1319,13 +1339,12 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة قائمة الرسائل الخاصة */}
       {showMessagesModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
             
             <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>قائمة الرسائل الخاصة ✉️</span>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>قائمة الرسائل الخاصة ✉️️</span>
               <button onClick={() => setShowMessagesModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
 
@@ -1362,7 +1381,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 الشريط السفلي للتنقل */}
       <nav style={{ height: '52px', minHeight: '52px', flexShrink: 0, backgroundColor: '#0b141a', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
         
         <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1392,7 +1410,6 @@ export default function App() {
 
       </nav>
 
-      {/* 🔴 نافذة طلبات الصداقة */}
       {showRequestsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
@@ -1430,7 +1447,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة التنبيهات والإشعارات */}
       {showNotificationsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
@@ -1462,7 +1478,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الأصدقاء الجانبية */}
       {showFriendsModal && (
         <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
@@ -1515,7 +1530,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة المتصلين */}
       {showOnlineModal && (
         <div style={{ position: 'fixed', top: '50px', left: 0, right: 0, bottom: '52px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
@@ -1559,7 +1573,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الإعدادات */}
       {showSettingsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '380px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', maxHeight: '85dvh' }}>
@@ -1654,15 +1667,12 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة الملف الشخصي */}
       {selectedProfileUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}>
             
-            {/* 🖼️ قسم الغلاف والصورة الشخصية */}
             <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '220px', overflow: 'hidden' }}>
               
-              {/* الغلاف (Cover) */}
               <div 
                 onClick={() => {
                   if (canEditCover) {
@@ -1687,10 +1697,8 @@ export default function App() {
                 }}
               />
 
-              {/* طبقة تظليل فوق صورة الغلاف */}
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.2) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
 
-              {/* زر الإغلاق */}
               <button 
                 onClick={(e) => { e.stopPropagation(); setSelectedProfileUser(null); }} 
                 style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#ffffff', fontSize: '16px', cursor: 'pointer', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 10 }}
@@ -1698,7 +1706,6 @@ export default function App() {
                 ✕
               </button>
 
-              {/* 🔹 زر تغيير الغلاف متاح فقط لـ (صاحب الموقع والادمن والسوبر ادمن والبريميوم) */}
               {canEditCover && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
@@ -1709,10 +1716,8 @@ export default function App() {
                 </button>
               )}
 
-              {/* محتوى الصورة الشخصية والرتبة والاسم */}
               <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px', paddingBottom: '14px' }}>
                 
-                {/* 🔹 الصورة الشخصية (Avatar) */}
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <div 
                     onClick={() => {
@@ -1746,7 +1751,6 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* أيقونة رفع صورة مخصصة للمسجلين والرتب العليا وتختفي تماماً عن الزائر */}
                   {canEditAvatar && (
                     <div 
                       onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
@@ -1769,7 +1773,6 @@ export default function App() {
 
             </div>
 
-            {/* تفاصيل الحساب والمعلومات */}
             <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
@@ -1792,20 +1795,18 @@ export default function App() {
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
-              {/* لوحة تحكم الأدمن لترقية المستخدمين */}
               {isAdmin && !isSelfProfile && (
                 <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'أدمن')} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>منح أدمن 👑</button>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'سوبر أدمن')} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>منح سوبر أدمن ⚡</button>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'بريميوم')} style={{ backgroundColor: '#eab308', color: '#000', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>منح بريميوم 💎</button>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'عضو')} style={{ backgroundColor: '#64748b', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>تجريد إلى عضو 👤</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Admin')} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Admin 👑</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Super Admin')} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Super Admin ⚡</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Premium')} style={{ backgroundColor: '#eab308', color: '#000', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Premium 💎</button>
+                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Member')} style={{ backgroundColor: '#64748b', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Demote Member 👤</button>
                   </div>
                 </div>
               )}
 
-              {/* أزرار التفاعل والإجراءات */}
               {!isSelfProfile && (
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                   <button 
@@ -1829,7 +1830,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 🔴 نافذة تكبير/معاينة الصورة */}
       {previewImage && (
         <div 
           onClick={() => setPreviewImage(null)} 
