@@ -155,9 +155,15 @@ export default function App() {
   const [profileAvatar, setProfileAvatar] = useState<string>('');
   const [profileCover, setProfileCover] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  // 🎵 States للأغنية
+  const [profileSong, setProfileSong] = useState<string>('');
+  const [isSongPlaying, setIsSongPlaying] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const songInputRef = useRef<HTMLInputElement | null>(null); // 🎵
+  const profileAudioRef = useRef<HTMLAudioElement | null>(null); // 🎵
 
   const [isPlayingRadio, setIsPlayingRadio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -176,10 +182,10 @@ export default function App() {
   };
 
   const rolePermissions: Record<string, string[]> = {
-    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover'],
-    Admin: ['manage_users', 'edit_avatar', 'edit_cover'],
-    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover'],
-    Premium: ['edit_avatar', 'edit_cover'],
+    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
+    Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
+    'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song'],
+    Premium: ['edit_avatar', 'edit_cover', 'add_song'],
     Member: ['edit_avatar'],
     Guest: []
   };
@@ -283,6 +289,7 @@ export default function App() {
             points: 0,
             avatarUrl: '',
             coverUrl: '',
+            profileSongUrl: '',
             joinedDate: todayDate,
             createdAt: new Date().toISOString()
           }, { merge: true });
@@ -337,6 +344,7 @@ export default function App() {
       if (data.nameColor) setNameColor(data.nameColor);
       if (data.avatarUrl) setProfileAvatar(data.avatarUrl);
       if (data.coverUrl) setProfileCover(data.coverUrl);
+      if (data.profileSongUrl !== undefined) setProfileSong(data.profileSongUrl || '');
     });
 
     let unsubscribeRole = () => {};
@@ -563,6 +571,75 @@ export default function App() {
     });
   };
 
+  // 🎵 اختيار الأغنية
+  const handleSongSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // حد أقصى 3 ميغا
+    if (file.size > 3 * 1024 * 1024) {
+      alert('⚠️ حجم الأغنية كبير جداً. الحد الأقصى 3 ميجابايت.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      setProfileSong(base64);
+      setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: base64 } : null);
+      await saveSettingToFirebase('profileSongUrl', base64);
+      alert('✅ تم حفظ الأغنية بنجاح!');
+    };
+    // إعادة تعيين الحقل لتمكين اختيار نفس الملف مرة أخرى
+    e.target.value = '';
+  };
+
+  // 🎵 تشغيل الأغنية
+  const playProfileSong = (songUrl: string) => {
+    // إيقاف أي صوت يعمل حالياً
+    if (profileAudioRef.current) {
+      profileAudioRef.current.pause();
+      profileAudioRef.current.currentTime = 0;
+      profileAudioRef.current = null;
+    }
+
+    if (!songUrl) return;
+
+    const audio = new Audio(songUrl);
+    audio.loop = false;
+    audio.volume = 0.7;
+    audio.play()
+      .then(() => setIsSongPlaying(true))
+      .catch((err) => {
+        console.warn('تعذر تشغيل الأغنية:', err);
+        setIsSongPlaying(false);
+      });
+    audio.onended = () => setIsSongPlaying(false);
+    profileAudioRef.current = audio;
+  };
+
+  // 🎵 إيقاف الأغنية
+  const stopProfileSong = () => {
+    if (profileAudioRef.current) {
+      profileAudioRef.current.pause();
+      profileAudioRef.current.currentTime = 0;
+      profileAudioRef.current = null;
+    }
+    setIsSongPlaying(false);
+  };
+
+  // 🎵 حذف الأغنية
+  const handleDeleteSong = async () => {
+    if (!user) return;
+    if (!confirm('هل تريد حذف الأغنية من ملفك الشخصي؟')) return;
+    setProfileSong('');
+    setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: '' } : null);
+    await saveSettingToFirebase('profileSongUrl', '');
+    stopProfileSong();
+    alert('🗑️ تم حذف الأغنية.');
+  };
+
   useEffect(() => {
     const initRoomsAndListen = async () => {
       const roomsCol = collection(db, 'rooms');
@@ -632,6 +709,7 @@ export default function App() {
         country: profileCountry,
         avatarUrl: profileAvatar,
         coverUrl: profileCover,
+        profileSongUrl: profileSong,
         joinedDate: todayDate,
         lastSeen: nowTime,
         lastActive: Date.now(),
@@ -645,7 +723,7 @@ export default function App() {
     return () => {
       clearInterval(presenceInterval);
     };
-  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, currentUserRole]);
+  }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
@@ -672,6 +750,7 @@ export default function App() {
               gender: data.gender || 'ذكر',
               avatarUrl: data.avatarUrl || '',
               coverUrl: data.coverUrl || '',
+              profileSongUrl: data.profileSongUrl || '',
               joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
               lastSeen: data.lastSeen || '01:00 AM',
               points: data.points || 0,
@@ -858,6 +937,7 @@ export default function App() {
       alert('لا يمكنك مراسلة نفسك!');
       return;
     }
+    stopProfileSong();
     setActivePrivateChat({ peerId, peerName });
     setSelectedProfileUser(null);
     setShowFriendsModal(false);
@@ -956,7 +1036,6 @@ export default function App() {
   };
 
   // 👑 إدارة الرتب: المالك فقط يستطيع منح/سحب الرتب الإدارية
-  // 🔑 الرتبة مرتبطة بالإيميل (roles_by_email) + UID — لا تتأثر بتغيير الاسم أو الصورة
   const handleUpdateUserRole = async (targetUid: string, newRole: string) => {
     if (!user || !isOwner || !targetUid || targetUid === user.uid) return;
 
@@ -1082,7 +1161,7 @@ export default function App() {
       const notifBody =
         normalizedNewRole === 'Member' || normalizedNewRole === 'Guest'
           ? `تم سحب الرتبة منك وتحديثها إلى ${normalizedNewRole}.`
-          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب والصورة والغلاف حسب الرتبة.`;
+          : `مبروك! تم إهداؤك رتبة (${normalizedNewRole}) وتفعيل صلاحيات الحساب والصورة والغلاف والأغنية حسب الرتبة.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: notifTitle,
@@ -1139,7 +1218,8 @@ export default function App() {
       points: uData.points || 0,
       email: userEmail,
       avatarUrl: uData.avatarUrl || '',
-      coverUrl: uData.coverUrl || ''
+      coverUrl: uData.coverUrl || '',
+      profileSongUrl: uData.profileSongUrl || ''
     };
 
     if (targetId && targetId !== 'guest_id') {
@@ -1156,7 +1236,8 @@ export default function App() {
             points: data.points ?? fetchedData.points,
             email: data.email || fetchedData.email || '',
             avatarUrl: data.avatarUrl || fetchedData.avatarUrl,
-            coverUrl: data.coverUrl || fetchedData.coverUrl
+            coverUrl: data.coverUrl || fetchedData.coverUrl,
+            profileSongUrl: data.profileSongUrl || fetchedData.profileSongUrl || ''
           };
         }
 
@@ -1181,6 +1262,25 @@ export default function App() {
     }
     setSelectedProfileUser(fetchedData);
   };
+
+  // 🎵 تشغيل/إيقاف الأغنية تلقائياً عند فتح/إغلاق الملف الشخصي
+  useEffect(() => {
+    if (selectedProfileUser && selectedProfileUser.profileSongUrl) {
+      const timer = setTimeout(() => {
+        playProfileSong(selectedProfileUser.profileSongUrl);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      stopProfileSong();
+    }
+  }, [selectedProfileUser]);
+
+  // 🎵 إيقاف الأغنية عند إغلاق الصفحة
+  useEffect(() => {
+    return () => {
+      stopProfileSong();
+    };
+  }, []);
 
   const filteredOnlineUsers = onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
@@ -1319,6 +1419,13 @@ export default function App() {
     hasCurrentPermission('edit_cover')
   );
 
+  // 🎵 صلاحية إضافة الأغنية: صاحب الموقع أو الرتب فقط (Admin, Super Admin, Premium)
+  const canAddSong = Boolean(
+    isSelfProfile &&
+    !isGuestUser &&
+    (isOwner || normalizedCurrentRole === 'Admin' || normalizedCurrentRole === 'Super Admin' || normalizedCurrentRole === 'Premium')
+  );
+
   return (
     <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       
@@ -1335,6 +1442,13 @@ export default function App() {
         accept="image/*" 
         style={{ display: 'none' }} 
         onChange={(e) => handleFileSelect(e, 'cover')} 
+      />
+      <input 
+        type="file" 
+        ref={songInputRef} 
+        accept="audio/*" 
+        style={{ display: 'none' }} 
+        onChange={handleSongSelect} 
       />
 
       <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, backgroundColor: '#0b141a', color: '#fff', padding: '0 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', direction: 'rtl', boxSizing: 'border-box', zIndex: 10 }}>
@@ -1850,6 +1964,34 @@ export default function App() {
                       style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
                     />
                   </div>
+
+                  {/* 🎵 قسم الأغنية في الإعدادات (لصاحب الموقع والرتب فقط) */}
+                  {canAddSong && (
+                    <div style={{ marginTop: '6px', padding: '10px', borderRadius: '8px', backgroundColor: '#f5f3ff', border: '1px solid #c4b5fd' }}>
+                      <label style={{ fontSize: '11px', color: '#6d28d9', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>🎵 أغنية الملف الشخصي</label>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button 
+                          onClick={() => songInputRef.current?.click()}
+                          style={{ flex: 1, minWidth: '120px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          {profileSong ? '🔄 تغيير الأغنية' : '➕ إضافة أغنية'}
+                        </button>
+                        {profileSong && (
+                          <button 
+                            onClick={handleDeleteSong}
+                            style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            🗑️ حذف
+                          </button>
+                        )}
+                      </div>
+                      {profileSong && (
+                        <div style={{ fontSize: '10px', color: '#6d28d9', marginTop: '6px' }}>
+                          ✅ الأغنية مضافة وستشغّل تلقائياً عند فتح ملفك.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1857,6 +1999,7 @@ export default function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <button 
                     onClick={async () => {
+                      stopProfileSong();
                       await updateLastSeenOnExit();
                       await signOut(auth);
                       setShowSettingsModal(false);
@@ -1876,8 +2019,14 @@ export default function App() {
       )}
 
       {selectedProfileUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
-          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}>
+        <div 
+          onClick={() => { stopProfileSong(); setSelectedProfileUser(null); }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', border: '1px solid #1e293b', maxHeight: '90dvh' }}
+          >
             
             <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '220px', overflow: 'hidden' }}>
               
@@ -1908,16 +2057,55 @@ export default function App() {
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.2) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
 
               <button 
-                onClick={(e) => { e.stopPropagation(); setSelectedProfileUser(null); }} 
+                onClick={(e) => { e.stopPropagation(); stopProfileSong(); setSelectedProfileUser(null); }} 
                 style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#ffffff', fontSize: '16px', cursor: 'pointer', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 10 }}
               >
                 ✕
               </button>
 
+              {/* 🎵 أزرار الأغنية - لصاحب الملف والرتب فقط */}
+              {canAddSong && (
+                <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10, display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {selectedProfileUser.profileSongUrl ? (
+                    <>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); songInputRef.current?.click(); }}
+                        style={{ background: 'rgba(34,197,94,0.9)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <span>🎵</span>
+                        <span>تغيير الأغنية</span>
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteSong(); }}
+                        style={{ background: 'rgba(220,38,38,0.9)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        🗑️
+                      </button>
+                    </>
+                  ) : (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); songInputRef.current?.click(); }}
+                      style={{ background: 'rgba(124,58,237,0.9)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span>🎵</span>
+                      <span>إضافة أغنية</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* 🎵 مؤشر تشغيل الأغنية عند مشاهدة ملف شخص آخر */}
+              {!isSelfProfile && selectedProfileUser.profileSongUrl && isSongPlaying && (
+                <div style={{ position: 'absolute', top: '42px', right: '8px', zIndex: 10, background: 'rgba(34,197,94,0.9)', color: '#ffffff', borderRadius: '20px', padding: '4px 10px', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🎵</span>
+                  <span>يعمل الآن</span>
+                </div>
+              )}
+
               {canEditCover && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
-                  style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.65)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px' }}
+                  style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.65)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   <span>📷</span>
                   <span>تغيير الغلاف</span>
@@ -2003,6 +2191,16 @@ export default function App() {
                 <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
               </div>
 
+              {/* 🎵 صف الأغنية في الملف */}
+              {selectedProfileUser.profileSongUrl && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px', backgroundColor: '#f0fdf4', padding: '6px 8px', borderRadius: '6px' }}>
+                  <span style={{ color: '#16a34a', fontWeight: 'bold' }}>🎵 أغنية الملف:</span>
+                  <span style={{ fontSize: '10px', color: '#16a34a' }}>
+                    {isSongPlaying ? '▶️ تعمل الآن' : '⏸ متوقفة'}
+                  </span>
+                </div>
+              )}
+
               {isOwner && !isSelfProfile && (
                 <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
@@ -2049,4 +2247,4 @@ export default function App() {
 
     </div>
   );
-}
+         }
