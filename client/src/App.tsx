@@ -993,6 +993,7 @@ export default function App() {
   };
 
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
+    setShowRoomsModal(false);
     setSelectedRoom(room);
     setCurrentView('chat');
     localStorage.setItem('gat_current_room_id', room.id);
@@ -2237,14 +2238,7 @@ export default function App() {
             <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
           </div>
 
-          <div onClick={() => {
-            if (currentView === 'chat' && selectedRoom) {
-              setShowRoomsModal(true);
-            } else {
-              setShowRoomsModal(false);
-              setCurrentView('rooms');
-            }
-          }} style={{ color: (currentView === 'rooms' || showRoomsModal) ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: (currentView === 'rooms' || showRoomsModal) ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: (currentView === 'rooms' || showRoomsModal) ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+          <div onClick={() => setShowRoomsModal(true)} style={{ color: showRoomsModal || currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showRoomsModal || currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showRoomsModal || currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
             <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
           </div>
@@ -2252,41 +2246,77 @@ export default function App() {
         </nav>
       )}
 
-      {showRoomsModal && currentView === 'chat' && selectedRoom && (
-        <div onClick={() => setShowRoomsModal(false)} style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: '60px', backgroundColor: 'rgba(0,0,0,0.28)', zIndex: 120, direction: 'rtl' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '78%', backgroundColor: '#ffffff', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '-6px 0 18px rgba(0,0,0,0.10)' }}>
-            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', minHeight: '60px', padding: '0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
-              <span style={{ fontWeight: 'bold', fontSize: '16px' }}>🏠 قائمة الغرف</span>
-              <button onClick={() => setShowRoomsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '30px', lineHeight: 1, cursor: 'pointer', fontWeight: 'normal' }}>✕</button>
+      {showRoomsModal && (
+        <div
+          onClick={() => setShowRoomsModal(false)}
+          style={{
+            position: 'fixed',
+            top: currentView === 'chat' ? '56px' : '0',
+            right: 0,
+            bottom: '64px',
+            left: 0,
+            backgroundColor: 'rgba(15,23,42,0.55)',
+            zIndex: 200,
+            direction: 'rtl',
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: '78%',
+              maxWidth: '560px',
+              minWidth: '300px',
+              background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+              boxShadow: '-12px 0 30px rgba(0,0,0,0.18)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{ background: 'linear-gradient(135deg, #0b141a 0%, #122331 100%)', color: '#fff', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '7px' }}>قائمة الغرف <span>🏠</span></div>
+              <button onClick={() => setShowRoomsModal(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '34px', lineHeight: 1, cursor: 'pointer', fontWeight: '300', padding: 0 }}>×</button>
             </div>
-            <div style={{ padding: '14px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', boxSizing: 'border-box' }}>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {isOwner && (
-                <form onSubmit={handleCreateRoom} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center' }}>🛠️ إدارة الغرف — صاحب الموقع فقط</div>
+                <form onSubmit={handleCreateRoom} style={{ background: 'linear-gradient(135deg,#f0f9ff,#ffffff)', border: '1px solid #dbeafe', borderRadius: '18px', padding: '14px', boxShadow: '0 5px 16px rgba(15,23,42,0.06)' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '11px', textAlign: 'center' }}>إدارة الغرف — صاحب الموقع فقط ⚙️</div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input type="text" placeholder="اسم الغرفة..." value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
-                    <input type="text" placeholder="💬" value={newRoomFlag} onChange={(e) => setNewRoomFlag(e.target.value)} style={{ width: '70px', padding: '10px', textAlign: 'center', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }} />
-                    <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>إضافة</button>
+                    <input type="text" placeholder="اسم الغرفة..." value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required style={{ flex: 1, minWidth: 0, padding: '11px 12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px', outline: 'none', textAlign: 'right' }} />
+                    <input type="text" value={newRoomFlag} onChange={(e) => setNewRoomFlag(e.target.value)} aria-label="رمز الغرفة" style={{ width: '52px', padding: '10px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '18px', textAlign: 'center', outline: 'none' }} />
+                    <button type="submit" style={{ background: 'linear-gradient(135deg,#10b981,#16a34a)', color: '#fff', border: 'none', padding: '11px 14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap', boxShadow: '0 5px 12px rgba(16,185,129,0.22)' }}>+ إضافة</button>
                   </div>
                 </form>
               )}
+
               {rooms.map((room) => {
                 const count = roomCounts[room.id] || 0;
-                const isCurrent = selectedRoom.id === room.id;
+                const isCurrentRoom = selectedRoom?.id === room.id;
                 return (
-                  <div key={room.id} style={{ backgroundColor: isCurrent ? '#eff6ff' : '#ffffff', borderRadius: '14px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: isCurrent ? '1px solid #38bdf8' : '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      {isCurrent ? (
-                        <button disabled style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: '22px', fontWeight: 'bold', fontSize: '12px', whiteSpace: 'nowrap' }}>الغرفة الحالية</button>
-                      ) : (
-                        <button onClick={() => { setShowRoomsModal(false); enterRoom(room); }} style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', padding: '10px 14px', borderRadius: '22px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}>🚪 دخول الغرفة</button>
-                      )}
-                      {isOwner && !isCurrent && (
-                        <button onClick={() => handleDeleteRoom(room.id)} style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '8px 11px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>🗑 حذف</button>
-                      )}
+                  <div key={room.id} style={{ background: isCurrentRoom ? 'linear-gradient(135deg,#eff6ff,#ffffff)' : '#ffffff', borderRadius: '18px', padding: '13px', border: isCurrentRoom ? '1.5px solid #38bdf8' : '1px solid #e2e8f0', boxShadow: '0 5px 16px rgba(15,23,42,0.07)', display: 'flex', alignItems: 'center', gap: '10px', minHeight: '76px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: isCurrentRoom ? '#dbeafe' : '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '23px', flexShrink: 0 }}>{room.flag || '🏠'}</div>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                        <span style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '12px', fontWeight: '700' }}>👥 {count}</div>
+                      {isCurrentRoom && <span style={{ alignSelf: 'flex-start', background: '#dcfce7', color: '#059669', borderRadius: '999px', padding: '3px 8px', fontSize: '10px', fontWeight: '800' }}>● الغرفة الحالية</span>}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#1e293b', fontSize: '13px', minWidth: 0 }}>
-                      <span>{count} 👥</span><span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.name}</span><span>{room.flag}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '7px', flexShrink: 0 }}>
+                      {isCurrentRoom ? (
+                        <button disabled style={{ background: '#94a3b8', color: '#fff', border: 'none', padding: '10px 12px', borderRadius: '999px', fontWeight: '800', fontSize: '11px', minWidth: '105px', opacity: 0.95 }}>الغرفة الحالية</button>
+                      ) : (
+                        <button onClick={() => enterRoom(room)} style={{ background: 'linear-gradient(135deg,#0b141a,#173044)', color: '#fff', border: 'none', padding: '10px 13px', borderRadius: '999px', fontWeight: '800', cursor: 'pointer', fontSize: '11px', minWidth: '105px', boxShadow: '0 5px 12px rgba(11,20,26,0.16)' }}>دخول الغرفة 🚪</button>
+                      )}
+                      {isOwner && !isCurrentRoom && (
+                        <button onClick={() => handleDeleteRoom(room.id)} style={{ background: '#fff1f2', color: '#dc2626', border: '1px solid #fecdd3', padding: '7px 12px', borderRadius: '10px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}>حذف 🗑️</button>
+                      )}
                     </div>
                   </div>
                 );
