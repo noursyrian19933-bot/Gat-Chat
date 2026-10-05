@@ -174,11 +174,11 @@ export default function App() {
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
   const [showOnlineModal, setShowOnlineModal] = useState(false);
-  const [showRoomsModal, setShowRoomsModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showMessagesModal, setShowMessagesModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showRoomsModal, setShowRoomsModal] = useState(false);
 
   const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
@@ -993,7 +993,6 @@ export default function App() {
   };
 
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
-    setShowRoomsModal(false);
     setSelectedRoom(room);
     setCurrentView('chat');
     localStorage.setItem('gat_current_room_id', room.id);
@@ -2249,137 +2248,67 @@ export default function App() {
       {showRoomsModal && selectedRoom && (
         <div
           onClick={() => setShowRoomsModal(false)}
-          style={{
-            position: 'fixed',
-            top: '56px',
-            left: 0,
-            right: 0,
-            bottom: '60px',
-            backgroundColor: 'rgba(0,0,0,0.45)',
-            zIndex: 80,
-            display: 'flex',
-            justifyContent: 'flex-start',
-            direction: 'rtl'
-          }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '78%',
-              maxWidth: '360px',
-              minWidth: '280px',
-              height: '100%',
-              backgroundColor: '#ffffff',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '-4px 0 16px rgba(0,0,0,0.25)',
-              boxSizing: 'border-box',
-              overflow: 'hidden'
-            }}
+            style={{ width: '100%', maxWidth: '540px', maxHeight: '85dvh', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}
           >
-            <div style={{
-              padding: '10px 12px',
-              borderBottom: '1px solid #cbd5e1',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: '#0b141a',
-              color: '#ffffff'
-            }}>
-              <button
-                onClick={() => setShowRoomsModal(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  padding: '0 4px'
-                }}
-                aria-label="إغلاق قائمة الغرف"
-              >
-                ✕
-              </button>
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>قائمة الغرف 🏠</span>
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>🏠 قائمة الغرف</span>
+              <button onClick={() => setShowRoomsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '24px', cursor: 'pointer', fontWeight: 'bold', lineHeight: 1 }}>✕</button>
             </div>
 
-            <div style={{
-              padding: '10px',
-              overflowY: 'auto',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              <div style={{
-                background: '#f8fafc',
-                border: '1px solid #cbd5e1',
-                borderRadius: '10px',
-                padding: '9px 10px',
-                color: '#475569',
-                fontSize: '11px',
-                textAlign: 'center'
-              }}>
-                أنت حالياً في: <strong style={{ color: '#0284c7' }}>{selectedRoom.name}</strong>
-                <div style={{ marginTop: '3px', color: '#64748b' }}>لن تخرج من الغرفة إلا عند اختيار «دخول الغرفة» لغرفة أخرى.</div>
-              </div>
+            <div style={{ padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {isOwner && (
+                <form onSubmit={handleCreateRoom} style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a' }}>🛠️ إدارة الغرف — صاحب الموقع فقط</div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="اسم الغرفة..."
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      required
+                      style={{ flex: 1, minWidth: 0, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="العلم"
+                      value={newRoomFlag}
+                      onChange={(e) => setNewRoomFlag(e.target.value)}
+                      style={{ width: '58px', padding: '8px', textAlign: 'center', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    />
+                    <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>إضافة</button>
+                  </div>
+                </form>
+              )}
 
               {rooms.map((room) => {
                 const count = roomCounts[room.id] || 0;
                 const isCurrent = selectedRoom.id === room.id;
-
                 return (
-                  <div
-                    key={room.id}
-                    style={{
-                      backgroundColor: isCurrent ? '#eff6ff' : '#ffffff',
-                      borderRadius: '10px',
-                      padding: '10px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '8px',
-                      border: isCurrent ? '1px solid #38bdf8' : '1px solid #cbd5e1',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                    }}
-                  >
-                    <button
-                      onClick={() => !isCurrent && enterRoom(room)}
-                      disabled={isCurrent}
-                      style={{
-                        backgroundColor: isCurrent ? '#94a3b8' : '#0b141a',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '7px 10px',
-                        borderRadius: '18px',
-                        fontWeight: 'bold',
-                        cursor: isCurrent ? 'default' : 'pointer',
-                        fontSize: '11px',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {isCurrent ? 'الغرفة الحالية' : 'دخول الغرفة'}
-                    </button>
-
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      minWidth: 0,
-                      fontWeight: 'bold',
-                      color: '#1e293b',
-                      fontSize: '12px'
-                    }}>
+                  <div key={room.id} style={{ backgroundColor: isCurrent ? '#eff6ff' : '#ffffff', borderRadius: '12px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', border: isCurrent ? '1px solid #38bdf8' : '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      {isCurrent ? (
+                        <button disabled style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '20px', fontWeight: 'bold', fontSize: '12px' }}>
+                          الغرفة الحالية
+                        </button>
+                      ) : (
+                        <button onClick={() => { setShowRoomsModal(false); enterRoom(room); }} style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
+                          دخول الغرفة 🚪
+                        </button>
+                      )}
+                      {isOwner && (
+                        <button onClick={() => handleDeleteRoom(room.id)} style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }} title="حذف الغرفة">
+                          🗑 حذف
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#1e293b', fontSize: '13px', textAlign: 'right' }}>
                       <span>{room.flag}</span>
-                      <span style={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>{room.name}</span>
-                      <span style={{ color: '#059669', fontSize: '10px', whiteSpace: 'nowrap' }}>
-                        {count} 👥
-                      </span>
+                      <span>{room.name}</span>
+                      <span style={{ color: '#059669', fontSize: '12px' }}>{count} 👥</span>
                     </div>
                   </div>
                 );
