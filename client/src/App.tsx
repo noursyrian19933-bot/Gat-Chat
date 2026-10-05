@@ -2253,13 +2253,13 @@ export default function App() {
       )}
 
       {showRoomsModal && currentView === 'chat' && selectedRoom && (
-        <div onClick={() => setShowRoomsModal(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '20px' }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '650px', maxHeight: '82vh', backgroundColor: '#ffffff', borderRadius: '18px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 35px rgba(0,0,0,0.35)' }}>
-            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div onClick={() => setShowRoomsModal(false)} style={{ position: 'fixed', top: '60px', left: 0, right: 0, bottom: '60px', backgroundColor: 'rgba(0,0,0,0.28)', zIndex: 120, direction: 'rtl' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '78%', backgroundColor: '#ffffff', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '-6px 0 18px rgba(0,0,0,0.10)' }}>
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', minHeight: '60px', padding: '0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
               <span style={{ fontWeight: 'bold', fontSize: '16px' }}>🏠 قائمة الغرف</span>
               <button onClick={() => setShowRoomsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '30px', lineHeight: 1, cursor: 'pointer', fontWeight: 'normal' }}>✕</button>
             </div>
-            <div style={{ padding: '14px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '14px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', boxSizing: 'border-box' }}>
               {isOwner && (
                 <form onSubmit={handleCreateRoom} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center' }}>🛠️ إدارة الغرف — صاحب الموقع فقط</div>
