@@ -202,6 +202,8 @@ export default function App() {
   const [newsInput, setNewsInput] = useState('');
   const [newsImage, setNewsImage] = useState('');
   const [newsCommentInputs, setNewsCommentInputs] = useState<Record<string,string>>({});
+  const [seenNewsIds, setSeenNewsIds] = useState<string[]>([]);
+  const [seenWallIds, setSeenWallIds] = useState<string[]>([]);
   const [rankedUsers, setRankedUsers] = useState<any[]>([]);
   const [pendingChatImage, setPendingChatImage] = useState<string | null>(null);
   const [pendingChatImageName, setPendingChatImageName] = useState('image.jpg');
@@ -933,6 +935,39 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!user) return;
+    try {
+      const newsKey = `gat_seen_news_${user.uid}`;
+      const wallKey = `gat_seen_wall_${user.uid}`;
+      const savedNews = JSON.parse(localStorage.getItem(newsKey) || '[]');
+      const savedWall = JSON.parse(localStorage.getItem(wallKey) || '[]');
+      setSeenNewsIds(Array.isArray(savedNews) ? savedNews : []);
+      setSeenWallIds(Array.isArray(savedWall) ? savedWall : []);
+    } catch (e) {
+      setSeenNewsIds([]);
+      setSeenWallIds([]);
+    }
+  }, [user]);
+
+  const markNewsSeen = (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    setSeenNewsIds(prev => {
+      const next = Array.from(new Set([...prev, ...ids]));
+      try { localStorage.setItem(`gat_seen_news_${user.uid}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const markWallSeen = (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    setSeenWallIds(prev => {
+      const next = Array.from(new Set([...prev, ...ids]));
+      try { localStorage.setItem(`gat_seen_wall_${user.uid}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  useEffect(() => {
     if (!showWallModal || !user) return;
     let cancelled = false;
     (async () => {
@@ -958,6 +993,20 @@ export default function App() {
       setNewsItems(items);
     });
   }, []);
+
+  // فتح الأخبار يعتبر مشاهدة فعلية لكل الأخبار الحالية؛ لذلك يختفي تنبيه (جديد).
+  useEffect(() => {
+    if (!showNewsModal || !newsItems.length || !user) return;
+    const timer = window.setTimeout(() => markNewsSeen(newsItems.map(n => n.id)), 250);
+    return () => window.clearTimeout(timer);
+  }, [showNewsModal, newsItems.length, user]);
+
+  // فتح حائط الأصدقاء يعتبر مشاهدة للمنشورات الحالية.
+  useEffect(() => {
+    if (!showWallModal || !wallPosts.length || !user) return;
+    const timer = window.setTimeout(() => markWallSeen(wallPosts.map(p => `${p.wallOwnerId || user.uid}_${p.id}`)), 250);
+    return () => window.clearTimeout(timer);
+  }, [showWallModal, wallPosts.length, user]);
 
 
   useEffect(() => {
@@ -2422,7 +2471,7 @@ export default function App() {
             <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
             {[
               ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}],['⟳','تحديث الصفحة',()=>window.location.reload()]
-            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'50px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',fontSize:'14px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'18px'}}>{icon as any}</span><span style={{display:'flex',alignItems:'center',gap:'7px'}}>{label as any}{label==='الأخبار'&&newsItems.length>0&&<b style={{background:'#ef233c',color:'#fff',fontSize:'9px',borderRadius:'4px',padding:'1px 5px'}}>{newsItems.length}</b>}</span></button>)}
+            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'50px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',fontSize:'14px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'18px'}}>{icon as any}</span><span style={{display:'flex',alignItems:'center',gap:'7px'}}>{label as any}{label==='الأخبار'&&newsItems.filter(n=>!seenNewsIds.includes(n.id)).length>0&&<b style={{background:'#ef233c',color:'#fff',fontSize:'9px',borderRadius:'4px',padding:'1px 5px'}}>{newsItems.filter(n=>!seenNewsIds.includes(n.id)).length}</b>}</span></button>)}
           </div>
         </div>
       )}
@@ -2528,7 +2577,7 @@ export default function App() {
               {wallPosts.length===0 ? <div style={{textAlign:'center',padding:'35px 10px',color:'#94a3b8',fontSize:'11px'}}>لا توجد منشورات على حائطك بعد.</div> : wallPosts.map(p=>{
                 const canInteract = p.userId === user.uid || isOwner || friendsList.some((f:any)=>f.friendUid===p.userId);
                 return <div key={p.id} style={{border:'1px solid #e2e8f0',borderRadius:'8px',padding:'8px',marginBottom:'7px',background:'#fff'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',fontWeight:'bold'}}><span>{p.userName}</span>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)} style={{border:0,background:'none',color:'#dc2626',fontSize:'11px'}}>حذف</button>}</div>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',fontWeight:'bold'}}><span>{p.userName} { !seenWallIds.includes(`${p.wallOwnerId || user.uid}_${p.id}`) && <span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px',fontSize:'9px'}}>جديد</span>}</span>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)} style={{border:0,background:'none',color:'#dc2626',fontSize:'11px'}}>حذف</button>}</div>
                   <div style={{fontSize:'11px',margin:'6px 0',lineHeight:1.65}}>{p.text}</div>
                   <div style={{display:'flex',gap:'7px',alignItems:'center',borderTop:'1px solid #f1f5f9',paddingTop:'5px'}}>{canInteract?<button onClick={()=>toggleWallLike(p)} style={{border:0,background:'none',fontSize:'10px',color:(p.likes||[]).includes(user.uid)?'#2563eb':'#64748b'}}>👍 {(p.likes||[]).length}</button>:<span style={{fontSize:'10px',color:'#94a3b8'}}>👍 {(p.likes||[]).length}</span>}<span style={{fontSize:'10px',color:'#64748b'}}>💬 {(p.comments||[]).length}</span></div>
                   {(p.comments||[]).map((c:any,i:number)=><div key={i} style={{fontSize:'10px',background:'#f8fafc',padding:'5px',borderRadius:'5px',marginTop:'4px'}}><b>{c.name}:</b> {c.text}</div>)}
@@ -2550,7 +2599,7 @@ export default function App() {
                 const canInteract=Boolean(user&&(n.authorId===user.uid||friendsList.some((f:any)=>f.friendUid===n.authorId)));
                 const likes=Array.isArray(n.likes)?n.likes:[]; const comments=Array.isArray(n.comments)?n.comments:[];
                 return <div key={n.id} style={{padding:'14px 6px 12px',borderBottom:'1px solid #e5e7eb'}}>
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}><div style={{display:'flex',alignItems:'center',gap:'7px'}}><div style={{width:'42px',height:'42px',borderRadius:'50%',overflow:'hidden',background:'#ddd'}}>{n.authorAvatar?<img src={n.authorAvatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',fontSize:'20px'}}>👤</span>}</div><div><div style={{fontSize:'12px',fontWeight:'700'}}>{n.authorName||'الإدارة'}</div><div style={{fontSize:'9px',color:'#888'}}>{n.createdAt?.toDate?n.createdAt.toDate().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}):'جديد'} <span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px'}}>جديد</span></div></div></div>{n.pinned&&<span style={{fontSize:'18px'}}>⚑</span>}</div>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}><div style={{display:'flex',alignItems:'center',gap:'7px'}}><div style={{width:'42px',height:'42px',borderRadius:'50%',overflow:'hidden',background:'#ddd'}}>{n.authorAvatar?<img src={n.authorAvatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',fontSize:'20px'}}>👤</span>}</div><div><div style={{fontSize:'12px',fontWeight:'700'}}>{n.authorName||'الإدارة'}</div><div style={{fontSize:'9px',color:'#888'}}>{n.createdAt?.toDate?n.createdAt.toDate().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}):'جديد'} {!seenNewsIds.includes(n.id)&&<span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px'}}>جديد</span>}</div></div></div>{n.pinned&&<span style={{fontSize:'18px'}}>⚑</span>}</div>
                   {n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'220px',objectFit:'cover',borderRadius:'6px',marginBottom:'7px'}}/>}<div style={{fontSize:'12px',lineHeight:1.75,color:'#333',whiteSpace:'pre-wrap'}}>{n.text}</div>
                   <div style={{display:'flex',alignItems:'center',gap:'10px',marginTop:'9px',paddingTop:'6px',borderTop:'1px solid #f1f1f1'}}>{canInteract?<button onClick={()=>toggleNewsLike(n)} style={{border:0,background:'transparent',fontSize:'11px',color:likes.includes(user?.uid)?'#e11d48':'#555'}}>❤️ {likes.length}</button>:<span style={{fontSize:'11px',color:'#999'}}>❤️ {likes.length}</span>}<span style={{fontSize:'11px',color:'#555'}}>💬 {comments.length}</span></div>
                   {comments.map((c:any,i:number)=><div key={i} style={{marginTop:'4px',background:'#f8fafc',padding:'5px 7px',borderRadius:'5px',fontSize:'10px'}}><b>{c.name}:</b> {c.text}</div>)}
