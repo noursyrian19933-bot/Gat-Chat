@@ -1216,9 +1216,35 @@ export default function App() {
     }
   };
 
+  const publishPresenceForRoomImmediately = async (room: { id: string; name: string; flag?: string }) => {
+    if (!user) return;
+    const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
+    const userName = user.isAnonymous ? (user.displayName || storedGuest || 'زائر') : (user.displayName || user.email?.split('@')[0] || 'عضو');
+    const roomId = room.id;
+    const roomName = room.name;
+    const payload = {
+      userId: user.uid, userName, email: (user.email || '').trim().toLowerCase(),
+      role: user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole)),
+      flag: room.flag || currentFlag, gender: profileGender, country: profileCountry,
+      avatarUrl: profileAvatar, coverUrl: profileCover, profileSongUrl: profileSong,
+      nameColor, nameStyle, profileBgColor, joinedDate: userJoinedDate || new Date().toISOString().slice(0,10),
+      roomId, roomName, lastSeen: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+      lastActive: Date.now(), online: true, points: 0
+    };
+    // تحديث Firebase مباشرة عند الضغط على دخول الغرفة، بدون انتظار دورة useEffect.
+    await set(ref(rdb, `room_presence_live/${roomId}/${user.uid}`), payload).catch(() => {});
+    setOnlineUsersList(prev => {
+      const self = { id:user.uid, ...payload };
+      return [self, ...prev.filter((u:any) => u.userId !== user.uid)];
+    });
+    setRoomCounts(prev => ({...prev, [roomId]: Math.max(Number(prev[roomId] || 0), 1)}));
+  };
+
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setShowRoomsModal(false);
     setSelectedRoom(room);
+    // الظهور في الروم الجديدة يكون فورياً عند الضغط، وليس بعد انتظار listener.
+    await publishPresenceForRoomImmediately(room);
     setCurrentView('chat');
     localStorage.setItem('gat_current_room_id', room.id);
     localStorage.setItem('gat_current_room_name', room.name);
@@ -1300,21 +1326,34 @@ export default function App() {
   };
 
   const sendChatMedia = async (mediaType: 'image'|'voice', mediaData: string, mediaName = 'media') => {
-    if (!selectedRoom || !user) return;
+    if (!selectedRoom || !user || !mediaData) return;
     const { senderName, roleText } = getSenderInfo();
     try {
-      const blob = await dataUrlToBlob(mediaData);
       const safeName = mediaName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
-      // الوسائط لا تدخل Firestore كـ Base64: تُرفع أولاً إلى Storage ثم نحفظ الرابط فقط.
-      const mediaUrl = await uploadBlobToStorage(blob, path, blob.type || (mediaType === 'voice' ? 'audio/webm' : 'image/jpeg'));
+      const raw = mediaData.includes(',') ? mediaData.split(',')[1] : mediaData;
+      const mime = mediaType === 'voice' ? 'audio/webm' : 'image/jpeg';
+      let mediaUrl = '';
+      try {
+        // uploadString يتعامل مباشرة مع Data URL وهو أكثر ثباتاً على الهاتف.
+        const fileRef = storageRef(storage, path);
+        await uploadString(fileRef, raw, 'base64', { contentType: mime });
+        mediaUrl = await getDownloadURL(fileRef);
+      } catch (storageError) {
+        // محاولة ثانية باستخدام Blob إذا فشل الرفع الأول.
+        const blob = await dataUrlToBlob(mediaData);
+        mediaUrl = await uploadBlobToStorage(blob, path, blob.type || mime);
+      }
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
         mediaType, mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
-      setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
-    } catch (e) { console.error('فشل رفع الوسائط:', e); alert('تعذر إرسال الصورة/الفويس. تأكد من تفعيل Firebase Storage وقواعد Storage.'); }
+      setPendingChatImage(null); setPendingChatImageName('image.jpg'); setRecordingData(null); setRecordingSeconds(0);
+    } catch (e:any) {
+      console.error('فشل إرسال الوسائط:', e);
+      alert(`تعذر إرسال ${mediaType === 'image' ? 'الصورة' : 'الفويس'}. تأكد من Firebase Storage Rules ثم أعد المحاولة.`);
+    }
   };
 
   const startVoiceRecording = async () => {
