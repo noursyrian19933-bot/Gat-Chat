@@ -138,6 +138,22 @@ const getNameStyleProps = (style: string, color: string) => {
   }
 };
 
+
+const VideoIcon = ({ type, size = 20, stroke = 2.2 }: { type: string; size?: number; stroke?: number }) => {
+  const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: stroke, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+  if (type === 'menu') return <svg {...common}><path d="M3 6h18M3 12h18M3 18h18"/></svg>;
+  if (type === 'diamond') return <svg {...common}><path d="M3 9l4-5h10l4 5-9 11L3 9z"/><path d="M3 9h18M7 4l5 5 5-5M8 9l4 11 4-11"/></svg>;
+  if (type === 'crown') return <svg {...common}><path d="M3 7l4 4 5-7 5 7 4-4-2 11H5L3 7z"/><path d="M5 18h14"/></svg>;
+  if (type === 'mail') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>;
+  if (type === 'request') return <svg {...common}><circle cx="9" cy="8" r="3"/><path d="M3 19c.5-3.2 2.5-5 6-5s5.5 1.8 6 5M17 7v6M14 10h6"/></svg>;
+  if (type === 'bell') return <svg {...common}><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>;
+  if (type === 'settings') return <svg {...common}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2h-2.6v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 8 15a1.7 1.7 0 0 0-1.5-1H6v-2.6h.5A1.7 1.7 0 0 0 8 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5v-.2H15v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.2V14h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg>;
+  if (type === 'home') return <svg {...common}><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9v11h14V9M9 20v-6h6v6"/></svg>;
+  if (type === 'users') return <svg {...common}><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6M14 15c3-.3 5 1.2 6 4"/></svg>;
+  if (type === 'userplus') return <svg {...common}><circle cx="8" cy="8" r="3"/><path d="M2.5 20c.5-4 2.3-6 5.5-6s5 2 5.5 6M18 7v6M15 10h6"/></svg>;
+  return null;
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
@@ -1745,7 +1761,7 @@ export default function App() {
         .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
-        .video-topbar .brand-logo { font-size:27px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
+        .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
         .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
@@ -1759,10 +1775,10 @@ export default function App() {
         .video-composer input::placeholder { color:#888 !important; }
         .video-composer > div { height:44px !important; border-radius:23px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; }
         .video-composer > button[type=submit] { width:46px !important; height:46px !important; background:#003d43 !important; font-size:20px !important; }
-        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:68px !important; min-height:68px !important; padding:0 5px !important; }
+        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:52px !important; min-height:52px !important; padding:0 4px !important; }
         .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:0 !important; flex:1 !important; padding:3px 2px !important; }
-        .video-bottom-nav > div div:first-child { font-size:27px !important; color:#fff !important; }
-        .video-bottom-nav > div div:last-child { font-size:12px !important; font-weight:500 !important; color:#fff !important; }
+        .video-bottom-nav > div div:first-child { font-size:20px !important; color:#fff !important; }
+        .video-bottom-nav > div div:last-child { font-size:10px !important; font-weight:500 !important; color:#fff !important; }
         .video-rooms-overlay { background:rgba(0,0,0,.42) !important; }
         .video-rooms-panel { width:100% !important; max-width:100% !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
         .video-rooms-panel > div:first-child { background:#003d43 !important; padding:14px 16px !important; }
@@ -1775,8 +1791,8 @@ export default function App() {
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
         @media (max-width:600px) {
-          .video-topbar { height:82px !important; min-height:82px !important; }
-          .video-topbar .brand-logo { font-size:21px !important; }
+          .video-topbar { height:52px !important; min-height:52px !important; }
+          .video-topbar .brand-logo { font-size:18px !important; }
           .video-chat-scroll > div { min-height:44px !important; }
           .video-chat-scroll > div > div:nth-child(2) { font-size:13px !important; }
           .video-rooms-panel { width:100% !important; }
@@ -1808,24 +1824,24 @@ export default function App() {
       />
 
       {(currentView === 'chat' || currentView === 'rooms') && (
-        <header className="video-topbar" style={{height:'82px',minHeight:'82px',flexShrink:0,background:'#003f45',color:'#fff',padding:'0 18px',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',boxSizing:'border-box',zIndex:50}}>
+        <header className="video-topbar" style={{height:'52px',minHeight:'52px',flexShrink:0,background:'#003f45',color:'#fff',padding:'0 10px',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',boxSizing:'border-box',zIndex:50}}>
           {currentView === 'rooms' ? (
             <>
-              <div className="brand-logo" style={{fontSize:'31px'}}>Arabic<span style={{color:'#ff4d76'}}>chat</span></div>
+              <div className="brand-logo" style={{fontSize:'22px'}}>Arabic<span style={{color:'#ff4d76'}}>chat</span></div>
               <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{width:'54px',height:'54px',borderRadius:'50%',overflow:'hidden',border:'2px solid rgba(255,255,255,.5)',background:'#334155',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{profileAvatar?<img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:'25px'}}>👤</span>}</div>
             </>
           ) : (
             <>
-              <div style={{display:'flex',alignItems:'center',gap:'18px'}}>
-                <button onClick={()=>setShowMainMenu(true)} aria-label="القائمة" style={{background:'transparent',border:0,color:'#fff',fontSize:'36px',lineHeight:1,cursor:'pointer',padding:0}}>☰</button>
+              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                <button onClick={()=>setShowMainMenu(true)} aria-label="القائمة" style={{background:'transparent',border:0,color:'#fff',cursor:'pointer',padding:0,display:'flex',alignItems:'center'}}><VideoIcon type="menu" size={23}/></button>
                 <button onClick={()=>setShowTopSearch(true)} aria-label="البحث" style={{background:'transparent',border:0,color:'#fff',fontSize:'31px',lineHeight:1,cursor:'pointer',padding:0}}>⌕</button>
-                <div style={{display:'flex',alignItems:'center',gap:'14px'}}><div style={{fontSize:'28px'}}>💎</div><div style={{fontSize:'28px'}}>♛</div></div>
+                <div style={{display:'flex',alignItems:'center',gap:'13px'}}><VideoIcon type="diamond" size={22}/><VideoIcon type="crown" size={22}/></div>
               </div>
-              <div style={{display:'flex',alignItems:'center',gap:'17px'}}>
-                <div onClick={()=>setShowMessagesModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff',position:'relative'}}><span style={{fontSize:'29px'}}>✉</span><span>رسالة</span>{totalUnreadMessages>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{totalUnreadMessages}</b>}</div>
-                <div onClick={()=>setShowRequestsModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff',position:'relative'}}><span style={{fontSize:'29px'}}>♟+</span><span>طلب</span>{pendingRequests.length>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{pendingRequests.length}</b>}</div>
-                <div onClick={handleOpenNotifications} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff',position:'relative'}}><span style={{fontSize:'29px'}}>♟</span><span>إشعار</span>{unreadNotificationsCount>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{unreadNotificationsCount}</b>}</div>
-                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff'}}><span style={{fontSize:'29px'}}>●</span><span>اعدادات</span></div>
+              <div style={{display:'flex',alignItems:'center',gap:'11px'}}>
+                <div onClick={()=>setShowMessagesModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="mail" size={20}/></span><span>رسالة</span>{totalUnreadMessages>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{totalUnreadMessages}</b>}</div>
+                <div onClick={()=>setShowRequestsModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="request" size={20}/></span><span>طلب</span>{pendingRequests.length>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{pendingRequests.length}</b>}</div>
+                <div onClick={handleOpenNotifications} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="bell" size={20}/></span><span>إشعار</span>{unreadNotificationsCount>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{unreadNotificationsCount}</b>}</div>
+                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff'}}><span style={{display:'flex'}}><VideoIcon type="settings" size={20}/></span><span>اعدادات</span></div>
               </div>
             </>
           )}
@@ -1979,7 +1995,7 @@ export default function App() {
                       style={{ 
                         backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', 
                         padding: '4px 6px', 
-                        minHeight: '34px',
+                        minHeight: '30px',
                         borderBottom: '1px solid #e7e7e7', 
                         display: 'flex', 
                         alignItems: 'center', 
@@ -1988,7 +2004,7 @@ export default function App() {
                       }}
                     >
                       
-                      <div onClick={() => openUserProfile(m)} style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                      <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
                         {m.avatarUrl ? (
                           <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -2195,11 +2211,11 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'68px',minHeight:'68px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
-          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>⌂</div><div>الغرف</div></div>
-          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>♣</div><div>المتصلين</div></div>
-          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>♟+</div><div>الأصدقاء</div></div>
-          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>⚙</div><div>خيارات</div></div>
+        <nav className="video-bottom-nav" style={{height:'52px',minHeight:'52px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
+          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
+          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
+          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
+          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={20}/></div><div>خيارات</div></div>
         </nav>
       )}
 
@@ -2232,7 +2248,7 @@ export default function App() {
             position: 'fixed',
             top: currentView === 'chat' ? '82px' : '0',
             right: 0,
-            bottom: currentView === 'chat' ? '88px' : '0',
+            bottom: currentView === 'chat' ? '52px' : '0',
             left: 0,
             backgroundColor: 'rgba(15,23,42,0.55)',
             zIndex: 200,
@@ -2323,7 +2339,7 @@ export default function App() {
                 pendingRequests.map((req) => (
                   <div key={req.id} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>👤</div>
+                      <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>👤</div>
                       <div>
                         <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>{req.fromName}</div>
                         <div style={{ fontSize: '10px', color: '#64748b' }}>يرغب بإضافتك كصديق</div>
