@@ -34,7 +34,7 @@ import {
   arrayRemove 
 } from 'firebase/firestore';
 
-import { getDatabase, ref, child, get, set, update } from 'firebase/database';
+import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, remove, endAt } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -187,6 +187,8 @@ export default function App() {
   const [hasMoreRoomMessages, setHasMoreRoomMessages] = useState(false);
   const [loadingMoreRoomMessages, setLoadingMoreRoomMessages] = useState(false);
   const roomMessagesCursorRef = useRef<any | null>(null);
+  const roomMessagesFirestoreCursorRef = useRef<any | null>(null);
+  const roomMessagesRtdbExhaustedRef = useRef(false);
   const roomMessagesLoadedMoreRef = useRef(false);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
@@ -520,36 +522,6 @@ export default function App() {
     };
   }, [user]);
 
-  const updateLastSeenOnExit = async () => {
-    if (!user) return;
-    try {
-      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const presenceRef = doc(db, 'room_presence', user.uid);
-      const userRef = doc(db, 'users', user.uid);
-      
-      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, roomId: 'lobby', roomName: 'القائمة الرئيسية' }, { merge: true });
-      await setDoc(userRef, { lastSeen: nowTime }, { merge: true });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    if (!user) return;
-    const handleBeforeUnload = () => {
-      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const presenceRef = doc(db, 'room_presence', user.uid);
-      const userRef = doc(db, 'users', user.uid);
-      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, roomId: 'lobby', roomName: 'القائمة الرئيسية' }, { merge: true }).catch(() => {});
-      setDoc(userRef, { lastSeen: nowTime }, { merge: true }).catch(() => {});
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
-    };
-  }, [user]);
-
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -690,8 +662,6 @@ export default function App() {
       }
       await updateDoc(userRef, updateData);
 
-      const presenceRef = doc(db, 'room_presence', user.uid);
-      await setDoc(presenceRef, updateData, { merge: true });
     } catch (e) {
       console.error(e);
     }
@@ -874,104 +844,107 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
+
     const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
-    const userName = user.isAnonymous 
-      ? (user.displayName || storedGuest || 'زائر') 
+    const userName = user.isAnonymous
+      ? (user.displayName || storedGuest || 'زائر')
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
-    
     const roomId = selectedRoom ? selectedRoom.id : 'lobby';
     const roomName = selectedRoom ? selectedRoom.name : 'القائمة الرئيسية';
-    
-    const presenceRef = doc(db, 'room_presence', user.uid);
     const todayDate = userJoinedDate || new Date().toISOString().split('T')[0];
+    const presenceRef = ref(rdb, `room_presence_live/${roomId}/${user.uid}`);
 
-    const updatePresence = async () => {
+    const buildPresence = () => ({
+      userId: user.uid,
+      userName,
+      email: (user.email || '').trim().toLowerCase(),
+      role: user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole)),
+      flag: currentFlag,
+      gender: profileGender,
+      country: profileCountry,
+      avatarUrl: profileAvatar,
+      coverUrl: profileCover,
+      profileSongUrl: profileSong,
+      nameColor,
+      nameStyle,
+      profileBgColor,
+      joinedDate: todayDate,
+      roomId,
+      roomName,
+      lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      lastActive: Date.now(),
+      online: true,
+      points: 0
+    });
+
+    onDisconnect(presenceRef).update({ online: false }).catch(() => {});
+
+    const publishPresence = () => set(presenceRef, buildPresence()).catch(() => {});
+    publishPresence();
+    const presenceInterval = window.setInterval(publishPresence, 30000);
+
+    const handleBeforeUnload = () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      let currentRole = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
-
-      setDoc(presenceRef, {
-        roomId: roomId,
-        roomName: roomName,
-        userId: user.uid,
-        userName: userName,
-        email: (user.email || '').trim().toLowerCase(),
-        role: currentRole,
-        flag: currentFlag,
-        gender: profileGender,
-        country: profileCountry,
-        avatarUrl: profileAvatar,
-        coverUrl: profileCover,
-        profileSongUrl: profileSong,
-        nameColor: nameColor,
-        nameStyle: nameStyle,
-        profileBgColor: profileBgColor,
-        joinedDate: todayDate,
+      update(presenceRef, {
+        online: false,
         lastSeen: nowTime,
-        lastActive: Date.now(),
-        points: 0
-      }, { merge: true });
+        roomId,
+        roomName
+      }).catch(() => {});
+      setDoc(doc(db, 'users', user.uid), { lastSeen: nowTime, lastExitAt: Date.now() }, { merge: true }).catch(() => {});
     };
 
-    updatePresence();
-    const presenceInterval = setInterval(updatePresence, 10000);
-
+    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       clearInterval(presenceInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      update(presenceRef, { online: false, lastActive: Date.now(), lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }).catch(() => {});
     };
   }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor, userJoinedDate]);
 
   useEffect(() => {
-    return onSnapshot(collection(db, 'room_presence'), (snapshot) => {
+    const roomId = selectedRoom?.id || 'lobby';
+    const presenceRoot = ref(rdb, `room_presence_live/${roomId}`);
+
+    return onValue(presenceRoot, (snapshot) => {
+      const raw = snapshot.val() || {};
       const counts: { [roomId: string]: number } = {};
-      const uniqueUsersMap = new Map<string, any>();
+      const activeUsersList: any[] = [];
       const now = Date.now();
-      const FIVE_MINUTES = 5 * 60 * 1000;
 
-      snapshot.docs.forEach(docSnap => {
-        const data = docSnap.data();
-        const uId = data.userId || docSnap.id;
-        const isRecentlyActive = data.lastActive && (now - data.lastActive < FIVE_MINUTES);
+      Object.entries(raw).forEach(([uid, value]: [string, any]) => {
+        if (!value || !value.userId) return;
+        const lastActive = Number(value.lastActive || 0);
+        // نحتفظ بالاسم حتى 15 دقيقة بعد الخروج، ثم يسقط تلقائيًا من القائمة.
+        if (lastActive && now - lastActive > 15 * 60 * 1000) return;
 
-        if (isRecentlyActive && uId) {
-          if (!uniqueUsersMap.has(uId) || (uniqueUsersMap.get(uId).lastActive < data.lastActive)) {
-            uniqueUsersMap.set(uId, {
-              id: docSnap.id,
-              userId: uId,
-              name: data.userName || 'زائر',
-              email: data.email || '',
-              role: data.role || 'Guest',
-              flag: data.flag || '🇯🇴',
-              country: data.country || 'الأردن',
-              gender: data.gender || 'ذكر',
-              avatarUrl: data.avatarUrl || '',
-              coverUrl: data.coverUrl || '',
-              profileSongUrl: data.profileSongUrl || '',
-              nameColor: data.nameColor || '#2563eb',
-              nameStyle: data.nameStyle || 'normal',
-              profileBgColor: data.profileBgColor || '#ffffff',
-              joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
-              lastSeen: data.lastSeen || '01:00 AM',
-              points: data.points || 0,
-              roomId: data.roomId,
-              roomName: data.roomName || 'القائمة الرئيسية',
-              lastActive: data.lastActive
-            });
-          }
-        }
+        activeUsersList.push({
+          id: uid, userId: uid, name: value.userName || 'زائر', email: value.email || '',
+          role: value.role || 'Guest', flag: value.flag || '🇯🇴', country: value.country || 'الأردن',
+          gender: value.gender || 'ذكر', avatarUrl: value.avatarUrl || '', coverUrl: value.coverUrl || '',
+          profileSongUrl: value.profileSongUrl || '', nameColor: value.nameColor || '#2563eb',
+          nameStyle: value.nameStyle || 'normal', profileBgColor: value.profileBgColor || '#ffffff',
+          joinedDate: value.joinedDate || new Date().toISOString().split('T')[0],
+          lastSeen: value.lastSeen || '', points: value.points || 0, roomId: value.roomId || roomId,
+          roomName: value.roomName || 'القائمة الرئيسية', lastActive, online: value.online === true
+        });
       });
 
-      const activeUsersList = Array.from(uniqueUsersMap.values());
+      counts[roomId] = activeUsersList.filter((u:any) => u.online === true).length;
 
-      activeUsersList.forEach(u => {
-        if (u.roomId && u.roomId !== 'lobby') {
-          counts[u.roomId] = (counts[u.roomId] || 0) + 1;
-        }
-      });
-
+      const roleRank = (u: any) => {
+        const role = normalizeRole(u.role);
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || role === 'Owner') return 1;
+        if (role === 'Super Admin') return 2;
+        if (role === 'Admin') return 3;
+        if (role === 'Member' || role === 'Premium') return 4;
+        return 5;
+      };
+      activeUsersList.sort((a,b) => roleRank(a)-roleRank(b) || Number(b.online)-Number(a.online) || String(a.name || '').localeCompare(String(b.name || '')));
       setRoomCounts(counts);
       setOnlineUsersList(activeUsersList);
     });
-  }, []);
+  }, [selectedRoom]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -1093,34 +1066,123 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [showWallModal, wallPosts.length, user]);
 
+  const normalizeRoomMessage = (id: string, data: any) => {
+    const created = typeof data?.createdAt === 'number'
+      ? data.createdAt
+      : (data?.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now());
+    const expired = !!(data?.isSystemSpecial && created && Date.now() - created > 5 * 60 * 1000);
+    return { id, ...data, createdAt: created, isExpired: expired };
+  };
+
+  const mergeRoomMessages = (items: any[]) => {
+    const valid = items.filter((m:any) => !m.isExpired);
+    setMessages(prev => {
+      const map = new Map(prev.map((m:any) => [m.id, m]));
+      valid.forEach((m:any) => map.set(m.id, m));
+      return Array.from(map.values()).sort((a:any,b:any) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+    });
+  };
+
   useEffect(() => {
     if (!selectedRoom) return;
+    let cancelled = false;
     roomMessagesCursorRef.current = null;
+    roomMessagesFirestoreCursorRef.current = null;
+    roomMessagesRtdbExhaustedRef.current = false;
     roomMessagesLoadedMoreRef.current = false;
     setHasMoreRoomMessages(false);
-    const msgQuery = query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),limit(20));
-    return onSnapshot(msgQuery,(snapshot)=>{
-      roomMessagesCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length-1] : null;
-      setHasMoreRoomMessages(snapshot.docs.length===20);
-      const now=Date.now();
-      const incoming=snapshot.docs.map(d=>{const data=d.data();const expired=!!(data.isSystemSpecial&&data.createdAt&&now-(data.createdAt.toMillis?data.createdAt.toMillis():Date.now())>5*60*1000);return {id:d.id,isExpired:expired,...data};}).filter((m:any)=>!m.isExpired);
-      setMessages(prev=>{const map=new Map(prev.map((m:any)=>[m.id,m]));incoming.forEach((m:any)=>map.set(m.id,m));return Array.from(map.values()).sort((a:any,b:any)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));});
-      if (!roomMessagesLoadedMoreRef.current) setTimeout(()=>chatBottomRef.current?.scrollIntoView({behavior:'smooth'}),100);
+    setMessages([]);
+
+    const roomMessagesRef = ref(rdb, `room_messages/${selectedRoom.id}`);
+    const liveQueryRef = query(roomMessagesRef, orderByChild('createdAt'), limitToLast(20));
+
+    // RTDB = البث اللحظي الجديد. لا نراقب تاريخ الغرفة كله.
+    const unsubscribeLive = onValue(liveQueryRef, (snapshot) => {
+      if (cancelled) return;
+      const incoming:any[] = [];
+      snapshot.forEach(childSnap => {
+        incoming.push(normalizeRoomMessage(childSnap.key || '', childSnap.val()));
+      });
+      if (incoming.length) {
+        roomMessagesCursorRef.current = incoming[0].createdAt;
+        mergeRoomMessages(incoming);
+      }
+      setHasMoreRoomMessages(incoming.length === 20 || !!roomMessagesFirestoreCursorRef.current);
+      if (!roomMessagesLoadedMoreRef.current) {
+        setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior:'smooth' }), 100);
+      }
     });
+
+    // Firestore القديم يُقرأ مرة واحدة فقط، وليس onSnapshot.
+    (async () => {
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'rooms', selectedRoom.id, 'messages'),
+          orderBy('createdAt', 'desc'),
+          limit(20)
+        ));
+        if (cancelled) return;
+        roomMessagesFirestoreCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
+        const oldMessages = snap.docs.map(d => normalizeRoomMessage(d.id, d.data())).reverse();
+        mergeRoomMessages(oldMessages);
+        setHasMoreRoomMessages(snap.docs.length === 20 || !!roomMessagesCursorRef.current);
+      } catch (e) {
+        console.warn('تعذر تحميل أرشيف رسائل الغرفة:', e);
+      }
+    })();
+
+    return () => { cancelled = true; unsubscribeLive(); };
   }, [selectedRoom]);
 
   const loadMoreRoomMessages = async () => {
-    if (!selectedRoom || !roomMessagesCursorRef.current || loadingMoreRoomMessages) return;
+    if (!selectedRoom || loadingMoreRoomMessages) return;
     setLoadingMoreRoomMessages(true);
     try {
-      const snap=await getDocs(query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),startAfter(roomMessagesCursorRef.current),limit(20)));
-      if (snap.docs.length) roomMessagesCursorRef.current=snap.docs[snap.docs.length-1];
-      setHasMoreRoomMessages(snap.docs.length===20);
-      const now=Date.now();
-      const older=snap.docs.map(d=>{const data=d.data();const expired=!!(data.isSystemSpecial&&data.createdAt&&now-(data.createdAt.toMillis?data.createdAt.toMillis():Date.now())>5*60*1000);return {id:d.id,isExpired:expired,...data};}).filter((m:any)=>!m.isExpired);
-      roomMessagesLoadedMoreRef.current=true;
-      setMessages(prev=>{const map=new Map(prev.map((m:any)=>[m.id,m]));older.forEach((m:any)=>map.set(m.id,m));return Array.from(map.values()).sort((a:any,b:any)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));});
-    } finally { setLoadingMoreRoomMessages(false); }
+      let added = 0;
+
+      // أولاً: نرجع إلى رسائل RTDB الأقدم من أقدم رسالة حيّة موجودة عندنا.
+      if (!roomMessagesRtdbExhaustedRef.current && roomMessagesCursorRef.current != null) {
+        const before = Number(roomMessagesCursorRef.current) - 1;
+        if (before > 0) {
+          const snap = await get(query(
+            ref(rdb, `room_messages/${selectedRoom.id}`),
+            orderByChild('createdAt'),
+            endAt(before),
+            limitToLast(20)
+          ));
+          const older:any[] = [];
+          snap.forEach(childSnap => older.push(normalizeRoomMessage(childSnap.key || '', childSnap.val())));
+          if (older.length) {
+            roomMessagesCursorRef.current = older[0].createdAt;
+            mergeRoomMessages(older);
+            added += older.length;
+          }
+          if (older.length < 20) roomMessagesRtdbExhaustedRef.current = true;
+        } else {
+          roomMessagesRtdbExhaustedRef.current = true;
+        }
+      }
+
+      // بعد انتهاء RTDB نرجع إلى أرشيف Firestore القديم.
+      if (added < 20 && roomMessagesFirestoreCursorRef.current) {
+        const snap = await getDocs(query(
+          collection(db, 'rooms', selectedRoom.id, 'messages'),
+          orderBy('createdAt', 'desc'),
+          startAfter(roomMessagesFirestoreCursorRef.current),
+          limit(20)
+        ));
+        roomMessagesFirestoreCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : roomMessagesFirestoreCursorRef.current;
+        const older = snap.docs.map(d => normalizeRoomMessage(d.id, d.data())).reverse();
+        mergeRoomMessages(older);
+        added += older.length;
+        if (snap.docs.length < 20) roomMessagesFirestoreCursorRef.current = null;
+      }
+
+      setHasMoreRoomMessages(added > 0 || !roomMessagesRtdbExhaustedRef.current || !!roomMessagesFirestoreCursorRef.current);
+      roomMessagesLoadedMoreRef.current = true;
+    } finally {
+      setLoadingMoreRoomMessages(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -1199,6 +1261,25 @@ export default function App() {
     }
   };
 
+  const updateLastSeenOnExit = async () => {
+    if (!user) return;
+    const roomId = selectedRoom?.id || 'lobby';
+    const roomName = selectedRoom?.name || 'القائمة الرئيسية';
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      await update(ref(rdb, `room_presence_live/${roomId}/${user.uid}`), {
+        online: false,
+        lastActive: Date.now(),
+        lastSeen: nowTime,
+        roomId,
+        roomName
+      });
+      await setDoc(doc(db, 'users', user.uid), { lastSeen: nowTime, lastExitAt: Date.now() }, { merge: true });
+    } catch (e) {
+      console.warn('تعذر حفظ آخر ظهور:', e);
+    }
+  };
+
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setShowRoomsModal(false);
     setSelectedRoom(room);
@@ -1216,14 +1297,10 @@ export default function App() {
       const currentRoleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
       try {
-        await addDoc(collection(db, 'rooms', room.id, 'messages'), {
-          user: 'نظام الشات',
-          userId: 'system',
-          text: `تم الانضمام ${actualName} (${currentRoleText})`,
-          role: 'System',
-          color: '#16a34a',
-          isSystemSpecial: false,
-          createdAt: serverTimestamp()
+        const systemId = crypto.randomUUID();
+        await set(ref(rdb, `room_messages/${room.id}/${systemId}`), {
+          user: 'نظام الشات', userId: 'system', text: `تم الانضمام ${actualName} (${currentRoleText})`,
+          role: 'System', color: '#16a34a', isSystemSpecial: false, createdAt: Date.now()
         });
       } catch (e) {
         console.error(e);
@@ -1268,10 +1345,11 @@ export default function App() {
     if (!selectedRoom || !user) return;
     const { senderName, roleText } = getSenderInfo();
     try {
-      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
+      const messageId = crypto.randomUUID();
+      await set(ref(rdb, `room_messages/${selectedRoom.id}/${messageId}`), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
-        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: Date.now()
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
     } catch (e) { console.error(e); }
@@ -1389,17 +1467,11 @@ export default function App() {
     const textMsg = inputText.trim();
 
     try {
-      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
-        user: senderName,
-        userId: user.uid,
-        text: textMsg,
-        role: roleText,
-        color: nameColor,
-        nameStyle: nameStyle,
-        profileBgColor: hasRankForCustomization ? profileBgColor : '',
-        avatarUrl: profileAvatar || '',
-        isSystemSpecial: false,
-        createdAt: serverTimestamp()
+      const messageId = crypto.randomUUID();
+      await set(ref(rdb, `room_messages/${selectedRoom.id}/${messageId}`), {
+        user: senderName, userId: user.uid, text: textMsg, role: roleText,
+        color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '',
+        avatarUrl: profileAvatar || '', isSystemSpecial: false, createdAt: Date.now()
       });
       setInputText('');
       setShowEmojiPicker(false);
@@ -1564,9 +1636,7 @@ export default function App() {
       await updateDoc(doc(db, 'users', targetUid), {
         kickedUntil: kickUntilTime
       });
-      await setDoc(doc(db, 'room_presence', targetUid), {
-        kickedUntil: kickUntilTime
-      }, { merge: true });
+
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: 'تنبيه طرد 🚫',
@@ -1650,15 +1720,7 @@ export default function App() {
         { merge: true }
       );
 
-      await setDoc(
-        doc(db, 'room_presence', targetUid),
-        {
-          email: targetEmail,
-          role: roleToSave,
-          permissions
-        },
-        { merge: true }
-      );
+
 
       try {
         await update(ref(rdb, `users/${targetUid}`), {
@@ -1682,14 +1744,10 @@ export default function App() {
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
 
-        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
-          user: 'نظام الشات',
-          userId: 'system',
-          text: roomMsg,
-          role: 'System',
-          color: isDemote ? '#ef4444' : '#eab308',
-          isSystemSpecial: true,
-          createdAt: serverTimestamp()
+        const systemId = crypto.randomUUID();
+        await set(ref(rdb, `room_messages/${selectedRoom.id}/${systemId}`), {
+          user: 'نظام الشات', userId: 'system', text: roomMsg, role: 'System',
+          color: isDemote ? '#ef4444' : '#eab308', isSystemSpecial: true, createdAt: Date.now()
         });
       }
 
@@ -1739,9 +1797,7 @@ export default function App() {
         displayName: cleanNewName
       });
 
-      await setDoc(doc(db, 'room_presence', targetUid), {
-        userName: cleanNewName
-      }, { merge: true });
+
 
       if (user && user.uid === targetUid && !user.isAnonymous) {
         await updateProfile(user, { displayName: cleanNewName });
@@ -2391,7 +2447,7 @@ export default function App() {
                         <button 
                           onClick={async () => {
                             try {
-                              await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
+                              await remove(ref(rdb, `room_messages/${selectedRoom.id}/${m.id}`));
                             } catch (e) {
                               console.error(e);
                             }
