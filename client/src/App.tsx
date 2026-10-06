@@ -898,8 +898,19 @@ export default function App() {
         joinedDate: todayDate, lastSeen: nowTime, lastActive: Date.now(), online: true,
         roomId, roomName, points: 0
       };
+      const selfOnline = {
+        id: user.uid, userId: user.uid, name: userName, email: payload.email,
+        role: payload.role, flag: payload.flag || '🇯🇴', country: payload.country || 'الأردن',
+        gender: payload.gender || 'ذكر', avatarUrl: payload.avatarUrl || '',
+        coverUrl: payload.coverUrl || '', profileSongUrl: payload.profileSongUrl || '',
+        nameColor: payload.nameColor || '#2563eb', nameStyle: payload.nameStyle || 'normal',
+        profileBgColor: payload.profileBgColor || '#fff', joinedDate: payload.joinedDate || '',
+        lastSeen: payload.lastSeen, points: payload.points || 0, roomId, roomName,
+        lastActive: payload.lastActive, online: true
+      };
+      setOnlineUsersList(prev => [selfOnline, ...prev.filter((u:any) => u.userId !== user.uid)]);
+      setRoomCounts(prev => ({ ...prev, [roomId]: Math.max(Number(prev[roomId] || 0), 1) }));
       set(presenceRef, payload).catch(() => {
-        // احتياطي فقط إذا كانت قواعد RTDB الحالية تمنع الكتابة.
         setDoc(doc(db, 'room_presence', user.uid), payload, { merge: true }).catch(() => {});
       });
     };
