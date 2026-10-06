@@ -26,7 +26,12 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  updateDoc 
+  updateDoc,
+  limit,
+  startAfter,
+  limitToLast,
+  arrayUnion,
+  arrayRemove 
 } from 'firebase/firestore';
 
 import { getDatabase, ref, child, get, set, update } from 'firebase/database';
@@ -94,14 +99,7 @@ const COUNTRIES_LIST = [
   "تونس", "الجزائر", "المغرب", "موريتانيا"
 ];
 
-const EMOJIS_LIST = [
-  "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", 
-  "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", 
-  "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", 
-  "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "😣", "😖", 
-  "❤", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", 
-  "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅"
-];
+const EMOJIS_LIST = `😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫡 🤭 🤫 🤥 😶 🫠 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🤑 🤠 😈 👿 👹 👺 🤡 💩 👻 💀 ☠️ 👽 👾 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 💫 💥 💦 💨 🕳️ 💯 💢 💬 🗨️ 🗯️ 💭 💤 👋 🤚 🖐️ ✋ 🖖 👌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ ✍️ 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦿 🦵 🦶 👂 👃 🧠 🫀 🫁 🦷 🦴 👀 👁️ 👅 👄 💋 🫦 👶 🧒 👦 👧 🧑 👱 👨 🧔 👨‍🦰 👨‍🦱 👨‍🦳 👨‍🦲 👩 👩‍🦰 👩‍🦱 👩‍🦳 👩‍🦲 🧓 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👮 👷 💂 🕵️ 👩‍⚕️ 👨‍⚕️ 👩‍🎓 👨‍🎓 👩‍🏫 👨‍🏫 👩‍💻 👨‍💻 👩‍🍳 👨‍🍳 👩‍🚀 👨‍🚀 👩‍🚒 👨‍🚒 🧙 🧚 🧛 🧜 🧝 🧞 🧟 💃 🕺 🕴️ 👯 🚶 🏃 🧘 🛀 🛌 ❤️‍🔥 ❤️‍🩹 🩷 🩵 🩶 🫶 🫂 🤍‍🔥 ⭐ 🌟 ✨ ⚡ 🔥 🎉 🎊 🎁 🎈 💎 👑 🏆 🥇 🥈 🥉 ⚽ 🏀 🏈 ⚾ 🎾 🏐 🏉 🎱 🪀 🪁 🎮 🎯 🎲 🎸 🎹 🎺 🎻 📱 💻 🖥️ ⌨️ 🖱️ 📷 📸 🎥 📺 ☎️ 📞 💡 🔔 🔕 📌 📍 ✏️ 📝 📚 📖 🔑 🔒 🔓 ⚙️ 🛠️ 🔧 🔨 🧰 💰 💵 💳 📦 🚗 🚕 🚌 🚓 🚑 ✈️ 🚀 🚲 🏠 🏡 🏢 🌍 🌎 🌏 ☀️ 🌙 ⭐ 🌈 ☁️ ❄️ ☔ 🌧️ 🌊 🌴 🌹 🌷 🌺 🌸 🌼 🌻 🍎 🍓 🍉 🍌 🍇 🍒 🍑 🍍 🥝 🍕 🍔 🍟 🌭 🌮 🍿 🍩 🍪 ☕ 🥤 🍺 🍰 🎂 🍫 🍭 🧃`.split(' ').filter(Boolean);
 
 const getNameStyleProps = (style: string, color: string) => {
   switch (style) {
@@ -185,7 +183,11 @@ export default function App() {
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
-  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; role?: string; userId?: string; color?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string; isSystemSpecial?: boolean; createdAt?: any }>>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [hasMoreRoomMessages, setHasMoreRoomMessages] = useState(false);
+  const [loadingMoreRoomMessages, setLoadingMoreRoomMessages] = useState(false);
+  const roomMessagesCursorRef = useRef<any | null>(null);
+  const roomMessagesLoadedMoreRef = useRef(false);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -197,14 +199,49 @@ export default function App() {
   const [showRoomsModal, setShowRoomsModal] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
   const [showTopSearch, setShowTopSearch] = useState(false);
+  const [showWallModal, setShowWallModal] = useState(false);
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
+  const [wallPosts, setWallPosts] = useState<any[]>([]);
+  const [hasMoreWallPosts, setHasMoreWallPosts] = useState(false);
+  const [loadingMoreWallPosts, setLoadingMoreWallPosts] = useState(false);
+  const wallCursorsRef = useRef<Record<string, any>>({});
+  const wallHasMoreRef = useRef<Record<string, boolean>>({});
+  const [wallInput, setWallInput] = useState('');
+  const [wallCommentInputs, setWallCommentInputs] = useState<Record<string,string>>({});
+  const [newsItems, setNewsItems] = useState<any[]>([]);
+  const [hasMoreNews, setHasMoreNews] = useState(false);
+  const [loadingMoreNews, setLoadingMoreNews] = useState(false);
+  const newsCursorRef = useRef<any | null>(null);
+  const [newsInput, setNewsInput] = useState('');
+  const [newsImage, setNewsImage] = useState('');
+  const [newsCommentInputs, setNewsCommentInputs] = useState<Record<string,string>>({});
+  const [seenNewsIds, setSeenNewsIds] = useState<string[]>([]);
+  const [seenWallIds, setSeenWallIds] = useState<string[]>([]);
+  const [rankedUsers, setRankedUsers] = useState<any[]>([]);
+  const [pendingChatImage, setPendingChatImage] = useState<string | null>(null);
+  const [pendingChatImageName, setPendingChatImageName] = useState('image.jpg');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingData, setRecordingData] = useState<string | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
+  const chatImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
+  const [hasMorePrivateMessages, setHasMorePrivateMessages] = useState(false);
+  const [loadingMorePrivateMessages, setLoadingMorePrivateMessages] = useState(false);
+  const privateMessagesCursorRef = useRef<any | null>(null);
   const [privateInputText, setPrivateInputText] = useState('');
   const [privateConversations, setPrivateConversations] = useState<Array<any>>([]);
 
   const [pendingRequests, setPendingRequests] = useState<Array<any>>([]);
   const [notificationsList, setNotificationsList] = useState<Array<any>>([]);
+  const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
+  const [loadingMoreNotifications, setLoadingMoreNotifications] = useState(false);
+  const notificationsCursorRef = useRef<any | null>(null);
   const [friendsList, setFriendsList] = useState<Array<any>>([]);
   const [friendsSearchQuery, setFriendsSearchQuery] = useState('');
 
@@ -297,11 +334,7 @@ export default function App() {
   const isSuperAdmin = Boolean(
     user &&
     !user.isAnonymous &&
-    (
-      isOwner ||
-      normalizedCurrentRole === 'Super Admin' ||
-      normalizedCurrentRole === 'Admin'
-    )
+    normalizedCurrentRole === 'Super Admin'
   );
 
   const hasRankForCustomization = Boolean(
@@ -310,7 +343,7 @@ export default function App() {
     (
       isOwner ||
       isAdmin ||
-      isPremium ||
+      normalizedCurrentRole === 'Premium' ||
       ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
     )
   );
@@ -494,9 +527,8 @@ export default function App() {
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
       
-      const exitAt = Date.now();
-      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, lastExitAt: exitAt }, { merge: true });
-      await setDoc(userRef, { lastSeen: nowTime, lastExitAt: exitAt }, { merge: true });
+      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, roomId: 'lobby', roomName: 'القائمة الرئيسية' }, { merge: true });
+      await setDoc(userRef, { lastSeen: nowTime }, { merge: true });
     } catch (e) {
       console.error(e);
     }
@@ -508,9 +540,8 @@ export default function App() {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
-      const exitAt = Date.now();
-      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, lastExitAt: exitAt }, { merge: true }).catch(() => {});
-      setDoc(userRef, { lastSeen: nowTime, lastExitAt: exitAt }, { merge: true }).catch(() => {});
+      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, roomId: 'lobby', roomName: 'القائمة الرئيسية' }, { merge: true }).catch(() => {});
+      setDoc(userRef, { lastSeen: nowTime }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
@@ -537,21 +568,49 @@ export default function App() {
   useEffect(() => {
     if (!user || !activePrivateChat) return;
     const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
+    privateMessagesCursorRef.current = null;
+    setHasMorePrivateMessages(false);
+    setPrivateMessages([]);
+
     const msgQuery = query(
       collection(db, 'private_messages', chatId, 'messages'),
-      orderBy('createdAt', 'asc')
+      orderBy('createdAt', 'desc'),
+      limit(20)
     );
     return onSnapshot(msgQuery, (snapshot) => {
-      const msgs = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
-      setPrivateMessages(msgs);
-      setTimeout(() => {
-        privateChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      const newest = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) })).reverse();
+      privateMessagesCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
+      setHasMorePrivateMessages(snapshot.docs.length === 20);
+      setPrivateMessages(prev => {
+        const map = new Map(prev.map((m:any) => [m.id, m]));
+        newest.forEach((m:any) => map.set(m.id, m));
+        return Array.from(map.values()).sort((a:any,b:any) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
+      });
+      setTimeout(() => { privateChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100);
     });
   }, [user, activePrivateChat]);
+
+  const loadMorePrivateMessages = async () => {
+    if (!user || !activePrivateChat || !privateMessagesCursorRef.current || loadingMorePrivateMessages) return;
+    setLoadingMorePrivateMessages(true);
+    try {
+      const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
+      const snap = await getDocs(query(
+        collection(db, 'private_messages', chatId, 'messages'),
+        orderBy('createdAt', 'desc'),
+        startAfter(privateMessagesCursorRef.current),
+        limit(20)
+      ));
+      const older = snap.docs.map(d => ({ id:d.id, ...(d.data() as any) })).reverse();
+      privateMessagesCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : privateMessagesCursorRef.current;
+      setHasMorePrivateMessages(snap.docs.length === 20);
+      setPrivateMessages(prev => {
+        const map = new Map(prev.map((m:any) => [m.id, m]));
+        older.forEach((m:any) => map.set(m.id, m));
+        return Array.from(map.values()).sort((a:any,b:any) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
+      });
+    } finally { setLoadingMorePrivateMessages(false); }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -571,18 +630,28 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(
-      collection(db, 'users', user.uid, 'notifications'),
-      orderBy('createdAt', 'desc')
-    );
+    notificationsCursorRef.current = null;
+    setHasMoreNotifications(false);
+    const q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('createdAt', 'desc'), limit(20));
     return onSnapshot(q, (snapshot) => {
-      const notes = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
-      setNotificationsList(notes);
+      notificationsCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
+      setHasMoreNotifications(snapshot.docs.length === 20);
+      const notes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) }));
+      setNotificationsList(prev => { const map=new Map(prev.map((n:any)=>[n.id,n])); notes.forEach((n:any)=>map.set(n.id,n)); return Array.from(map.values()).sort((a:any,b:any)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)); });
     });
   }, [user]);
+
+  const loadMoreNotifications = async () => {
+    if (!user || !notificationsCursorRef.current || loadingMoreNotifications) return;
+    setLoadingMoreNotifications(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'users', user.uid, 'notifications'), orderBy('createdAt','desc'), startAfter(notificationsCursorRef.current), limit(20)));
+      if (snap.docs.length) notificationsCursorRef.current = snap.docs[snap.docs.length-1];
+      setHasMoreNotifications(snap.docs.length === 20);
+      const older=snap.docs.map(d=>({id:d.id,...(d.data() as any)}));
+      setNotificationsList(prev=>{const map=new Map(prev.map((n:any)=>[n.id,n]));older.forEach((n:any)=>map.set(n.id,n));return Array.from(map.values()).sort((a:any,b:any)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));});
+    } finally { setLoadingMoreNotifications(false); }
+  };
 
   const handleOpenNotifications = async () => {
     setShowNotificationsModal(true);
@@ -856,15 +925,14 @@ export default function App() {
       const counts: { [roomId: string]: number } = {};
       const uniqueUsersMap = new Map<string, any>();
       const now = Date.now();
-      const FIFTEEN_MINUTES = 15 * 60 * 1000;
+      const FIVE_MINUTES = 5 * 60 * 1000;
 
       snapshot.docs.forEach(docSnap => {
         const data = docSnap.data();
         const uId = data.userId || docSnap.id;
-        const isOnlineNow = !!data.lastActive && (now - data.lastActive < 60 * 1000);
-        const exitedRecently = !!data.lastExitAt && (now - data.lastExitAt < FIFTEEN_MINUTES);
+        const isRecentlyActive = data.lastActive && (now - data.lastActive < FIVE_MINUTES);
 
-        if ((isOnlineNow || exitedRecently) && uId) {
+        if (isRecentlyActive && uId) {
           if (!uniqueUsersMap.has(uId) || (uniqueUsersMap.get(uId).lastActive < data.lastActive)) {
             uniqueUsersMap.set(uId, {
               id: docSnap.id,
@@ -886,8 +954,7 @@ export default function App() {
               points: data.points || 0,
               roomId: data.roomId,
               roomName: data.roomName || 'القائمة الرئيسية',
-              lastActive: data.lastActive || 0,
-              lastExitAt: data.lastExitAt || 0
+              lastActive: data.lastActive
             });
           }
         }
@@ -906,50 +973,155 @@ export default function App() {
     });
   }, []);
 
-  // يحذف من قائمة الحضور بعد 15 دقيقة حتى لو لم يحدث أي تحديث جديد في Firebase.
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const FIFTEEN_MINUTES = 15 * 60 * 1000;
-      setOnlineUsersList(prev => prev.filter((u:any) =>
-        (!!u.lastActive && (now - u.lastActive < 60 * 1000)) ||
-        (!!u.lastExitAt && (now - u.lastExitAt < FIFTEEN_MINUTES))
-      ));
-    }, 30000);
-    return () => clearInterval(timer);
+    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(u.role) === 'Owner');
+      const roleRank = (u:any) => {
+        const r = normalizeRole(u.role);
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+        if (r === 'Super Admin') return 2;
+        if (r === 'Admin') return 3;
+        if (r === 'Member' || r === 'Premium') return 4;
+        return 5;
+      };
+      const sorted = [...list].sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
+      if (owner && !sorted.some(u => u.id === owner.id)) sorted.unshift(owner);
+      setRankedUsers(sorted);
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
+    if (!user) return;
+    try {
+      const newsKey = `gat_seen_news_${user.uid}`;
+      const wallKey = `gat_seen_wall_${user.uid}`;
+      const savedNews = JSON.parse(localStorage.getItem(newsKey) || '[]');
+      const savedWall = JSON.parse(localStorage.getItem(wallKey) || '[]');
+      setSeenNewsIds(Array.isArray(savedNews) ? savedNews : []);
+      setSeenWallIds(Array.isArray(savedWall) ? savedWall : []);
+    } catch (e) {
+      setSeenNewsIds([]);
+      setSeenWallIds([]);
+    }
+  }, [user]);
+
+  const markNewsSeen = (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    setSeenNewsIds(prev => {
+      const next = Array.from(new Set([...prev, ...ids]));
+      try { localStorage.setItem(`gat_seen_news_${user.uid}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const markWallSeen = (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    setSeenWallIds(prev => {
+      const next = Array.from(new Set([...prev, ...ids]));
+      try { localStorage.setItem(`gat_seen_wall_${user.uid}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const fetchWallPage = async (reset = false) => {
+    if (!user || loadingMoreWallPosts) return;
+    if (reset) { wallCursorsRef.current = {}; wallHasMoreRef.current = {}; setWallPosts([]); setHasMoreWallPosts(false); }
+    setLoadingMoreWallPosts(true);
+    try {
+      const wallOwnerIds = Array.from(new Set([user.uid, ...friendsList.map((f:any) => f.friendUid).filter(Boolean)]));
+      const allPosts:any[] = reset ? [] : [...wallPosts];
+      let anyMore = false;
+      for (const wallOwnerId of wallOwnerIds) {
+        const wallRef = collection(db, 'users', wallOwnerId, 'wall_posts');
+        const cursor = wallCursorsRef.current[wallOwnerId];
+        const q = cursor ? query(wallRef, orderBy('createdAt','desc'), startAfter(cursor), limit(20)) : query(wallRef, orderBy('createdAt','desc'), limit(20));
+        const snap = await getDocs(q);
+        if (snap.docs.length) wallCursorsRef.current[wallOwnerId] = snap.docs[snap.docs.length-1];
+        wallHasMoreRef.current[wallOwnerId] = snap.docs.length === 20;
+        if (snap.docs.length === 20) anyMore = true;
+        snap.docs.forEach(d => { const post={id:d.id,wallOwnerId,...(d.data() as any)}; if (!allPosts.some(x=>x.wallOwnerId===wallOwnerId&&x.id===d.id)) allPosts.push(post); });
+      }
+      allPosts.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      setWallPosts(allPosts);
+      setHasMoreWallPosts(anyMore);
+    } finally { setLoadingMoreWallPosts(false); }
+  };
+
+  useEffect(() => {
+    if (!showWallModal || !user) return;
+    fetchWallPage(true);
+  }, [showWallModal, user, friendsList]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'), limit(20));
+    newsCursorRef.current = null;
+    setHasMoreNews(false);
+    return onSnapshot(q, snap => {
+      newsCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length-1] : null;
+      setHasMoreNews(snap.docs.length === 20);
+      const items = snap.docs.map(d => ({ id:d.id, ...(d.data() as any) }));
+      setNewsItems(prev => {
+        const map=new Map(prev.map((n:any)=>[n.id,n])); items.forEach((n:any)=>map.set(n.id,n));
+        return Array.from(map.values()).sort((a:any,b:any)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned)) || ((b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)));
+      });
+    });
+  }, []);
+
+  const loadMoreNews = async () => {
+    if (!newsCursorRef.current || loadingMoreNews) return;
+    setLoadingMoreNews(true);
+    try {
+      const snap=await getDocs(query(collection(db,'news'),orderBy('createdAt','desc'),startAfter(newsCursorRef.current),limit(20)));
+      if (snap.docs.length) newsCursorRef.current=snap.docs[snap.docs.length-1];
+      setHasMoreNews(snap.docs.length===20);
+      const older=snap.docs.map(d=>({id:d.id,...(d.data() as any)}));
+      setNewsItems(prev=>{const map=new Map(prev.map((n:any)=>[n.id,n]));older.forEach((n:any)=>map.set(n.id,n));return Array.from(map.values()).sort((a:any,b:any)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned))||((b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)));});
+    } finally { setLoadingMoreNews(false); }
+  };
+
+  useEffect(() => {
+    if (!showNewsModal || !newsItems.length || !user) return;
+    const timer = window.setTimeout(() => markNewsSeen(newsItems.map(n => n.id)), 250);
+    return () => window.clearTimeout(timer);
+  }, [showNewsModal, newsItems.length, user]);
+
+  useEffect(() => {
+    if (!showWallModal || !wallPosts.length || !user) return;
+    const timer = window.setTimeout(() => markWallSeen(wallPosts.map(p => `${p.wallOwnerId || user.uid}_${p.id}`)), 250);
+    return () => window.clearTimeout(timer);
+  }, [showWallModal, wallPosts.length, user]);
+
+  useEffect(() => {
     if (!selectedRoom) return;
-    const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'));
-    return onSnapshot(msgQuery, (snapshot) => {
-      const now = Date.now();
-      const FIVE_MINUTES_MS = 5 * 60 * 1000;
-
-      const msgs = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        let isExpired = false;
-
-        if (data.isSystemSpecial && data.createdAt) {
-          const msgTime = data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now();
-          if (now - msgTime > FIVE_MINUTES_MS) {
-            isExpired = true;
-          }
-        }
-
-        return {
-          id: docSnap.id,
-          isExpired,
-          ...data
-        };
-      }).filter(m => !m.isExpired);
-
-      setMessages(msgs);
-      setTimeout(() => {
-        chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+    roomMessagesCursorRef.current = null;
+    roomMessagesLoadedMoreRef.current = false;
+    setHasMoreRoomMessages(false);
+    const msgQuery = query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),limit(20));
+    return onSnapshot(msgQuery,(snapshot)=>{
+      roomMessagesCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length-1] : null;
+      setHasMoreRoomMessages(snapshot.docs.length===20);
+      const now=Date.now();
+      const incoming=snapshot.docs.map(d=>{const data=d.data();const expired=!!(data.isSystemSpecial&&data.createdAt&&now-(data.createdAt.toMillis?data.createdAt.toMillis():Date.now())>5*60*1000);return {id:d.id,isExpired:expired,...data};}).filter((m:any)=>!m.isExpired);
+      setMessages(prev=>{const map=new Map(prev.map((m:any)=>[m.id,m]));incoming.forEach((m:any)=>map.set(m.id,m));return Array.from(map.values()).sort((a:any,b:any)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));});
+      if (!roomMessagesLoadedMoreRef.current) setTimeout(()=>chatBottomRef.current?.scrollIntoView({behavior:'smooth'}),100);
     });
   }, [selectedRoom]);
+
+  const loadMoreRoomMessages = async () => {
+    if (!selectedRoom || !roomMessagesCursorRef.current || loadingMoreRoomMessages) return;
+    setLoadingMoreRoomMessages(true);
+    try {
+      const snap=await getDocs(query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),startAfter(roomMessagesCursorRef.current),limit(20)));
+      if (snap.docs.length) roomMessagesCursorRef.current=snap.docs[snap.docs.length-1];
+      setHasMoreRoomMessages(snap.docs.length===20);
+      const now=Date.now();
+      const older=snap.docs.map(d=>{const data=d.data();const expired=!!(data.isSystemSpecial&&data.createdAt&&now-(data.createdAt.toMillis?data.createdAt.toMillis():Date.now())>5*60*1000);return {id:d.id,isExpired:expired,...data};}).filter((m:any)=>!m.isExpired);
+      roomMessagesLoadedMoreRef.current=true;
+      setMessages(prev=>{const map=new Map(prev.map((m:any)=>[m.id,m]));older.forEach((m:any)=>map.set(m.id,m));return Array.from(map.values()).sort((a:any,b:any)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));});
+    } finally { setLoadingMoreRoomMessages(false); }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1073,6 +1245,137 @@ export default function App() {
     const match = text.match(regExp);
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
   };
+
+
+  const getSenderInfo = () => {
+    const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
+    const senderName = user?.isAnonymous ? (user.displayName || storedGuest || 'زائر') : (user?.displayName || user?.email?.split('@')[0] || 'عضو');
+    const roleText = user?.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+    return { senderName, roleText };
+  };
+
+  const handleChatImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    compressAndUploadImage(file, 900, 900, (base64) => {
+      setPendingChatImage(base64);
+      setPendingChatImageName(file.name || 'image.jpg');
+    });
+    e.target.value = '';
+  };
+
+  const sendChatMedia = async (mediaType: 'image'|'voice', mediaData: string, mediaName = 'media') => {
+    if (!selectedRoom || !user) return;
+    const { senderName, roleText } = getSenderInfo();
+    try {
+      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
+        user: senderName, userId: user.uid, text: '', role: roleText,
+        color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
+        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+      });
+      setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
+    } catch (e) { console.error(e); }
+  };
+
+  const startVoiceRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || isRecording) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      voiceChunksRef.current = [];
+      recorder.ondataavailable = (ev) => { if (ev.data.size) voiceChunksRef.current.push(ev.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => setRecordingData(reader.result as string);
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true); setRecordingSeconds(0);
+      recordingTimerRef.current = window.setInterval(() => setRecordingSeconds(v => v + 1), 1000);
+    } catch (e) { console.error(e); }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+    mediaRecorderRef.current = null;
+    setIsRecording(false);
+    if (recordingTimerRef.current) { window.clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  };
+
+  const cancelVoiceRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+    mediaRecorderRef.current = null;
+    voiceChunksRef.current = [];
+    setIsRecording(false); setRecordingData(null); setRecordingSeconds(0);
+    if (recordingTimerRef.current) { window.clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  };
+
+  const addWallPost = async () => {
+    if (!user || !wallInput.trim()) return;
+    const { senderName } = getSenderInfo();
+    await addDoc(collection(db, 'users', user.uid, 'wall_posts'), { userId: user.uid, userName: senderName, text: wallInput.trim(), likes: [], comments: [], createdAt: serverTimestamp() });
+    setWallInput('');
+  };
+
+  const canInteractWithAuthor = async (authorId: string) => {
+    if (!user) return false;
+    if (!authorId || authorId === user.uid) return true;
+    return friendsList.some((f:any) => f.friendUid === authorId);
+  };
+
+  const toggleWallLike = async (post:any) => {
+    if (!user || !(await canInteractWithAuthor(post.userId))) return;
+    const likes = Array.isArray(post.likes) ? post.likes : [];
+    const next = likes.includes(user.uid) ? likes.filter((x:string)=>x!==user.uid) : [...likes, user.uid];
+    await updateDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', post.id), { likes: next });
+  };
+
+  const addWallComment = async (post:any) => {
+    if (!user || !(await canInteractWithAuthor(post.userId))) return;
+    const text = (wallCommentInputs[post.id] || '').trim(); if (!text) return;
+    const { senderName } = getSenderInfo();
+    const comments = Array.isArray(post.comments) ? post.comments : [];
+    await updateDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', post.id), { comments: [...comments, { uid:user.uid, name:senderName, text, createdAt:new Date().toISOString() }] });
+    setWallCommentInputs(v => ({...v, [post.id]: ''}));
+  };
+
+  const deleteWallPost = async (postId:string) => {
+    if (!user) return;
+    const post = wallPosts.find(p => p.id === postId);
+    if (!post) return;
+    const canDelete = isOwner || post.userId === user.uid;
+    if (!canDelete) return;
+    await deleteDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', postId));
+  };
+
+  const addNewsPost = async () => {
+    if (!user || (!isOwner && !isSuperAdmin) || !newsInput.trim()) return;
+    const { senderName } = getSenderInfo();
+    await addDoc(collection(db,'news'), { text:newsInput.trim(), image:newsImage, authorId:user.uid, authorName:senderName, authorAvatar:profileAvatar || '', pinned:false, likes:[], comments:[], createdAt:serverTimestamp() });
+    setNewsInput(''); setNewsImage('');
+  };
+
+  const toggleNewsLike = async (item:any) => {
+    if (!user || !(await canInteractWithAuthor(item.authorId))) return;
+    const likes = Array.isArray(item.likes) ? item.likes : [];
+    const next = likes.includes(user.uid) ? likes.filter((x:string)=>x!==user.uid) : [...likes, user.uid];
+    await updateDoc(doc(db, 'news', item.id), { likes: next });
+  };
+
+  const addNewsComment = async (item:any) => {
+    if (!user || !(await canInteractWithAuthor(item.authorId))) return;
+    const text = (newsCommentInputs[item.id] || '').trim(); if (!text) return;
+    const { senderName } = getSenderInfo();
+    const comments = Array.isArray(item.comments) ? item.comments : [];
+    await updateDoc(doc(db, 'news', item.id), { comments: [...comments, { uid:user.uid, name:senderName, text, createdAt:new Date().toISOString() }] });
+    setNewsCommentInputs(v => ({...v, [item.id]: ''}));
+  };
+
+  const deleteNewsPost = async (id:string) => { if (isOwner) await deleteDoc(doc(db,'news',id)); };
+  const toggleNewsPin = async (item:any) => { if (isOwner) await updateDoc(doc(db,'news',item.id), { pinned: !item.pinned }); };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1316,15 +1619,10 @@ export default function App() {
         selectedProfileUser?.name ||
         'المستخدم';
 
-      const oldRole = targetUserData.role || 'Member';
-      let roleToSave = normalizedNewRole;
-
-      if (normalizedNewRole === 'Member' || normalizedNewRole === 'Guest') {
-        roleToSave = targetUserData.previousRole && !['Member', 'Guest'].includes(targetUserData.previousRole) 
-          ? targetUserData.previousRole 
-          : 'Member';
-      }
-
+      const oldRole = normalizeRole(targetUserData.role || 'Member');
+      // عند سحب السوبر أدمن/الأدمن نحفظ الرتبة الجديدة فعلياً كعضو،
+      // ولا نعيد الرتبة القديمة تلقائياً. هذا يجعل القائمة تختفي فوراً وتحفظ الحالة دائماً.
+      const roleToSave = normalizedNewRole === 'Guest' ? 'Guest' : (normalizedNewRole === 'Member' ? 'Member' : normalizedNewRole);
       const permissions = rolePermissions[roleToSave] || [];
 
       await setDoc(
@@ -1377,8 +1675,9 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
+      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
+
       if (selectedRoom) {
-        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
@@ -1546,7 +1845,12 @@ export default function App() {
     };
   }, []);
 
-  const filteredOnlineUsers = onlineUsersList.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredOnlineUsers = onlineUsersList
+    .filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && String(u.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a,b) => {
+      const rank=(u:any)=>{ const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5; };
+      return rank(a)-rank(b) || String(a.name||'').localeCompare(String(b.name||''));
+    });
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
 
   const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
@@ -1780,22 +2084,22 @@ export default function App() {
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
-        .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div { min-height:42px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
         .video-chat-scroll > div > div:first-child { width:34px !important; height:34px !important; border-width:1px !important; font-size:14px !important; }
-        .video-chat-scroll > div > div:nth-child(2) { font-size:13px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
+        .video-chat-scroll > div > div:nth-child(2) { font-size:11px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
         .video-chat-scroll > div > div:nth-child(2) span { font-size:inherit !important; }
         .video-composer { min-height:64px !important; border-top:1px solid #d8d8d8 !important; padding:6px 8px !important; gap:6px !important; }
-        .video-composer input { font-size:13px !important; color:#333 !important; }
+        .video-composer input { font-size:12px !important; color:#333 !important; }
         .video-composer input::placeholder { color:#888 !important; }
         .video-composer > div { height:44px !important; border-radius:23px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; }
         .video-composer > button[type=submit] { width:46px !important; height:46px !important; background:#003d43 !important; font-size:20px !important; }
-        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:52px !important; min-height:52px !important; padding:0 4px !important; }
+        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:48px !important; min-height:48px !important; padding:0 4px !important; }
         .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:0 !important; flex:1 !important; padding:3px 2px !important; }
-        .video-bottom-nav > div div:first-child { font-size:20px !important; color:#fff !important; }
-        .video-bottom-nav > div div:last-child { font-size:10px !important; font-weight:500 !important; color:#fff !important; }
+        .video-bottom-nav > div div:first-child { font-size:16px !important; color:#fff !important; }
+        .video-bottom-nav > div div:last-child { font-size:9px !important; font-weight:500 !important; color:#fff !important; }
         .video-rooms-overlay { background:rgba(0,0,0,.42) !important; }
         .video-rooms-panel { width:100% !important; max-width:100% !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
         .video-rooms-panel > div:first-child { background:#003d43 !important; padding:14px 16px !important; }
@@ -1807,11 +2111,12 @@ export default function App() {
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
+        .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
-          .video-topbar { height:52px !important; min-height:52px !important; }
+          .video-topbar { height:48px !important; min-height:48px !important; }
           .video-topbar .brand-logo { font-size:18px !important; }
-          .video-chat-scroll > div { min-height:44px !important; }
-          .video-chat-scroll > div > div:nth-child(2) { font-size:13px !important; }
+          .video-chat-scroll > div { min-height:42px !important; }
+          .video-chat-scroll > div > div:nth-child(2) { font-size:11px !important; }
           .video-rooms-panel { width:100% !important; }
         }
       `}</style>
@@ -1839,9 +2144,10 @@ export default function App() {
         style={{ display: 'none' }} 
         onChange={handleSongSelect} 
       />
+      <input type="file" ref={chatImageInputRef} accept="image/*" style={{display:'none'}} onChange={handleChatImageSelect} />
 
       {(currentView === 'chat' || currentView === 'rooms') && (
-        <header className="video-topbar" style={{height:'52px',minHeight:'52px',flexShrink:0,background:'#003f45',color:'#fff',padding:'0 10px',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',boxSizing:'border-box',zIndex:50}}>
+        <header className="video-topbar" style={{height:'48px',minHeight:'48px',flexShrink:0,background:'#003f45',color:'#fff',padding:'0 10px',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',boxSizing:'border-box',zIndex:50}}>
           {currentView === 'rooms' ? (
             <>
               <div className="brand-logo" style={{fontSize:'22px'}}>Arabic<span style={{color:'#ff4d76'}}>chat</span></div>
@@ -1852,13 +2158,13 @@ export default function App() {
               <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                 <button onClick={()=>setShowMainMenu(true)} aria-label="القائمة" style={{background:'transparent',border:0,color:'#fff',cursor:'pointer',padding:0,display:'flex',alignItems:'center'}}><VideoIcon type="menu" size={23}/></button>
                 <button onClick={()=>setShowTopSearch(true)} aria-label="البحث" style={{background:'transparent',border:0,color:'#fff',fontSize:'31px',lineHeight:1,cursor:'pointer',padding:0}}>⌕</button>
-                <div style={{display:'flex',alignItems:'center',gap:'13px'}}><VideoIcon type="diamond" size={22}/><VideoIcon type="crown" size={22}/></div>
+                <div style={{display:'flex',alignItems:'center',gap:'13px'}}><VideoIcon type="diamond" size={20}/></div>
               </div>
               <div style={{display:'flex',alignItems:'center',gap:'11px'}}>
                 <div onClick={()=>setShowMessagesModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="mail" size={20}/></span><span>رسالة</span>{totalUnreadMessages>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{totalUnreadMessages}</b>}</div>
                 <div onClick={()=>setShowRequestsModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="request" size={20}/></span><span>طلب</span>{pendingRequests.length>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{pendingRequests.length}</b>}</div>
                 <div onClick={handleOpenNotifications} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="bell" size={20}/></span><span>إشعار</span>{unreadNotificationsCount>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{unreadNotificationsCount}</b>}</div>
-                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff'}}><span style={{display:'flex'}}><VideoIcon type="settings" size={20}/></span><span>اعدادات</span></div>
+                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff'}}><span style={{display:'flex'}}><VideoIcon type="settings" size={18}/></span><span>اعدادات</span></div>
               </div>
             </>
           )}
@@ -2046,7 +2352,14 @@ export default function App() {
                           </span>
                         </span>
 
-                        {youtubeEmbedUrl ? (
+                        {m.mediaType === 'image' ? (
+                          <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
+                            <img src={m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
+                            <a href={m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
+                          </div>
+                        ) : m.mediaType === 'voice' ? (
+                          <audio controls src={m.mediaData} style={{width:'190px',height:'34px'}} />
+                        ) : youtubeEmbedUrl ? (
                           <button 
                             onClick={() => setActiveVideoUrl(youtubeEmbedUrl)}
                             style={{ 
@@ -2074,7 +2387,7 @@ export default function App() {
                         )}
                       </div>
 
-                      {isSuperAdmin && (
+                      {isOwner && (
                         <button 
                           onClick={async () => {
                             try {
@@ -2094,40 +2407,39 @@ export default function App() {
                   );
                 })
               )}
+              {hasMoreRoomMessages && <button type="button" onClick={loadMoreRoomMessages} disabled={loadingMoreRoomMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'6px'}}>{loadingMoreRoomMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
               <div ref={chatBottomRef} />
             </div>
 
             {showEmojiPicker && (
-              <div style={{ backgroundColor: '#f1f5f9', borderTop: '1px solid #cbd5e1', padding: '8px', display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '4px', maxHeight: '120px', overflowY: 'auto', flexShrink: 0 }}>
+              <div className="emoji-panel" style={{ backgroundColor:'#f8fafc', borderTop:'1px solid #cbd5e1', padding:'7px', display:'grid', gridTemplateColumns:'repeat(9,1fr)', gap:'2px', maxHeight:'180px', overflowY:'auto', flexShrink:0 }}>
                 {EMOJIS_LIST.map((emoji, idx) => (
-                  <button key={idx} onClick={() => setInputText(prev => prev + emoji)} style={{ background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '4px' }}>
-                    {emoji}
-                  </button>
+                  <button key={idx} onClick={() => setInputText(prev => prev + emoji)} className={idx % 17 === 0 ? 'animated-emoji' : ''} style={{background:'transparent',border:'none',fontSize:'20px',cursor:'pointer',padding:'3px',lineHeight:1}}>{emoji}</button>
                 ))}
               </div>
             )}
 
-            <form className="video-composer" onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '7px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
-              
-              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>
-                ➤
-              </button>
-
-              <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '40px' }}>
-                <input 
-                  type="text" 
-                  value={inputText} 
-                  onChange={(e) => setInputText(e.target.value)} 
-                  placeholder="اكتب هنا أو ألصق رابط يوتيوب..." 
-                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '13px' }}
-                />
-                <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '0' }}>😊</button>
+            {(pendingChatImage || isRecording || recordingData) && (
+              <div style={{background:'#f8fafc',borderTop:'1px solid #ddd',padding:'7px 10px',display:'flex',alignItems:'center',gap:'8px',direction:'rtl'}}>
+                {pendingChatImage && <img src={pendingChatImage} alt="preview" style={{width:'52px',height:'52px',objectFit:'cover',borderRadius:'7px',border:'1px solid #ccc'}} />}
+                {recordingData && <audio controls src={recordingData} style={{width:'190px',height:'34px'}} />}
+                {isRecording && <span style={{fontSize:'12px',color:'#dc2626',fontWeight:'bold'}}>● تسجيل {recordingSeconds}s</span>}
+                <div style={{marginRight:'auto',display:'flex',gap:'5px'}}>
+                  {!isRecording && (pendingChatImage || recordingData) && <button type="button" onClick={() => {setPendingChatImage(null);setRecordingData(null);}} style={{border:'1px solid #fecaca',background:'#fff1f2',color:'#dc2626',borderRadius:'6px',padding:'5px 8px',fontSize:'10px'}}>حذف</button>}
+                  {recordingData && <button type="button" onClick={() => sendChatMedia('voice', recordingData, 'voice.webm')} style={{border:'none',background:'#16a34a',color:'#fff',borderRadius:'6px',padding:'5px 8px',fontSize:'10px'}}>إرسال</button>}
+                  {isRecording && <button type="button" onClick={stopVoiceRecording} style={{border:'none',background:'#dc2626',color:'#fff',borderRadius:'6px',padding:'5px 8px',fontSize:'10px'}}>إيقاف</button>}
+                  {pendingChatImage && <button type="button" onClick={() => sendChatMedia('image', pendingChatImage, pendingChatImageName)} style={{border:'none',background:'#16a34a',color:'#fff',borderRadius:'6px',padding:'5px 8px',fontSize:'10px'}}>إرسال</button>}
+                </div>
               </div>
-
-              <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b', padding: '0 2px' }}>🎙</button>
-              
-              <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#64748b', padding: '0 2px' }}>+</button>
-
+            )}
+            <form className="video-composer" onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '7px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
+              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>➤</button>
+              <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 10px', border: '1px solid #cbd5e1', height: '40px' }}>
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتب هنا أو ألصق رابط يوتيوب..." style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '12px' }} />
+                <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{background:'transparent',border:'none',fontSize:'18px',cursor:'pointer',padding:'0'}}>😊</button>
+              </div>
+              <button type="button" onClick={isRecording ? stopVoiceRecording : startVoiceRecording} style={{background:'transparent',border:'none',fontSize:'19px',cursor:'pointer',color:isRecording?'#dc2626':'#64748b',padding:'0 2px'}}>🎙</button>
+              <button type="button" onClick={() => chatImageInputRef.current?.click()} style={{background:'transparent',border:'none',fontSize:'19px',cursor:'pointer',color:'#64748b',padding:'0 2px'}}>🖼️</button>
             </form>
 
           </div>
@@ -2164,6 +2476,7 @@ export default function App() {
                 );
               })
             )}
+            {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'4px'}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
             <div ref={privateChatBottomRef} />
           </div>
 
@@ -2228,21 +2541,21 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'52px',minHeight:'52px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
-          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
-          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
-          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
-          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={20}/></div><div>خيارات</div></div>
+        <nav className="video-bottom-nav" style={{height:'48px',minHeight:'48px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
+          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={18}/></div><div>الغرف</div></div>
+          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={18}/></div><div>المتصلين</div></div>
+          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={18}/></div><div>الأصدقاء</div></div>
+          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={18}/></div><div>خيارات</div></div>
         </nav>
       )}
 
       {showMainMenu && (
         <div className="video-drawer-overlay" onClick={()=>setShowMainMenu(false)} style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.38)',zIndex:260,direction:'rtl'}}>
           <div onClick={e=>e.stopPropagation()} style={{width:'44%',minWidth:'300px',maxWidth:'420px',height:'100%',background:'#fff',boxShadow:'8px 0 24px rgba(0,0,0,.2)',overflowY:'auto'}}>
-            <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'74px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'34px',textAlign:'left',padding:'0 22px',cursor:'pointer'}}>×</button>
+            <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
             {[
-              ['🟢','متصل',()=>{}],['📡','حائط الأصدقاء',()=>setShowFriendsModal(true)],['📰','الأخبار',()=>setShowNotificationsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>{}],['♛','الأمراء',()=>{}],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}],['⟳','تحديث الصفحة',()=>window.location.reload()]
-            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'67px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 22px',fontSize:'20px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'26px'}}>{icon as any}</span><span>{label as any}</span></button>)}
+              ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}],['⟳','تحديث الصفحة',()=>window.location.reload()]
+            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'50px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',fontSize:'14px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'18px'}}>{icon as any}</span><span style={{display:'flex',alignItems:'center',gap:'7px'}}>{label as any}{label==='الأخبار'&&newsItems.filter(n=>!seenNewsIds.includes(n.id)).length>0&&<b style={{background:'#ef233c',color:'#fff',fontSize:'9px',borderRadius:'4px',padding:'1px 5px'}}>{newsItems.filter(n=>!seenNewsIds.includes(n.id)).length}</b>}</span></button>)}
           </div>
         </div>
       )}
@@ -2254,7 +2567,7 @@ export default function App() {
             <div style={{flex:1,fontSize:'21px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>البحث عن أشخاص <span style={{color:'#16a6d4',fontSize:'32px'}}>⌕</span></div>
           </div>
           <div style={{textAlign:'center',fontSize:'18px',padding:'24px'}}>إعلان ترويجي</div>
-          <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=><div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px',cursor:'pointer'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><span style={{fontSize:'18px'}}>{u.flag||'🌐'}</span><span style={{fontSize:'20px',fontWeight:'700',color:'#333'}}>{u.name}</span></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'3px solid #17a7d2',background:'#eee'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}>👤</span>}</div></div>)}</div>
+          <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=><div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px',cursor:'pointer'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><span style={{fontSize:'20px',fontWeight:'700',color:'#333'}}>{u.name}</span></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'3px solid #17a7d2',background:'#eee'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}>👤</span>}</div></div>)}</div>
         </div>
       )}
 
@@ -2263,9 +2576,9 @@ export default function App() {
           onClick={() => setShowRoomsModal(false)}
           style={{
             position: 'fixed',
-            top: currentView === 'chat' ? '82px' : '0',
+            top: currentView === 'chat' ? '48px' : '0',
             right: 0,
-            bottom: currentView === 'chat' ? '52px' : '0',
+            bottom: currentView === 'chat' ? '50px' : '0',
             left: 0,
             backgroundColor: 'rgba(15,23,42,0.55)',
             zIndex: 200,
@@ -2338,6 +2651,64 @@ export default function App() {
         </div>
       )}
 
+
+      {showWallModal && user && (
+        <div style={{position:'fixed',inset:0,zIndex:280,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'flex-start',direction:'rtl'}} onClick={()=>setShowWallModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'86%',maxWidth:'430px',height:'100%',background:'#fff',display:'flex',flexDirection:'column',boxShadow:'-8px 0 25px rgba(0,0,0,.2)'}}>
+            <div style={{height:'48px',background:'#003f45',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px'}}><b style={{fontSize:'14px'}}>حائط الأصدقاء</b><button onClick={()=>setShowWallModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
+            <div style={{padding:'9px',borderBottom:'1px solid #e5e7eb'}}><textarea value={wallInput} onChange={e=>setWallInput(e.target.value)} placeholder='اكتب منشوراً جديداً على حائطك...' style={{width:'100%',minHeight:'64px',resize:'none',border:'1px solid #d6dce1',borderRadius:'8px',padding:'8px',fontSize:'11px',outline:'none',direction:'rtl'}}/><button onClick={addWallPost} style={{marginTop:'6px',background:'#16a34a',color:'#fff',border:0,borderRadius:'7px',padding:'6px 13px',fontSize:'10px',fontWeight:'700'}}>نشر</button></div>
+            <div style={{flex:1,overflowY:'auto',padding:'8px',background:'#fafafa'}}>
+              {wallPosts.length===0 ? <div style={{textAlign:'center',padding:'35px 10px',color:'#94a3b8',fontSize:'11px'}}>لا توجد منشورات على حائطك بعد.</div> : wallPosts.map(p=>{
+                const canInteract = p.userId === user.uid || isOwner || friendsList.some((f:any)=>f.friendUid===p.userId);
+                return <div key={p.id} style={{border:'1px solid #e2e8f0',borderRadius:'8px',padding:'8px',marginBottom:'7px',background:'#fff'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',fontWeight:'bold'}}><span>{p.userName} { !seenWallIds.includes(`${p.wallOwnerId || user.uid}_${p.id}`) && <span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px',fontSize:'9px'}}>جديد</span>}</span>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)} style={{border:0,background:'none',color:'#dc2626',fontSize:'11px'}}>حذف</button>}</div>
+                  <div style={{fontSize:'11px',margin:'6px 0',lineHeight:1.65}}>{p.text}</div>
+                  <div style={{display:'flex',gap:'7px',alignItems:'center',borderTop:'1px solid #f1f5f9',paddingTop:'5px'}}>{canInteract?<button onClick={()=>toggleWallLike(p)} style={{border:0,background:'none',fontSize:'10px',color:(p.likes||[]).includes(user.uid)?'#2563eb':'#64748b'}}>👍 {(p.likes||[]).length}</button>:<span style={{fontSize:'10px',color:'#94a3b8'}}>👍 {(p.likes||[]).length}</span>}<span style={{fontSize:'10px',color:'#64748b'}}>💬 {(p.comments||[]).length}</span></div>
+                  {(p.comments||[]).map((c:any,i:number)=><div key={i} style={{fontSize:'10px',background:'#f8fafc',padding:'5px',borderRadius:'5px',marginTop:'4px'}}><b>{c.name}:</b> {c.text}</div>)}
+                  {canInteract&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={wallCommentInputs[p.id]||''} onChange={e=>setWallCommentInputs(v=>({...v,[p.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'5px',fontSize:'10px',outline:'none'}}/><button onClick={()=>addWallComment(p)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 8px',fontSize:'10px'}}>تعليق</button></div>}
+                </div>
+              })}
+              {hasMoreWallPosts && <button onClick={()=>fetchWallPage(false)} disabled={loadingMoreWallPosts} style={{display:'block',margin:'10px auto',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'7px 14px',fontSize:'10px'}}>{loadingMoreWallPosts?'جاري التحميل...':'تحميل المزيد'}</button>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewsModal && (
+        <div style={{position:'fixed',inset:0,zIndex:281,background:'#fff',display:'flex',justifyContent:'center',direction:'rtl'}}>
+          <div style={{width:'100%',maxWidth:'430px',height:'100%',background:'#fff',display:'flex',flexDirection:'column'}}>
+            <div style={{height:'52px',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',gap:'10px',padding:'0 12px'}}><button onClick={()=>setShowNewsModal(false)} style={{border:0,background:'transparent',fontSize:'28px',color:'#444'}}>×</button><div style={{flex:1,textAlign:'center',fontSize:'16px',color:'#333'}}>الأخبار 📰</div></div>
+            {(isOwner || isSuperAdmin)&&<div style={{padding:'8px',borderBottom:'1px solid #e5e7eb'}}><textarea value={newsInput} onChange={e=>setNewsInput(e.target.value)} placeholder='اكتب خبراً جديداً...' style={{width:'100%',minHeight:'58px',border:'1px solid #d6dce1',borderRadius:'7px',padding:'7px',fontSize:'11px',resize:'none',outline:'none'}}/><button onClick={addNewsPost} style={{marginTop:'5px',background:'#16a34a',color:'#fff',border:0,borderRadius:'6px',padding:'6px 12px',fontSize:'10px',fontWeight:'700'}}>نشر الخبر</button></div>}
+            <div style={{flex:1,overflowY:'auto',padding:'0 10px'}}>
+              {newsItems.length===0?<div style={{textAlign:'center',padding:'40px',color:'#777',fontSize:'12px'}}>لا توجد أخبار حالياً.</div>:newsItems.map(n=>{
+                const canInteract=Boolean(user&&(n.authorId===user.uid||friendsList.some((f:any)=>f.friendUid===n.authorId)));
+                const likes=Array.isArray(n.likes)?n.likes:[]; const comments=Array.isArray(n.comments)?n.comments:[];
+                return <div key={n.id} style={{padding:'14px 6px 12px',borderBottom:'1px solid #e5e7eb'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}><div style={{display:'flex',alignItems:'center',gap:'7px'}}><div style={{width:'42px',height:'42px',borderRadius:'50%',overflow:'hidden',background:'#ddd'}}>{n.authorAvatar?<img src={n.authorAvatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',fontSize:'20px'}}>👤</span>}</div><div><div style={{fontSize:'12px',fontWeight:'700'}}>{n.authorName||'الإدارة'}</div><div style={{fontSize:'9px',color:'#888'}}>{n.createdAt?.toDate?n.createdAt.toDate().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}):'جديد'} {!seenNewsIds.includes(n.id)&&<span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px'}}>جديد</span>}</div></div></div>{n.pinned&&<span style={{fontSize:'18px'}}>⚑</span>}</div>
+                  {n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'220px',objectFit:'cover',borderRadius:'6px',marginBottom:'7px'}}/>}<div style={{fontSize:'12px',lineHeight:1.75,color:'#333',whiteSpace:'pre-wrap'}}>{n.text}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',marginTop:'9px',paddingTop:'6px',borderTop:'1px solid #f1f1f1'}}>{canInteract?<button onClick={()=>toggleNewsLike(n)} style={{border:0,background:'transparent',fontSize:'11px',color:likes.includes(user?.uid)?'#e11d48':'#555'}}>❤️ {likes.length}</button>:<span style={{fontSize:'11px',color:'#999'}}>❤️ {likes.length}</span>}<span style={{fontSize:'11px',color:'#555'}}>💬 {comments.length}</span></div>
+                  {comments.map((c:any,i:number)=><div key={i} style={{marginTop:'4px',background:'#f8fafc',padding:'5px 7px',borderRadius:'5px',fontSize:'10px'}}><b>{c.name}:</b> {c.text}</div>)}
+                  {canInteract&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={newsCommentInputs[n.id]||''} onChange={e=>setNewsCommentInputs(v=>({...v,[n.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'5px',fontSize:'10px'}}/><button onClick={()=>addNewsComment(n)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 8px',fontSize:'10px'}}>تعليق</button></div>}
+                  {isOwner&&<div style={{display:'flex',gap:'5px',marginTop:'7px'}}><button onClick={()=>toggleNewsPin(n)} style={{border:0,background:'#fef3c7',color:'#92400e',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>{n.pinned?'إلغاء التثبيت':'تثبيت المنشور'}</button><button onClick={()=>deleteNewsPost(n.id)} style={{border:0,background:'#fee2e2',color:'#dc2626',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>حذف</button></div>}
+                </div>;
+              })}
+              {hasMoreNews && <button onClick={loadMoreNews} disabled={loadingMoreNews} style={{display:'block',margin:'10px auto',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'7px 14px',fontSize:'10px'}}>{loadingMoreNews?'جاري التحميل...':'تحميل المزيد'}</button>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVipModal && (
+        <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>
+              {rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).sort((a,b)=>{const rr=(u:any)=>{const r=normalizeRole(u.role);if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase())return 1;if(r==='Super Admin')return 2;if(r==='Admin')return 3;return 9;};return rr(a)-rr(b)||String(a.displayName||'').localeCompare(String(b.displayName||''));}).map((u:any,i:number)=><div key={u.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'34px',height:'34px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center'}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div><div style={{fontSize:'12px',fontWeight:'bold'}}>{u.displayName||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div></div></div>)}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showRequestsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
           <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
@@ -2400,6 +2771,7 @@ export default function App() {
                   </div>
                 ))
               )}
+              {hasMoreNotifications && <button onClick={loadMoreNotifications} disabled={loadingMoreNotifications} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px'}}>{loadingMoreNotifications?'جاري التحميل...':'تحميل المزيد'}</button>}
             </div>
 
           </div>
@@ -2407,7 +2779,7 @@ export default function App() {
       )}
 
       {showFriendsModal && (
-        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: '60px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+        <div style={{ position: 'fixed', top: '48px', left: 0, right: 0, bottom: '50px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
             
             <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
@@ -2459,7 +2831,7 @@ export default function App() {
       )}
 
       {showOnlineModal && (
-        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: '60px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+        <div style={{ position: 'fixed', top: '48px', left: 0, right: 0, bottom: '50px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
           <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
             
             <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
