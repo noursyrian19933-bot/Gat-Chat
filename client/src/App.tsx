@@ -1898,7 +1898,7 @@ export default function App() {
         <div style={{ width: '100%', maxWidth: '380px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
+            <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
             <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>منصة الدردشة العربية العصرية</p>
           </div>
 
@@ -2027,7 +2027,7 @@ export default function App() {
     return (
       <div style={{ height: '100dvh', width: '100vw', backgroundColor: '#0b141a', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px', textAlign: 'center', direction: 'rtl' }}>
         <div style={{ fontSize: '56px', marginBottom: '16px' }}>🚫</div>
-        <h2 style={{ color: '#ef4444', marginBottom: '10px', fontSize: '20px' }}>أنت مطرود من الشات مؤقتاً</h2>
+        <h2 style={{ color: '#ef4444', marginBottom: '10px', fontSize: '16px' }}>أنت مطرود من الشات مؤقتاً</h2>
         <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '20px' }}>تم طردك من قبل إدارة الموقع. ستتمكن من العودة فور انتهاء الوقت أدناه.</p>
         <div style={{ backgroundColor: '#1e293b', padding: '16px 28px', borderRadius: '12px', border: '1px solid #334155', fontSize: '18px', fontWeight: 'bold', color: '#38bdf8' }}>
           ستعود بعد: {minutes} دقيقة و {seconds} ثانية
@@ -2097,7 +2097,7 @@ export default function App() {
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
-        .video-composer button { min-width: 28px !important; } .video-composer { min-height: 46px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
+        .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
           .video-topbar .brand-logo { font-size:18px !important; }
@@ -2477,8 +2477,8 @@ export default function App() {
                 style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '13px' }}
               />
             </div>
-            <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>📎</button>
-            <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>🎙</button>
+            <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#64748b' }}>📎</button>
+            <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#64748b' }}>🎙</button>
           </form>
 
         </div>
@@ -2541,7 +2541,7 @@ export default function App() {
           <div onClick={e=>e.stopPropagation()} style={{width:'44%',minWidth:'300px',maxWidth:'420px',height:'100%',background:'#fff',boxShadow:'8px 0 24px rgba(0,0,0,.2)',overflowY:'auto'}}>
             <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
             {[
-              ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}],['⟳','تحديث الصفحة',()=>window.location.reload()]
+              ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}]
             ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'54px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px',fontSize:'15px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'20px'}}>{icon as any}</span><span>{label as any}</span></button>)}
           </div>
         </div>
@@ -2622,7 +2622,7 @@ export default function App() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '7px', flexShrink: 0 }}>
                       {isCurrentRoom ? (
-                        <button disabled style={{ background: '#94a3b8', color: '#fff', border: 'none', padding: '10px 12px', borderRadius: '999px', fontWeight: '800', fontSize: '11px', minWidth: '105px', opacity: 0.95 }}>الغرفة الحالية</button>
+                        <button disabled style={{ background: '#94a3b8', color: '#fff', border: 'none', padding: '5px 7px', borderRadius: '999px', fontWeight: '800', fontSize: '11px', minWidth: '105px', opacity: 0.95 }}>الغرفة الحالية</button>
                       ) : (
                         <button onClick={() => enterRoom(room)} style={{ background: 'linear-gradient(135deg,#0b141a,#173044)', color: '#fff', border: 'none', padding: '8px 11px', borderRadius: '999px', fontWeight: '800', cursor: 'pointer', fontSize: '10px', minWidth: '96px', boxShadow: '0 5px 12px rgba(11,20,26,0.16)' }}>دخول الغرفة 🚪</button>
                       )}
@@ -2661,7 +2661,7 @@ export default function App() {
       )}
 
       {showNewsModal && (
-        <div style={{position:'fixed',inset:0,zIndex:281,background:'#f8fafc',display:'flex',flexDirection:'column',direction:'rtl'}}>
+        <div style={{position:'fixed',inset:0,zIndex:281,background:'#f8fafc',display:'flex',flexDirection:'column',direction:'rtl'}}><button type="button" onClick={()=>window.location.reload()} style={{margin:'6px 8px',alignSelf:'flex-start',border:0,borderRadius:'7px',background:'#e2e8f0',color:'#334155',padding:'5px 10px',fontSize:'10px',cursor:'pointer'}}>⟳ تحديث الصفحة</button>
           <div style={{height:'52px',flexShrink:0,background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px'}}>
             <b style={{fontSize:'15px'}}>الأخبار</b>
             <button onClick={()=>setShowNewsModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'27px',cursor:'pointer'}}>×</button>
@@ -2807,7 +2807,7 @@ export default function App() {
                 </div>
               ) : (
                 filteredFriendsList.map((friend) => (
-                  <div key={friend.id} style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
+                  <div key={friend.id} style={{ padding: '5px 7px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
                       <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{friend.name}</span>
