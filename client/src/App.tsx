@@ -1738,7 +1738,47 @@ export default function App() {
   const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
 
   return (
-    <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#004247', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
+    <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#003d43', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
+      <style>{`
+        .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
+        .video-theme { background:#003d43 !important; }
+        .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
+        .video-topbar > div:first-child { order:2; }
+        .video-topbar > div:last-child { order:1; }
+        .video-topbar .brand-logo { font-size:25px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
+        .video-chat-scroll { background:#fff !important; }
+        .video-chat-scroll > div { min-height:54px !important; padding:5px 8px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div:nth-child(even) { background:#f1f1f1 !important; }
+        .video-chat-scroll img { border-radius:50%; }
+        .video-composer { min-height:78px !important; border-top:1px solid #d8d8d8 !important; padding:8px 10px !important; gap:7px !important; }
+        .video-composer input { font-size:17px !important; color:#333 !important; }
+        .video-composer input::placeholder { color:#888 !important; }
+        .video-composer > div { height:54px !important; border-radius:28px !important; background:#f8f8f8 !important; }
+        .video-composer > button[type=submit] { width:54px !important; height:54px !important; background:#003d43 !important; font-size:25px !important; }
+        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:82px !important; min-height:82px !important; padding:0 8px !important; }
+        .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:70px; padding:4px 8px !important; }
+        .video-bottom-nav > div span:first-child { font-size:30px !important; color:#fff !important; }
+        .video-bottom-nav > div span:last-child { font-size:15px !important; font-weight:500 !important; color:#fff !important; }
+        .video-rooms-overlay { background:rgba(0,0,0,.42) !important; }
+        .video-rooms-panel { width:78% !important; max-width:520px !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
+        .video-rooms-panel > div:first-child { background:#003d43 !important; padding:18px 18px !important; }
+        .video-rooms-panel > div:first-child div { font-size:20px !important; }
+        .video-rooms-panel > div:nth-child(2) { padding:14px 14px 22px !important; gap:12px !important; }
+        .video-rooms-panel form { border-radius:16px !important; border:1px solid #ddd !important; background:#fff !important; box-shadow:none !important; }
+        .video-rooms-panel form input { font-size:14px !important; }
+        .video-rooms-panel form button { border-radius:12px !important; }
+        .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:16px !important; min-height:82px !important; padding:12px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
+        .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
+        @media (max-width:600px) {
+          .video-topbar { height:82px !important; min-height:82px !important; }
+          .video-topbar .brand-logo { font-size:21px !important; }
+          .video-chat-scroll > div { min-height:56px !important; }
+          .video-chat-scroll > div span { font-size:15px !important; }
+          .video-chat-scroll > div span[style*="fontSize: '11px'"] { font-size:12px !important; }
+          .video-rooms-panel { width:82% !important; }
+        }
+      `}</style>
+
       <style>{`*{box-sizing:border-box} body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#004247} button,input,textarea,select{font-family:inherit} ::-webkit-scrollbar{width:4px;height:4px} ::-webkit-scrollbar-thumb{background:#aab7b8;border-radius:10px}`}</style>
       
       <input 
@@ -1766,8 +1806,11 @@ export default function App() {
       {currentView === 'chat' && (
         <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, background: '#004247', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 7px rgba(0,0,0,0.18)' }}>
           
-          <div style={{ cursor: 'pointer', fontSize: '20px', color: '#38bdf8', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            ☰
+          <div style={{ display:'flex', alignItems:'center', gap:'18px' }}>
+            <div style={{ cursor:'pointer', fontSize:'34px', color:'#fff', lineHeight:1 }}>☰</div>
+            <div className="brand-logo">Arabic<span style={{color:'#ff4b73'}}>chat</span></div>
+            <div style={{fontSize:'24px',color:'#fff'}}>♛</div>
+            <div style={{fontSize:'23px',color:'#fff'}}>💎</div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
@@ -1976,7 +2019,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
+            <div className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
               
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
@@ -2102,7 +2145,7 @@ export default function App() {
               </div>
             )}
 
-            <form onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
+            <form className="video-composer" onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '7px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
               
               <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>
                 ➤
@@ -2223,25 +2266,26 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav style={{ height: '62px', minHeight: '62px', flexShrink: 0, background: '#004247', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.12)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 8px rgba(0,0,0,0.18)', padding: '0 8px' }}>
+        <nav className="video-bottom-nav" style={{ height: '82px', minHeight: '82px', flexShrink: 0, background: '#004247', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.12)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 8px rgba(0,0,0,0.18)', padding: '0 8px' }}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',color:'#fff',minWidth:'92px',justifyContent:'center'}}><div style={{width:'42px',height:'42px',borderRadius:'50%',background:'#fff',color:'#003d43',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'23px'}}>▶</div><div style={{textAlign:'left',lineHeight:1.05}}><div style={{fontSize:'10px'}}>Radio</div><div style={{fontSize:'18px'}}>9090</div></div></div>
           
           <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'transparent', borderRadius: '12px', padding: '3px 12px', border: '1px solid transparent' }}>
-            <span style={{ fontSize: '18px', color: '#38bdf8' }}>⚙</span>
+            <span style={{ fontSize: '28px', color: '#fff' }}>⚙</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
           </div>
 
           <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '18px', color: '#22c55e' }}>👥⁺</span>
+            <span style={{ fontSize: '28px', color: '#fff' }}>👥⁺</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
           </div>
 
           <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '18px', color: '#eab308' }}>👥</span>
+            <span style={{ fontSize: '28px', color: '#fff' }}>👥</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
           </div>
 
           <div onClick={() => setShowRoomsModal(true)} style={{ color: showRoomsModal || currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showRoomsModal || currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showRoomsModal || currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
+            <span style={{ fontSize: '28px', color: '#fff' }}>⌂</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
           </div>
 
@@ -2249,7 +2293,7 @@ export default function App() {
       )}
 
       {showRoomsModal && (
-        <div
+        <div className="video-rooms-overlay"
           onClick={() => setShowRoomsModal(false)}
           style={{
             position: 'fixed',
@@ -2263,7 +2307,7 @@ export default function App() {
             overflow: 'hidden'
           }}
         >
-          <div
+          <div className="video-rooms-panel"
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'absolute',
@@ -2696,7 +2740,7 @@ export default function App() {
       )}
 
       {selectedProfileUser && (
-        <div 
+        <div className="video-profile-backdrop"
           onClick={() => { stopProfileSong(); setSelectedProfileUser(null); }}
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}
         >
