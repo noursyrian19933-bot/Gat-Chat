@@ -1212,7 +1212,12 @@ export default function App() {
   };
 
   const deleteWallPost = async (postId:string) => {
-    if (isOwner || (user && wallPosts.find(p=>p.id===postId)?.userId===user.uid)) const post = wallPosts.find(p => p.id === postId); if (post) await deleteDoc(doc(db, 'users', post.wallOwnerId || user!.uid, 'wall_posts', postId));
+    if (!user) return;
+    const post = wallPosts.find(p => p.id === postId);
+    if (!post) return;
+    const canDelete = isOwner || post.userId === user.uid;
+    if (!canDelete) return;
+    await deleteDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', postId));
   };
 
   const addNewsPost = async () => {
@@ -1539,8 +1544,9 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
+      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
+
       if (selectedRoom) {
-        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
