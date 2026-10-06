@@ -1746,51 +1746,39 @@ export default function App() {
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:27px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
-        .video-chat-scroll { background:#fff !important; }
-        .video-chat-scroll > div { min-height:54px !important; padding:5px 8px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
+        .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
-        .video-composer { min-height:78px !important; border-top:1px solid #d8d8d8 !important; padding:8px 10px !important; gap:7px !important; }
-        .video-composer input { font-size:17px !important; color:#333 !important; }
+        .video-chat-scroll > div > div:first-child { width:34px !important; height:34px !important; border-width:1px !important; font-size:14px !important; }
+        .video-chat-scroll > div > div:nth-child(2) { font-size:13px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
+        .video-chat-scroll > div > div:nth-child(2) span { font-size:inherit !important; }
+        .video-composer { min-height:64px !important; border-top:1px solid #d8d8d8 !important; padding:6px 8px !important; gap:6px !important; }
+        .video-composer input { font-size:13px !important; color:#333 !important; }
         .video-composer input::placeholder { color:#888 !important; }
-        .video-composer > div { height:54px !important; border-radius:28px !important; background:#f8f8f8 !important; }
-        .video-composer > button[type=submit] { width:54px !important; height:54px !important; background:#003d43 !important; font-size:25px !important; }
-        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:82px !important; min-height:82px !important; padding:0 8px !important; }
-        .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:70px; padding:4px 8px !important; }
-        .video-bottom-nav > div span:first-child { font-size:30px !important; color:#fff !important; }
-        .video-bottom-nav > div span:last-child { font-size:15px !important; font-weight:500 !important; color:#fff !important; }
+        .video-composer > div { height:44px !important; border-radius:23px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; }
+        .video-composer > button[type=submit] { width:46px !important; height:46px !important; background:#003d43 !important; font-size:20px !important; }
+        .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:68px !important; min-height:68px !important; padding:0 5px !important; }
+        .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:0 !important; flex:1 !important; padding:3px 2px !important; }
+        .video-bottom-nav > div div:first-child { font-size:27px !important; color:#fff !important; }
+        .video-bottom-nav > div div:last-child { font-size:12px !important; font-weight:500 !important; color:#fff !important; }
         .video-rooms-overlay { background:rgba(0,0,0,.42) !important; }
         .video-rooms-panel { width:100% !important; max-width:100% !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
-        .video-rooms-panel > div:first-child { background:#003d43 !important; padding:18px 18px !important; }
-        .video-rooms-panel > div:first-child div { font-size:20px !important; }
-        .video-rooms-panel > div:nth-child(2) { padding:14px 14px 22px !important; gap:12px !important; }
-        .video-rooms-panel form { border-radius:16px !important; border:1px solid #ddd !important; background:#fff !important; box-shadow:none !important; }
-        .video-rooms-panel form input { font-size:14px !important; }
-        .video-rooms-panel form button { border-radius:12px !important; }
-        .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:16px !important; min-height:82px !important; padding:12px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
+        .video-rooms-panel > div:first-child { background:#003d43 !important; padding:14px 16px !important; }
+        .video-rooms-panel > div:first-child div { font-size:17px !important; }
+        .video-rooms-panel > div:nth-child(2) { padding:12px 12px 18px !important; gap:10px !important; }
+        .video-rooms-panel form { border-radius:14px !important; border:1px solid #ddd !important; background:#fff !important; box-shadow:none !important; }
+        .video-rooms-panel form input { font-size:12px !important; }
+        .video-rooms-panel form button { border-radius:10px !important; }
+        .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
-        .video-chat-scroll { font-family: Tahoma, Arial, sans-serif !important; }
-        .video-chat-scroll > div { min-height:52px !important; padding:3px 8px !important; gap:8px !important; }
-        .video-chat-scroll > div > div:first-child { width:42px !important; height:42px !important; border-width:2px !important; }
-        .video-chat-scroll > div > div:nth-child(2) { font-size:17px !important; line-height:1.25 !important; justify-content:flex-start !important; }
-        .video-chat-scroll > div > div:nth-child(2) span { font-size:inherit !important; }
-        .video-composer { min-height:74px !important; padding:8px 10px !important; }
-        .video-composer > div { height:54px !important; border-radius:30px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; }
-        .video-composer input { font-size:17px !important; }
-        .video-composer > button[type=submit] { width:58px !important; height:58px !important; border-radius:50% !important; font-size:27px !important; }
-        .video-room-list { scrollbar-width:none; }
-        .video-room-list::-webkit-scrollbar { display:none; }
-        .video-room-card { font-family: Tahoma, Arial, sans-serif !important; }
-        .video-profile-backdrop { align-items:flex-start !important; padding-top:28px !important; }
-        .video-profile-backdrop > div { max-width:96% !important; width:96% !important; border-radius:20px !important; max-height:88dvh !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
         @media (max-width:600px) {
           .video-topbar { height:82px !important; min-height:82px !important; }
           .video-topbar .brand-logo { font-size:21px !important; }
-          .video-chat-scroll > div { min-height:56px !important; }
-          .video-chat-scroll > div span { font-size:15px !important; }
-          .video-chat-scroll > div span[style*="fontSize: '11px'"] { font-size:12px !important; }
+          .video-chat-scroll > div { min-height:44px !important; }
+          .video-chat-scroll > div > div:nth-child(2) { font-size:13px !important; }
           .video-rooms-panel { width:100% !important; }
         }
       `}</style>
@@ -2009,9 +1997,7 @@ export default function App() {
                       </div>
 
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
-                        <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
-                        
-                        <span 
+                                                <span 
                           style={{ 
                             backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
                             padding: hasCustomBg ? '3px 8px' : '0',
@@ -2209,12 +2195,11 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'88px',minHeight:'88px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 14px',zIndex:10}}>
-          <div style={{display:'flex',alignItems:'center',gap:'10px',color:'#fff'}}><div style={{fontSize:'34px'}}>☷</div><div style={{width:'50px',height:'50px',borderRadius:'50%',background:'#fff',color:'#003f45',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'25px'}}>▶</div><div style={{lineHeight:1.05,textAlign:'left'}}><div style={{fontSize:'16px',color:'#19a6d0'}}>Radio</div><div style={{fontSize:'20px'}}>9090</div></div></div>
-          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'35px',lineHeight:1}}>⌂</div><div>الغرف</div></div>
-          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'34px',lineHeight:1}}>♣</div><div>المتصلين</div></div>
-          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'34px',lineHeight:1}}>♟+</div><div>الأصدقاء</div></div>
-          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'36px',lineHeight:1}}>⚙</div><div>خيارات</div></div>
+        <nav className="video-bottom-nav" style={{height:'68px',minHeight:'68px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
+          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>⌂</div><div>الغرف</div></div>
+          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>♣</div><div>المتصلين</div></div>
+          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>♟+</div><div>الأصدقاء</div></div>
+          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'12px',flex:1,minWidth:0}}><div style={{fontSize:'27px',lineHeight:1}}>⚙</div><div>خيارات</div></div>
         </nav>
       )}
 
