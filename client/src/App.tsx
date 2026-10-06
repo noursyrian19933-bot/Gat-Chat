@@ -28,7 +28,11 @@ import {
   serverTimestamp,
   updateDoc,
   arrayUnion,
-  arrayRemove 
+  arrayRemove,
+  limit,
+  limitToLast,
+  startAfter,
+  endBefore
 } from 'firebase/firestore';
 
 import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
@@ -180,8 +184,15 @@ export default function App() {
 
   const [rooms, setRooms] = useState<Array<{ id: string; name: string; flag: string }>>([]);
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
+  const roomsCursorRef = useRef<any>(null);
+  const [hasMoreRooms, setHasMoreRooms] = useState(false);
+  const [loadingMoreRooms, setLoadingMoreRooms] = useState(false);
   
   const [messages, setMessages] = useState<any[]>([]);
+  const roomOlderMessagesRef = useRef<Record<string, any[]>>({});
+  const roomFirstDocRef = useRef<Record<string, any>>({});
+  const [hasMoreRoomMessages, setHasMoreRoomMessages] = useState(false);
+  const [loadingMoreRoomMessages, setLoadingMoreRoomMessages] = useState(false);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -215,12 +226,25 @@ export default function App() {
 
   const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
+  const privateOlderMessagesRef = useRef<Record<string, any[]>>({});
+  const privateFirstDocRef = useRef<Record<string, any>>({});
+  const [hasMorePrivateMessages, setHasMorePrivateMessages] = useState(false);
+  const [loadingMorePrivateMessages, setLoadingMorePrivateMessages] = useState(false);
+  const [hasMorePrivateConversations, setHasMorePrivateConversations] = useState(false);
+  const [loadingMorePrivateConversations, setLoadingMorePrivateConversations] = useState(false);
+  const privateConversationsCursorRef = useRef<any>(null);
   const [privateInputText, setPrivateInputText] = useState('');
   const [privateConversations, setPrivateConversations] = useState<Array<any>>([]);
 
   const [pendingRequests, setPendingRequests] = useState<Array<any>>([]);
   const [notificationsList, setNotificationsList] = useState<Array<any>>([]);
+  const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
+  const [loadingMoreNotifications, setLoadingMoreNotifications] = useState(false);
+  const notificationsCursorRef = useRef<any>(null);
   const [friendsList, setFriendsList] = useState<Array<any>>([]);
+  const [hasMoreFriends, setHasMoreFriends] = useState(false);
+  const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
+  const friendsCursorRef = useRef<any>(null);
   const [friendsSearchQuery, setFriendsSearchQuery] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -530,37 +554,56 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(
-      collection(db, 'users', user.uid, 'private_chats'),
-      orderBy('lastMessageTime', 'desc')
-    );
+    const q = query(collection(db, 'users', user.uid, 'private_chats'), orderBy('lastMessageTime', 'desc'), limit(20));
     return onSnapshot(q, (snapshot) => {
-      const convs = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
-      setPrivateConversations(convs);
+      privateConversationsCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
+      setHasMorePrivateConversations(snapshot.docs.length === 20);
+      setPrivateConversations(snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) })));
     });
   }, [user]);
+
+  const loadMorePrivateConversations = async () => {
+    if (!user || !privateConversationsCursorRef.current || !hasMorePrivateConversations || loadingMorePrivateConversations) return;
+    setLoadingMorePrivateConversations(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'users', user.uid, 'private_chats'), orderBy('lastMessageTime', 'desc'), startAfter(privateConversationsCursorRef.current), limit(20)));
+      privateConversationsCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : privateConversationsCursorRef.current;
+      setPrivateConversations(prev => [...prev, ...snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))]);
+      setHasMorePrivateConversations(snap.docs.length === 20);
+    } finally { setLoadingMorePrivateConversations(false); }
+  };
 
   useEffect(() => {
     if (!user || !activePrivateChat) return;
     const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
-    const msgQuery = query(
-      collection(db, 'private_messages', chatId, 'messages'),
-      orderBy('createdAt', 'asc')
-    );
+    const msgQuery = query(collection(db, 'private_messages', chatId, 'messages'), orderBy('createdAt', 'asc'), limitToLast(20));
     return onSnapshot(msgQuery, (snapshot) => {
-      const msgs = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
-      setPrivateMessages(msgs);
-      setTimeout(() => {
-        privateChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      privateFirstDocRef.current[chatId] = snapshot.docs.length ? snapshot.docs[0] : null;
+      setHasMorePrivateMessages(snapshot.docs.length === 20);
+      const latest = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      const older = privateOlderMessagesRef.current[chatId] || [];
+      const map = new Map<string, any>();
+      older.forEach(m => map.set(m.id, m)); latest.forEach(m => map.set(m.id, m));
+      setPrivateMessages(Array.from(map.values()).sort((a,b) => ((a.createdAt?.seconds||0)-(b.createdAt?.seconds||0))));
+      setTimeout(() => privateChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
   }, [user, activePrivateChat]);
+
+  const loadMorePrivateMessages = async () => {
+    if (!user || !activePrivateChat || !hasMorePrivateMessages || loadingMorePrivateMessages) return;
+    const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
+    const firstDoc = privateFirstDocRef.current[chatId];
+    if (!firstDoc) return;
+    setLoadingMorePrivateMessages(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'private_messages', chatId, 'messages'), orderBy('createdAt', 'asc'), endBefore(firstDoc), limitToLast(20)));
+      const older = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      privateOlderMessagesRef.current[chatId] = [...older, ...(privateOlderMessagesRef.current[chatId] || [])];
+      privateFirstDocRef.current[chatId] = snap.docs.length ? snap.docs[0] : firstDoc;
+      setPrivateMessages(prev => { const map=new Map<string,any>(); [...older,...prev].forEach(m=>map.set(m.id,m)); return Array.from(map.values()); });
+      setHasMorePrivateMessages(snap.docs.length === 20);
+    } finally { setLoadingMorePrivateMessages(false); }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -580,18 +623,24 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(
-      collection(db, 'users', user.uid, 'notifications'),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('createdAt', 'desc'), limit(20));
     return onSnapshot(q, (snapshot) => {
-      const notes = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
-      setNotificationsList(notes);
+      notificationsCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
+      setHasMoreNotifications(snapshot.docs.length === 20);
+      setNotificationsList(snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) })));
     });
   }, [user]);
+
+  const loadMoreNotifications = async () => {
+    if (!user || !notificationsCursorRef.current || !hasMoreNotifications || loadingMoreNotifications) return;
+    setLoadingMoreNotifications(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'users', user.uid, 'notifications'), orderBy('createdAt', 'desc'), startAfter(notificationsCursorRef.current), limit(20)));
+      notificationsCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : notificationsCursorRef.current;
+      setNotificationsList(prev => [...prev, ...snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))]);
+      setHasMoreNotifications(snap.docs.length === 20);
+    } finally { setLoadingMoreNotifications(false); }
+  };
 
   const handleOpenNotifications = async () => {
     setShowNotificationsModal(true);
@@ -608,15 +657,24 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    const friendsRef = collection(db, 'users', user.uid, 'friends');
-    return onSnapshot(friendsRef, (snapshot) => {
-      const list = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...(docSnap.data() as any)
-      }));
-      setFriendsList(list);
+    const q = query(collection(db, 'users', user.uid, 'friends'), limit(20));
+    return onSnapshot(q, (snapshot) => {
+      friendsCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
+      setHasMoreFriends(snapshot.docs.length === 20);
+      setFriendsList(snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) })));
     });
   }, [user]);
+
+  const loadMoreFriends = async () => {
+    if (!user || !friendsCursorRef.current || !hasMoreFriends || loadingMoreFriends) return;
+    setLoadingMoreFriends(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'users', user.uid, 'friends'), startAfter(friendsCursorRef.current), limit(20)));
+      friendsCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : friendsCursorRef.current;
+      setFriendsList(prev => [...prev, ...snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))]);
+      setHasMoreFriends(snap.docs.length === 20);
+    } finally { setLoadingMoreFriends(false); }
+  };
 
   const saveSettingToFirebase = async (field: string, value: any) => {
     if (!user) return;
@@ -747,9 +805,13 @@ export default function App() {
   };
 
   useEffect(() => {
+    let unsub: any;
+    let cancelled = false;
+
     const initRoomsAndListen = async () => {
       const roomsCol = collection(db, 'rooms');
       const snapshot = await getDocs(roomsCol);
+
       if (snapshot.empty) {
         const defaultRooms = [
           { name: 'غرفة الأردن', flag: '🇯🇴' },
@@ -762,28 +824,76 @@ export default function App() {
           { name: 'غرفة فلسطين', flag: '🇵🇸' },
           { name: 'الدردشة الحرة', flag: '💬' }
         ];
-        for (const r of defaultRooms) {
-          await addDoc(roomsCol, r);
+        for (const r of defaultRooms) await addDoc(roomsCol, r);
+      }
+
+      const firstPage = await getDocs(query(roomsCol, limit(20)));
+      if (cancelled) return;
+      roomsCursorRef.current = firstPage.docs.length ? firstPage.docs[firstPage.docs.length - 1] : null;
+      setHasMoreRooms(firstPage.docs.length === 20);
+      setRooms(firstPage.docs.map(d => ({ id: d.id, ...(d.data() as any) })));
+
+      const savedId = localStorage.getItem('gat_current_room_id');
+      if (savedId) {
+        const foundInPage = firstPage.docs.find(d => d.id === savedId);
+        if (foundInPage) {
+          const found = { id: foundInPage.id, ...(foundInPage.data() as any) };
+          setSelectedRoom(found);
+          setCurrentView('chat');
+        } else {
+          // لا نحمّل كل الغرف فقط لاستعادة غرفة المستخدم؛ نجلب وثيقة الغرفة المطلوبة وحدها.
+          try {
+            const savedRoomSnap = await getDocs(query(collection(db, 'rooms'), where('__name__', '==', savedId), limit(1)));
+            if (!cancelled && !savedRoomSnap.empty) {
+              const found = { id: savedRoomSnap.docs[0].id, ...(savedRoomSnap.docs[0].data() as any) };
+              setSelectedRoom(found);
+              setCurrentView('chat');
+            }
+          } catch (e) { console.warn('تعذر استعادة الغرفة المحفوظة', e); }
         }
       }
-      return onSnapshot(roomsCol, (snap) => {
-        const fetchedRooms = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-        setRooms(fetchedRooms);
 
-        const savedId = localStorage.getItem('gat_current_room_id');
-        if (savedId) {
-          const found = fetchedRooms.find(r => r.id === savedId);
-          if (found) {
-            setSelectedRoom(found);
-            setCurrentView('chat');
-          }
+      // نستمع فقط لأول 20 غرفة. الغرف الأقدم تُطلب عند الضغط على «المزيد».
+      unsub = onSnapshot(query(roomsCol, limit(20)), (snap) => {
+        const liveRooms = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        setRooms(prev => {
+          const loadedMore = prev.slice(20);
+          const map = new Map<string, any>();
+          liveRooms.forEach(r => map.set(r.id, r));
+          loadedMore.forEach(r => { if (!map.has(r.id)) map.set(r.id, r); });
+          return Array.from(map.values());
+        });
+        const saved = localStorage.getItem('gat_current_room_id');
+        if (saved) {
+          const found = liveRooms.find(r => r.id === saved);
+          if (found) setSelectedRoom(found);
         }
       });
     };
-    let unsub: any;
-    initRoomsAndListen().then(u => { unsub = u; });
-    return () => { if (unsub) unsub(); };
+
+    initRoomsAndListen().catch(e => console.error(e));
+    return () => { cancelled = true; if (unsub) unsub(); };
   }, []);
+
+  const loadMoreRooms = async () => {
+    if (!roomsCursorRef.current || !hasMoreRooms || loadingMoreRooms) return;
+    setLoadingMoreRooms(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'rooms'), startAfter(roomsCursorRef.current), limit(20)));
+      if (snap.docs.length) {
+        roomsCursorRef.current = snap.docs[snap.docs.length - 1];
+        const older = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        setRooms(prev => {
+          const map = new Map(prev.map((r:any) => [r.id, r]));
+          older.forEach(r => map.set(r.id, r));
+          return Array.from(map.values());
+        });
+      }
+      setHasMoreRooms(snap.docs.length === 20);
+    } finally {
+      setLoadingMoreRooms(false);
+    }
+  };
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -965,12 +1075,12 @@ export default function App() {
   useEffect(() => {
     if (!showWallModal || !user) return;
     const wallRef = collection(db, 'users', user.uid, 'wall_posts');
-    const q = query(wallRef, orderBy('createdAt', 'desc'));
+    const q = query(wallRef, orderBy('createdAt', 'desc'), limit(20));
     return onSnapshot(q, snap => setWallPosts(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))));
   }, [showWallModal, user]);
 
   useEffect(() => {
-    const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'), limit(20));
     return onSnapshot(q, snap => {
       const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       items.sort((a,b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
@@ -980,7 +1090,7 @@ export default function App() {
 
   useEffect(() => {
     if (!selectedRoom) return;
-    const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'));
+    const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(20));
     return onSnapshot(msgQuery, (snapshot) => {
       const now = Date.now();
       const FIVE_MINUTES_MS = 5 * 60 * 1000;
@@ -2311,6 +2421,7 @@ export default function App() {
           </div>
 
           <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,borderRadius:'8px',padding:'6px 12px',fontSize:'10px',background:'#e2e8f0',color:'#0f172a'}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
             {privateMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
                 ابدأ محادثتك الخاصة الآن مع {activePrivateChat.peerName} 💬
@@ -2359,6 +2470,7 @@ export default function App() {
             </div>
 
             <div style={{ padding: '12px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {hasMorePrivateConversations && <button type="button" onClick={loadMorePrivateConversations} disabled={loadingMorePrivateConversations} style={{border:0,borderRadius:'8px',padding:'6px 10px',fontSize:'10px',background:'#e2e8f0'}}>{loadingMorePrivateConversations?'جاري التحميل...':'تحميل المزيد'}</button>}
               {privateConversations.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
                   لا توجد محادثات خاصة مسجلة حالياً.
@@ -2497,6 +2609,17 @@ export default function App() {
                   </div>
                 );
               })}
+
+              {hasMoreRooms && (
+                <button
+                  type="button"
+                  onClick={loadMoreRooms}
+                  disabled={loadingMoreRooms}
+                  style={{ marginTop: '2px', width: '100%', background: '#f1f5f9', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', fontSize: '11px', fontWeight: '800', cursor: loadingMoreRooms ? 'default' : 'pointer' }}
+                >
+                  {loadingMoreRooms ? 'جاري تحميل المزيد...' : 'تحميل المزيد من الغرف'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -2579,6 +2702,7 @@ export default function App() {
             </div>
 
             <div style={{ padding: '12px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {hasMoreNotifications && <button type="button" onClick={loadMoreNotifications} disabled={loadingMoreNotifications} style={{margin:'6px auto',border:0,borderRadius:'8px',padding:'6px 12px',fontSize:'10px',background:'#e2e8f0'}}>{loadingMoreNotifications?'جاري التحميل...':'تحميل المزيد'}</button>}
               {notificationsList.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
                   لا توجد إشعارات أو تنبيهات جديدة.
