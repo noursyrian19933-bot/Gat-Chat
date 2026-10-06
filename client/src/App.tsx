@@ -157,7 +157,7 @@ const VideoIcon = ({ type, size = 20, stroke = 2.2 }: { type: string; size?: num
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<'menu' | 'register' | 'login' | 'guest' | 'forgot'>('menu');
+  const [authMode, setAuthMode] = useState<'menu' | 'register' | 'login' | 'guest' | 'forgot'>('login');
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1894,12 +1894,13 @@ export default function App() {
 
   if (!user && !loading) {
     return (
-      <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px', direction: 'rtl', boxSizing: 'border-box' }}>
-        <div style={{ width: '100%', maxWidth: '380px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="video-auth-screen" style={{ backgroundColor: '#071c22', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', height: '100dvh', padding: '0 8px 24px', direction: 'rtl', boxSizing: 'border-box', overflowY: 'auto' }}>
+        <div className="video-auth-wrap" style={{ width: '100%', maxWidth: '430px', padding: '0', display: 'flex', flexDirection: 'column', gap: '0', position: 'relative', zIndex: 2 }}>
           
-          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>منصة الدردشة العربية العصرية</p>
+          <div className="video-auth-hero">
+            <div className="video-auth-logo">Arabic<span>chat</span></div>
+            <div className="video-auth-title">شات تعارف عربي</div>
+            <div className="video-auth-subtitle">تعارف، دردشة، أصدقاء وصداقات عربية</div>
           </div>
 
           {errorMessage && <div style={{ color: '#ef4444', fontSize: '11px', background: 'rgba(239,68,68,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(239,68,68,0.3)' }}>{errorMessage}</div>}
@@ -1987,6 +1988,7 @@ export default function App() {
               </div>
 
               <button type="submit" style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '4px' }}>تسجيل الدخول</button>
+              <button type="button" onClick={() => { setAuthMode('register'); setErrorMessage(''); setSuccessMessage(''); }} className="video-register-button">إنشاء حساب جديد 👤</button>
               <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
