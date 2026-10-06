@@ -289,7 +289,9 @@ export default function App() {
   const profileAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
+  const privateChatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const normalizeRole = (role: any): string => {
     const value = String(role || '').trim().toLowerCase();
@@ -593,6 +595,8 @@ export default function App() {
   const loadMorePrivateMessages = async () => {
     if (!user || !activePrivateChat || !privateMessagesCursorRef.current || loadingMorePrivateMessages) return;
     setLoadingMorePrivateMessages(true);
+    const scrollEl = privateChatScrollRef.current;
+    const beforeHeight = scrollEl?.scrollHeight || 0;
     try {
       const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
       const snap = await getDocs(query(
@@ -608,6 +612,9 @@ export default function App() {
         const map = new Map(prev.map((m:any) => [m.id, m]));
         older.forEach((m:any) => map.set(m.id, m));
         return Array.from(map.values()).sort((a:any,b:any) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
+      });
+      requestAnimationFrame(() => {
+        if (scrollEl) scrollEl.scrollTop += (scrollEl.scrollHeight - beforeHeight);
       });
     } finally { setLoadingMorePrivateMessages(false); }
   };
@@ -884,13 +891,17 @@ export default function App() {
     const publishPresence = () => {
       const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const currentRole = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
-      set(presenceRef, {
+      const payload = {
         userId: user.uid, userName, email: (user.email || '').trim().toLowerCase(), role: currentRole,
         flag: currentFlag, gender: profileGender, country: profileCountry, avatarUrl: profileAvatar,
         coverUrl: profileCover, profileSongUrl: profileSong, nameColor, nameStyle, profileBgColor,
         joinedDate: todayDate, lastSeen: nowTime, lastActive: Date.now(), online: true,
         roomId, roomName, points: 0
-      }).catch(() => {});
+      };
+      set(presenceRef, payload).catch(() => {
+        // احتياطي فقط إذا كانت قواعد RTDB الحالية تمنع الكتابة.
+        setDoc(doc(db, 'room_presence', user.uid), payload, { merge: true }).catch(() => {});
+      });
     };
 
     // Firebase يغلق الحالة تلقائيًا عند انقطاع الاتصال المفاجئ.
@@ -938,10 +949,22 @@ export default function App() {
       const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase())return 1;if(r==='Super Admin')return 2;if(r==='Admin')return 3;if(r==='Member'||r==='Premium')return 4;return 5;};
       users.sort((a,b)=>rank(a)-rank(b)||Number(b.online)-Number(a.online)||String(a.name||'').localeCompare(String(b.name||'')));
       counts[roomId]=users.filter(u=>u.online).length;
+      // لا نترك القائمة فارغة إذا كانت قواعد RTDB لم تُحدّث بعد: أظهر المستخدم الحالي فورًا.
+      if (user && !users.some(u => u.userId === user.uid)) {
+        const selfName = user.isAnonymous ? (user.displayName || localStorage.getItem('gat_guest_name') || 'زائر') : (user.displayName || user.email?.split('@')[0] || 'عضو');
+        users.push({ id:user.uid, userId:user.uid, name:selfName, email:(user.email||'').toLowerCase(),
+          role:user.isAnonymous?'Guest':(isOwner?'Owner':normalizeRole(currentUserRole)), flag:currentFlag || '🇯🇴',
+          country:profileCountry || 'الأردن', gender:profileGender || 'ذكر', avatarUrl:profileAvatar || '',
+          nameColor:nameColor || '#2563eb', nameStyle:nameStyle || 'normal', profileBgColor:profileBgColor || '#fff',
+          roomId, roomName:selectedRoom?.name || 'القائمة الرئيسية', lastActive:Date.now(), lastSeen:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), online:true
+        });
+      }
+      users.sort((a,b)=>rank(a)-rank(b)||Number(b.online)-Number(a.online)||String(a.name||'').localeCompare(String(b.name||'')));
+      counts[roomId]=users.filter(u=>u.online).length;
       setRoomCounts(counts);
       setOnlineUsersList(users);
     });
-  }, [selectedRoom]);
+  }, [selectedRoom, user, currentFlag, profileCountry, profileGender, profileAvatar, currentUserRole, isOwner, nameColor, nameStyle, profileBgColor]);
 
   useEffect(() => {
     const ownerQuery = query(collection(db, 'users'), where('email', '==', ADMIN_EMAIL));
@@ -1081,6 +1104,8 @@ export default function App() {
   const loadMoreRoomMessages = async () => {
     if (!selectedRoom || !roomMessagesCursorRef.current || loadingMoreRoomMessages) return;
     setLoadingMoreRoomMessages(true);
+    const scrollEl = chatScrollRef.current;
+    const beforeHeight = scrollEl?.scrollHeight || 0;
     try {
       const snap=await getDocs(query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),startAfter(roomMessagesCursorRef.current),limit(20)));
       if (snap.docs.length) roomMessagesCursorRef.current=snap.docs[snap.docs.length-1];
@@ -1815,7 +1840,7 @@ export default function App() {
   }, []);
 
   const filteredOnlineUsers = onlineUsersList
-    .filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && String(u.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(u => String(u.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a,b) => {
       const rank=(u:any)=>{ const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5; };
       return rank(a)-rank(b) || String(a.name||'').localeCompare(String(b.name||''));
@@ -2258,8 +2283,9 @@ export default function App() {
               </div>
             )}
 
-            <div className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
+            <div ref={chatScrollRef} className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
               
+              {hasMoreRoomMessages && <button type="button" onClick={loadMoreRoomMessages} disabled={loadingMoreRoomMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'6px',position:'sticky',top:'4px',zIndex:2}}>{loadingMoreRoomMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
                   لا توجد رسائل في هذه الغرفة بعد. اكتب شيئاً وابدأ المحادثة! 💬
@@ -2376,7 +2402,6 @@ export default function App() {
                   );
                 })
               )}
-              {hasMoreRoomMessages && <button type="button" onClick={loadMoreRoomMessages} disabled={loadingMoreRoomMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'6px'}}>{loadingMoreRoomMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
               <div ref={chatBottomRef} />
             </div>
 
@@ -2427,7 +2452,8 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div ref={privateChatScrollRef} style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'4px',position:'sticky',top:'4px',zIndex:2}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
             {privateMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
                 ابدأ محادثتك الخاصة الآن مع {activePrivateChat.peerName} 💬
@@ -2445,7 +2471,6 @@ export default function App() {
                 );
               })
             )}
-            {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'4px'}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
             <div ref={privateChatBottomRef} />
           </div>
 
