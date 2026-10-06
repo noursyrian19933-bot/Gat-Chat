@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytes, uploadString, getDownloadURL } from 'firebase/storage';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -1277,6 +1277,13 @@ export default function App() {
     return await getDownloadURL(fileRef);
   };
 
+  const uploadDataUrlToStorage = async (dataUrl: string, path: string, contentType?: string) => {
+    const fileRef = storageRef(storage, path);
+    const raw = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+    await uploadString(fileRef, raw, 'base64', contentType ? { contentType } : undefined);
+    return await getDownloadURL(fileRef);
+  };
+
   const dataUrlToBlob = async (dataUrl: string) => {
     const res = await fetch(dataUrl);
     return await res.blob();
@@ -1299,20 +1306,15 @@ export default function App() {
       const blob = await dataUrlToBlob(mediaData);
       const safeName = mediaName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
-      let mediaUrl = '';
-      try {
-        mediaUrl = await uploadBlobToStorage(blob, path, blob.type);
-      } catch (storageError) {
-        // إذا كانت Storage Rules غير مفعلة بعد، لا نفقد الإرسال؛ نستخدم البيانات المحلية كحل احتياطي.
-        mediaUrl = mediaData;
-      }
+      // الوسائط لا تدخل Firestore كـ Base64: تُرفع أولاً إلى Storage ثم نحفظ الرابط فقط.
+      const mediaUrl = await uploadBlobToStorage(blob, path, blob.type || (mediaType === 'voice' ? 'audio/webm' : 'image/jpeg'));
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
-        mediaType, mediaUrl, mediaData: mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
-    } catch (e) { console.error('فشل رفع الوسائط:', e); }
+    } catch (e) { console.error('فشل رفع الوسائط:', e); alert('تعذر إرسال الصورة/الفويس. تأكد من تفعيل Firebase Storage وقواعد Storage.'); }
   };
 
   const startVoiceRecording = async () => {
@@ -2122,9 +2124,7 @@ export default function App() {
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
-        .video-chat-scroll > div { min-height:42px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
-        .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
-        .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
+        .video-chat-scroll > div { min-height:34px !important; padding:2px 4px !important; gap:5px !important; border-bottom:0 !important; background:transparent !important; box-shadow:none !important; }
         .video-chat-scroll img { border-radius:50%; }
         .video-chat-scroll > div > div:first-child { width:34px !important; height:34px !important; border-width:1px !important; font-size:14px !important; }
         .video-chat-scroll > div > div:nth-child(2) { font-size:11px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
@@ -2356,7 +2356,9 @@ export default function App() {
                       key={m.id || idx} 
                       style={{ 
                         backgroundColor: 'transparent',
-                        padding: '3px 2px',
+                        background: 'transparent',
+                        boxShadow: 'none',
+                        padding: '2px 2px',
                         minHeight: '30px',
                         borderBottom: 'none',
                         display: 'flex',
