@@ -1299,11 +1299,17 @@ export default function App() {
       const blob = await dataUrlToBlob(mediaData);
       const safeName = mediaName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
-      const mediaUrl = await uploadBlobToStorage(blob, path, blob.type);
+      let mediaUrl = '';
+      try {
+        mediaUrl = await uploadBlobToStorage(blob, path, blob.type);
+      } catch (storageError) {
+        // إذا كانت Storage Rules غير مفعلة بعد، لا نفقد الإرسال؛ نستخدم البيانات المحلية كحل احتياطي.
+        mediaUrl = mediaData;
+      }
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
-        mediaType, mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaUrl, mediaData: mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
     } catch (e) { console.error('فشل رفع الوسائط:', e); }
@@ -2349,14 +2355,14 @@ export default function App() {
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', 
-                        padding: '4px 6px', 
+                        backgroundColor: 'transparent',
+                        padding: '3px 2px',
                         minHeight: '30px',
-                        borderBottom: '1px solid #e7e7e7', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '10px', 
-                        direction: 'rtl' 
+                        borderBottom: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '7px',
+                        direction: 'rtl'
                       }}
                     >
                       
@@ -2387,11 +2393,11 @@ export default function App() {
 
                         {m.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
-                            <img src={m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
-                            <a href={m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
+                            <img src={m.mediaUrl || m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
+                            <a href={m.mediaUrl || m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
                           </div>
                         ) : m.mediaType === 'voice' ? (
-                          <audio controls src={m.mediaData} style={{width:'190px',height:'34px'}} />
+                          <audio controls src={m.mediaUrl || m.mediaData} style={{width:'190px',height:'34px'}} />
                         ) : youtubeEmbedUrl ? (
                           <button 
                             onClick={() => setActiveVideoUrl(youtubeEmbedUrl)}
@@ -2425,6 +2431,8 @@ export default function App() {
                           onClick={async () => {
                             try {
                               await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
+                              // حذف فوري من الواجهة بدون انتظار إعادة تحميل الصفحة أو تحديث listener.
+                              setMessages(prev => prev.filter((item:any) => item.id !== m.id));
                             } catch (e) {
                               console.error(e);
                             }
