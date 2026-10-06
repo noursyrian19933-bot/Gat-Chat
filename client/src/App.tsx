@@ -31,7 +31,7 @@ import {
   arrayRemove 
 } from 'firebase/firestore';
 
-import { getDatabase, ref, child, get, set, update, onValue, onDisconnect } from 'firebase/database';
+import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -880,21 +880,31 @@ export default function App() {
     };
   }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor, userJoinedDate]);
 
-  // الحضور الحقيقي للغرف: كل تغيير يصل لجميع المستخدمين فورًا من Realtime Database.
+  // الحضور اللحظي للغرفة الحالية فقط.
+  // مهم: نبقي بنية presence الحالية كما هي حتى لا نحتاج لتغيير Rules الموجودة الآن.
+  // الاستعلام يطلب من Realtime Database فقط السجلات التي roomId فيها يساوي الغرفة الحالية،
+  // بدل تحميل جميع المستخدمين المتصلين في جميع الغرف لكل مستخدم.
   useEffect(() => {
-    const presenceRoot = ref(rdb, 'presence');
-    return onValue(presenceRoot, (snapshot) => {
+    const roomId = selectedRoom?.id || 'lobby';
+    const currentRoomPresenceQuery = rtdbQuery(
+      ref(rdb, 'presence'),
+      rtdbOrderByChild('roomId'),
+      rtdbEqualTo(roomId)
+    );
+
+    return onValue(currentRoomPresenceQuery, (snapshot) => {
       const raw = snapshot.val() || {};
       const now = Date.now();
       const users: any[] = [];
-      const counts: { [roomId: string]: number } = {};
 
       Object.entries(raw).forEach(([uid, data]: [string, any]) => {
         if (!data || data.online !== true || !data.userId) return;
         // حماية إضافية للحالات القديمة التي لم يصلها onDisconnect.
         if (data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
+        // حماية إضافية حتى لا تظهر حالة من غرفة أخرى بسبب بيانات قديمة.
+        if ((data.roomId || 'lobby') !== roomId) return;
 
-        const u = {
+        users.push({
           id: uid,
           userId: uid,
           name: data.userName || 'زائر',
@@ -915,9 +925,7 @@ export default function App() {
           roomId: data.roomId || 'lobby',
           roomName: data.roomName || 'القائمة الرئيسية',
           lastActive: data.lastActive || 0
-        };
-        users.push(u);
-        if (u.roomId && u.roomId !== 'lobby') counts[u.roomId] = (counts[u.roomId] || 0) + 1;
+        });
       });
 
       const rank = (u: any) => {
@@ -928,11 +936,12 @@ export default function App() {
         if (r === 'Member' || r === 'Premium') return 4;
         return 5;
       };
+
       users.sort((a, b) => rank(a) - rank(b) || String(a.name).localeCompare(String(b.name)));
-      setRoomCounts(counts);
       setOnlineUsersList(users);
+      setRoomCounts(prev => ({ ...prev, ...(roomId !== 'lobby' ? { [roomId]: users.length } : {}) }));
     });
-  }, []);
+  }, [selectedRoom?.id]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
