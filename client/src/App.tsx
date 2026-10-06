@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getStorage, ref as storageRef, uploadBytes, uploadString, getDownloadURL } from 'firebase/storage';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -28,9 +27,6 @@ import {
   orderBy,
   serverTimestamp,
   updateDoc,
-  limit,
-  startAfter,
-  limitToLast,
   arrayUnion,
   arrayRemove 
 } from 'firebase/firestore';
@@ -44,6 +40,7 @@ const firebaseConfig = {
   storageBucket: "gat-chat-b7187.firebasestorage.app",
   messagingSenderId: "1062482533282",
   appId: "1:1062482533282:web:745104a6415898bac530fb",
+  databaseURL: "https://gat-chat-b7187-default-rtdb.firebaseio.com",
   measurementId: "G-ZW607L85LT"
 };
 
@@ -51,7 +48,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rdb = getDatabase(app);
-const storage = getStorage(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
@@ -186,10 +182,6 @@ export default function App() {
   const [roomCounts, setRoomCounts] = useState<{ [roomId: string]: number }>({});
   
   const [messages, setMessages] = useState<any[]>([]);
-  const [hasMoreRoomMessages, setHasMoreRoomMessages] = useState(false);
-  const [loadingMoreRoomMessages, setLoadingMoreRoomMessages] = useState(false);
-  const roomMessagesCursorRef = useRef<any | null>(null);
-  const roomMessagesLoadedMoreRef = useRef(false);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   
@@ -205,21 +197,11 @@ export default function App() {
   const [showNewsModal, setShowNewsModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
   const [wallPosts, setWallPosts] = useState<any[]>([]);
-  const [hasMoreWallPosts, setHasMoreWallPosts] = useState(false);
-  const [loadingMoreWallPosts, setLoadingMoreWallPosts] = useState(false);
-  const wallCursorsRef = useRef<Record<string, any>>({});
-  const wallHasMoreRef = useRef<Record<string, boolean>>({});
   const [wallInput, setWallInput] = useState('');
   const [wallCommentInputs, setWallCommentInputs] = useState<Record<string,string>>({});
   const [newsItems, setNewsItems] = useState<any[]>([]);
-  const [hasMoreNews, setHasMoreNews] = useState(false);
-  const [loadingMoreNews, setLoadingMoreNews] = useState(false);
-  const newsCursorRef = useRef<any | null>(null);
   const [newsInput, setNewsInput] = useState('');
   const [newsImage, setNewsImage] = useState('');
-  const [newsCommentInputs, setNewsCommentInputs] = useState<Record<string,string>>({});
-  const [seenNewsIds, setSeenNewsIds] = useState<string[]>([]);
-  const [seenWallIds, setSeenWallIds] = useState<string[]>([]);
   const [rankedUsers, setRankedUsers] = useState<any[]>([]);
   const [pendingChatImage, setPendingChatImage] = useState<string | null>(null);
   const [pendingChatImageName, setPendingChatImageName] = useState('image.jpg');
@@ -233,17 +215,11 @@ export default function App() {
 
   const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
-  const [hasMorePrivateMessages, setHasMorePrivateMessages] = useState(false);
-  const [loadingMorePrivateMessages, setLoadingMorePrivateMessages] = useState(false);
-  const privateMessagesCursorRef = useRef<any | null>(null);
   const [privateInputText, setPrivateInputText] = useState('');
   const [privateConversations, setPrivateConversations] = useState<Array<any>>([]);
 
   const [pendingRequests, setPendingRequests] = useState<Array<any>>([]);
   const [notificationsList, setNotificationsList] = useState<Array<any>>([]);
-  const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
-  const [loadingMoreNotifications, setLoadingMoreNotifications] = useState(false);
-  const notificationsCursorRef = useRef<any | null>(null);
   const [friendsList, setFriendsList] = useState<Array<any>>([]);
   const [friendsSearchQuery, setFriendsSearchQuery] = useState('');
 
@@ -291,9 +267,7 @@ export default function App() {
   const profileAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
-  const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
-  const privateChatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const normalizeRole = (role: any): string => {
     const value = String(role || '').trim().toLowerCase();
@@ -572,54 +546,21 @@ export default function App() {
   useEffect(() => {
     if (!user || !activePrivateChat) return;
     const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
-    privateMessagesCursorRef.current = null;
-    setHasMorePrivateMessages(false);
-    setPrivateMessages([]);
-
     const msgQuery = query(
       collection(db, 'private_messages', chatId, 'messages'),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      orderBy('createdAt', 'asc')
     );
     return onSnapshot(msgQuery, (snapshot) => {
-      const newest = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) })).reverse();
-      privateMessagesCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
-      setHasMorePrivateMessages(snapshot.docs.length === 20);
-      setPrivateMessages(prev => {
-        const map = new Map(prev.map((m:any) => [m.id, m]));
-        newest.forEach((m:any) => map.set(m.id, m));
-        return Array.from(map.values()).sort((a:any,b:any) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
-      });
-      setTimeout(() => { privateChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+      const msgs = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...(docSnap.data() as any)
+      }));
+      setPrivateMessages(msgs);
+      setTimeout(() => {
+        privateChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     });
   }, [user, activePrivateChat]);
-
-  const loadMorePrivateMessages = async () => {
-    if (!user || !activePrivateChat || !privateMessagesCursorRef.current || loadingMorePrivateMessages) return;
-    setLoadingMorePrivateMessages(true);
-    const scrollEl = privateChatScrollRef.current;
-    const beforeHeight = scrollEl?.scrollHeight || 0;
-    try {
-      const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
-      const snap = await getDocs(query(
-        collection(db, 'private_messages', chatId, 'messages'),
-        orderBy('createdAt', 'desc'),
-        startAfter(privateMessagesCursorRef.current),
-        limit(20)
-      ));
-      const older = snap.docs.map(d => ({ id:d.id, ...(d.data() as any) })).reverse();
-      privateMessagesCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length - 1] : privateMessagesCursorRef.current;
-      setHasMorePrivateMessages(snap.docs.length === 20);
-      setPrivateMessages(prev => {
-        const map = new Map(prev.map((m:any) => [m.id, m]));
-        older.forEach((m:any) => map.set(m.id, m));
-        return Array.from(map.values()).sort((a:any,b:any) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
-      });
-      requestAnimationFrame(() => {
-        if (scrollEl) scrollEl.scrollTop += (scrollEl.scrollHeight - beforeHeight);
-      });
-    } finally { setLoadingMorePrivateMessages(false); }
-  };
 
   useEffect(() => {
     if (!user) return;
@@ -639,28 +580,18 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    notificationsCursorRef.current = null;
-    setHasMoreNotifications(false);
-    const q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('createdAt', 'desc'), limit(20));
+    const q = query(
+      collection(db, 'users', user.uid, 'notifications'),
+      orderBy('createdAt', 'desc')
+    );
     return onSnapshot(q, (snapshot) => {
-      notificationsCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null;
-      setHasMoreNotifications(snapshot.docs.length === 20);
-      const notes = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as any) }));
-      setNotificationsList(prev => { const map=new Map(prev.map((n:any)=>[n.id,n])); notes.forEach((n:any)=>map.set(n.id,n)); return Array.from(map.values()).sort((a:any,b:any)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)); });
+      const notes = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...(docSnap.data() as any)
+      }));
+      setNotificationsList(notes);
     });
   }, [user]);
-
-  const loadMoreNotifications = async () => {
-    if (!user || !notificationsCursorRef.current || loadingMoreNotifications) return;
-    setLoadingMoreNotifications(true);
-    try {
-      const snap = await getDocs(query(collection(db, 'users', user.uid, 'notifications'), orderBy('createdAt','desc'), startAfter(notificationsCursorRef.current), limit(20)));
-      if (snap.docs.length) notificationsCursorRef.current = snap.docs[snap.docs.length-1];
-      setHasMoreNotifications(snap.docs.length === 20);
-      const older=snap.docs.map(d=>({id:d.id,...(d.data() as any)}));
-      setNotificationsList(prev=>{const map=new Map(prev.map((n:any)=>[n.id,n]));older.forEach((n:any)=>map.set(n.id,n));return Array.from(map.values()).sort((a:any,b:any)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));});
-    } finally { setLoadingMoreNotifications(false); }
-  };
 
   const handleOpenNotifications = async () => {
     setShowNotificationsModal(true);
@@ -747,20 +678,15 @@ export default function App() {
     const maxH = type === 'avatar' ? 350 : 400;
 
     compressAndUploadImage(file, maxW, maxH, async (base64) => {
-      try {
-        const blob = await dataUrlToBlob(base64);
-        const path = `users/${user.uid}/${type}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const url = await uploadBlobToStorage(blob, path, blob.type);
-        if (type === 'avatar') {
-          setProfileAvatar(url);
-          setSelectedProfileUser((prev: any) => prev ? { ...prev, avatarUrl: url } : null);
-          await saveSettingToFirebase('avatarUrl', url);
-        } else {
-          setProfileCover(url);
-          setSelectedProfileUser((prev: any) => prev ? { ...prev, coverUrl: url } : null);
-          await saveSettingToFirebase('coverUrl', url);
-        }
-      } catch (err) { console.error('فشل رفع الصورة:', err); }
+      if (type === 'avatar') {
+        setProfileAvatar(base64);
+        setSelectedProfileUser((prev: any) => prev ? { ...prev, avatarUrl: base64 } : null);
+        await saveSettingToFirebase('avatarUrl', base64);
+      } else {
+        setProfileCover(base64);
+        setSelectedProfileUser((prev: any) => prev ? { ...prev, coverUrl: base64 } : null);
+        await saveSettingToFirebase('coverUrl', base64);
+      }
     });
   };
 
@@ -774,14 +700,9 @@ export default function App() {
     reader.readAsDataURL(file);
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
-      try {
-        const blob = await dataUrlToBlob(base64);
-        const path = `users/${user.uid}/songs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const url = await uploadBlobToStorage(blob, path, blob.type);
-        setProfileSong(url);
-        setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: url } : null);
-        await saveSettingToFirebase('profileSongUrl', url);
-      } catch (err) { console.error('فشل رفع الأغنية:', err); }
+      setProfileSong(base64);
+      setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: base64 } : null);
+      await saveSettingToFirebase('profileSongUrl', base64);
     };
     e.target.value = '';
   };
@@ -893,252 +814,192 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
+
     const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
-    const userName = user.isAnonymous ? (user.displayName || storedGuest || 'زائر') : (user.displayName || user.email?.split('@')[0] || 'عضو');
+    const userName = user.isAnonymous
+      ? (user.displayName || storedGuest || 'زائر')
+      : (user.displayName || user.email?.split('@')[0] || 'عضو');
     const roomId = selectedRoom ? selectedRoom.id : 'lobby';
     const roomName = selectedRoom ? selectedRoom.name : 'القائمة الرئيسية';
-    const presenceRef = ref(rdb, `room_presence_live/${roomId}/${user.uid}`);
     const todayDate = userJoinedDate || new Date().toISOString().split('T')[0];
+    const presenceRef = ref(rdb, `presence/${user.uid}`);
 
-    const publishPresence = () => {
-      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const currentRole = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
-      const payload = {
-        userId: user.uid, userName, email: (user.email || '').trim().toLowerCase(), role: currentRole,
-        flag: currentFlag, gender: profileGender, country: profileCountry, avatarUrl: profileAvatar,
-        coverUrl: profileCover, profileSongUrl: profileSong, nameColor, nameStyle, profileBgColor,
-        joinedDate: todayDate, lastSeen: nowTime, lastActive: Date.now(), online: true,
-        roomId, roomName, points: 0
-      };
-      const selfOnline = {
-        id: user.uid, userId: user.uid, name: userName, email: payload.email,
-        role: payload.role, flag: payload.flag || '🇯🇴', country: payload.country || 'الأردن',
-        gender: payload.gender || 'ذكر', avatarUrl: payload.avatarUrl || '',
-        coverUrl: payload.coverUrl || '', profileSongUrl: payload.profileSongUrl || '',
-        nameColor: payload.nameColor || '#2563eb', nameStyle: payload.nameStyle || 'normal',
-        profileBgColor: payload.profileBgColor || '#fff', joinedDate: payload.joinedDate || '',
-        lastSeen: payload.lastSeen, points: payload.points || 0, roomId, roomName,
-        lastActive: payload.lastActive, online: true
-      };
-      setOnlineUsersList(prev => [selfOnline, ...prev.filter((u:any) => u.userId !== user.uid)]);
-      setRoomCounts(prev => ({ ...prev, [roomId]: Math.max(Number(prev[roomId] || 0), 1) }));
-      set(presenceRef, payload).catch(() => {
-        setDoc(doc(db, 'room_presence', user.uid), payload, { merge: true }).catch(() => {});
-      });
-    };
+    const currentRole = user.isAnonymous
+      ? 'Guest'
+      : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
 
-    // Firebase يغلق الحالة تلقائيًا عند انقطاع الاتصال المفاجئ.
-    onDisconnect(presenceRef).update({ online: false, lastActive: Date.now() }).catch(() => {});
+    const presenceData = () => ({
+      userId: user.uid,
+      userName,
+      email: (user.email || '').trim().toLowerCase(),
+      role: currentRole,
+      flag: currentFlag || '🇯🇴',
+      gender: profileGender || 'ذكر',
+      country: profileCountry || 'الأردن',
+      avatarUrl: profileAvatar || '',
+      coverUrl: profileCover || '',
+      profileSongUrl: profileSong || '',
+      nameColor: nameColor || '#2563eb',
+      nameStyle: nameStyle || 'normal',
+      profileBgColor: profileBgColor || '#ffffff',
+      joinedDate: todayDate,
+      roomId,
+      roomName,
+      online: true,
+      lastActive: Date.now(),
+      lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      points: 0
+    });
+
+    // Firebase نفسه يغيّر الحالة عند انقطاع الاتصال، حتى لو أُغلقت الصفحة فجأة.
+    onDisconnect(presenceRef).update({
+      online: false,
+      lastActive: 0,
+      lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }).catch(() => {});
+
+    const publishPresence = () => set(presenceRef, presenceData()).catch(() => {});
     publishPresence();
-    const presenceInterval = window.setInterval(publishPresence, 30000);
+
+    // تحديث خفيف فقط للتأكد من بقاء الحالة حية. الظهور نفسه لحظي عبر onValue.
+    const interval = window.setInterval(publishPresence, 30000);
 
     const handleBeforeUnload = () => {
-      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      update(presenceRef, { online: false, lastActive: Date.now(), lastSeen: nowTime }).catch(() => {});
-      setDoc(doc(db, 'users', user.uid), { lastSeen: nowTime, lastExitAt: Date.now() }, { merge: true }).catch(() => {});
+      update(presenceRef, {
+        online: false,
+        lastActive: 0,
+        lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      clearInterval(presenceInterval);
+      clearInterval(interval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // عند تغيير الغرفة نضع آخر ظهور في الغرفة القديمة، ولا نحذف السجل فورًا.
-      handleBeforeUnload();
+      // عند تغيير الغرفة، effect التالي يكتب roomId الجديد فورًا.
     };
   }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor, userJoinedDate]);
 
+  // الحضور الحقيقي للغرف: كل تغيير يصل لجميع المستخدمين فورًا من Realtime Database.
   useEffect(() => {
-    const roomId = selectedRoom ? selectedRoom.id : 'lobby';
-    const presenceRef = ref(rdb, `room_presence_live/${roomId}`);
-    return onValue(presenceRef, (snapshot) => {
+    const presenceRoot = ref(rdb, 'presence');
+    return onValue(presenceRoot, (snapshot) => {
       const raw = snapshot.val() || {};
-      const counts: { [roomId: string]: number } = {};
-      const users: any[] = [];
       const now = Date.now();
+      const users: any[] = [];
+      const counts: { [roomId: string]: number } = {};
+
       Object.entries(raw).forEach(([uid, data]: [string, any]) => {
-        if (!data || !data.userId) return;
-        const lastActive = Number(data.lastActive || 0);
-        // يبقى الاسم ظاهرًا حتى 15 دقيقة بعد آخر خروج.
-        if (lastActive && now - lastActive > 15 * 60 * 1000) return;
-        users.push({ id: uid, userId: uid, name: data.userName || 'زائر', email: data.email || '',
-          role: data.role || 'Guest', flag: data.flag || '🇯🇴', country: data.country || 'الأردن',
-          gender: data.gender || 'ذكر', avatarUrl: data.avatarUrl || '', coverUrl: data.coverUrl || '',
-          profileSongUrl: data.profileSongUrl || '', nameColor: data.nameColor || '#2563eb',
-          nameStyle: data.nameStyle || 'normal', profileBgColor: data.profileBgColor || '#fff',
-          joinedDate: data.joinedDate || '', lastSeen: data.lastSeen || '', points: data.points || 0,
-          roomId: data.roomId || roomId, roomName: data.roomName || 'القائمة الرئيسية',
-          lastActive, online: data.online === true });
+        if (!data || data.online !== true || !data.userId) return;
+        // حماية إضافية للحالات القديمة التي لم يصلها onDisconnect.
+        if (data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
+
+        const u = {
+          id: uid,
+          userId: uid,
+          name: data.userName || 'زائر',
+          email: data.email || '',
+          role: data.role || 'Guest',
+          flag: data.flag || '🇯🇴',
+          country: data.country || 'الأردن',
+          gender: data.gender || 'ذكر',
+          avatarUrl: data.avatarUrl || '',
+          coverUrl: data.coverUrl || '',
+          profileSongUrl: data.profileSongUrl || '',
+          nameColor: data.nameColor || '#2563eb',
+          nameStyle: data.nameStyle || 'normal',
+          profileBgColor: data.profileBgColor || '#ffffff',
+          joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
+          lastSeen: data.lastSeen || '',
+          points: data.points || 0,
+          roomId: data.roomId || 'lobby',
+          roomName: data.roomName || 'القائمة الرئيسية',
+          lastActive: data.lastActive || 0
+        };
+        users.push(u);
+        if (u.roomId && u.roomId !== 'lobby') counts[u.roomId] = (counts[u.roomId] || 0) + 1;
       });
-      const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase())return 1;if(r==='Super Admin')return 2;if(r==='Admin')return 3;if(r==='Member'||r==='Premium')return 4;return 5;};
-      users.sort((a,b)=>rank(a)-rank(b)||Number(b.online)-Number(a.online)||String(a.name||'').localeCompare(String(b.name||'')));
-      counts[roomId]=users.filter(u=>u.online).length;
-      // لا نترك القائمة فارغة إذا كانت قواعد RTDB لم تُحدّث بعد: أظهر المستخدم الحالي فورًا.
-      if (user && !users.some(u => u.userId === user.uid)) {
-        const selfName = user.isAnonymous ? (user.displayName || localStorage.getItem('gat_guest_name') || 'زائر') : (user.displayName || user.email?.split('@')[0] || 'عضو');
-        users.push({ id:user.uid, userId:user.uid, name:selfName, email:(user.email||'').toLowerCase(),
-          role:user.isAnonymous?'Guest':(isOwner?'Owner':normalizeRole(currentUserRole)), flag:currentFlag || '🇯🇴',
-          country:profileCountry || 'الأردن', gender:profileGender || 'ذكر', avatarUrl:profileAvatar || '',
-          nameColor:nameColor || '#2563eb', nameStyle:nameStyle || 'normal', profileBgColor:profileBgColor || '#fff',
-          roomId, roomName:selectedRoom?.name || 'القائمة الرئيسية', lastActive:Date.now(), lastSeen:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), online:true
-        });
-      }
-      users.sort((a,b)=>rank(a)-rank(b)||Number(b.online)-Number(a.online)||String(a.name||'').localeCompare(String(b.name||'')));
-      counts[roomId]=users.filter(u=>u.online).length;
+
+      const rank = (u: any) => {
+        const r = normalizeRole(u.role);
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+        if (r === 'Super Admin') return 2;
+        if (r === 'Admin') return 3;
+        if (r === 'Member' || r === 'Premium') return 4;
+        return 5;
+      };
+      users.sort((a, b) => rank(a) - rank(b) || String(a.name).localeCompare(String(b.name)));
       setRoomCounts(counts);
       setOnlineUsersList(users);
     });
-  }, [selectedRoom, user, currentFlag, profileCountry, profileGender, profileAvatar, currentUserRole, isOwner, nameColor, nameStyle, profileBgColor]);
-
-  useEffect(() => {
-    const ownerQuery = query(collection(db, 'users'), where('email', '==', ADMIN_EMAIL));
-    const staffQuery = query(collection(db, 'users'), where('role', 'in', ['Super Admin', 'Admin', 'Owner']));
-    let ownerUsers:any[] = [];
-    let staffUsers:any[] = [];
-    const rebuild = () => {
-      const map = new Map<string, any>();
-      [...ownerUsers, ...staffUsers].forEach(u => map.set(u.id, u));
-      const list = Array.from(map.values());
-      const roleRank=(u:any)=>{const r=normalizeRole(u.role);if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase())return 1;if(r==='Super Admin')return 2;if(r==='Admin')return 3;return 9;};
-      list.sort((a,b)=>roleRank(a)-roleRank(b)||String(a.displayName||'').localeCompare(String(b.displayName||'')));
-      setRankedUsers(list);
-    };
-    const unsubOwner=onSnapshot(ownerQuery,s=>{ownerUsers=s.docs.map(d=>({id:d.id,...(d.data() as any)}));rebuild();});
-    const unsubStaff=onSnapshot(staffQuery,s=>{staffUsers=s.docs.map(d=>({id:d.id,...(d.data() as any)}));rebuild();});
-    return ()=>{unsubOwner();unsubStaff();};
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    try {
-      const newsKey = `gat_seen_news_${user.uid}`;
-      const wallKey = `gat_seen_wall_${user.uid}`;
-      const savedNews = JSON.parse(localStorage.getItem(newsKey) || '[]');
-      const savedWall = JSON.parse(localStorage.getItem(wallKey) || '[]');
-      setSeenNewsIds(Array.isArray(savedNews) ? savedNews : []);
-      setSeenWallIds(Array.isArray(savedWall) ? savedWall : []);
-    } catch (e) {
-      setSeenNewsIds([]);
-      setSeenWallIds([]);
-    }
-  }, [user]);
-
-  const markNewsSeen = (ids: string[]) => {
-    if (!user || ids.length === 0) return;
-    setSeenNewsIds(prev => {
-      const next = Array.from(new Set([...prev, ...ids]));
-      try { localStorage.setItem(`gat_seen_news_${user.uid}`, JSON.stringify(next)); } catch {}
-      return next;
+    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(u.role) === 'Owner');
+      const roleRank = (u:any) => {
+        const r = normalizeRole(u.role);
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+        if (r === 'Super Admin') return 2;
+        if (r === 'Admin') return 3;
+        if (r === 'Member' || r === 'Premium') return 4;
+        return 5;
+      };
+      const sorted = [...list].sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
+      if (owner && !sorted.some(u => u.id === owner.id)) sorted.unshift(owner);
+      setRankedUsers(sorted);
     });
-  };
-
-  const markWallSeen = (ids: string[]) => {
-    if (!user || ids.length === 0) return;
-    setSeenWallIds(prev => {
-      const next = Array.from(new Set([...prev, ...ids]));
-      try { localStorage.setItem(`gat_seen_wall_${user.uid}`, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
-
-  const fetchWallPage = async (reset = false) => {
-    if (!user || loadingMoreWallPosts) return;
-    if (reset) { wallCursorsRef.current = {}; wallHasMoreRef.current = {}; setWallPosts([]); setHasMoreWallPosts(false); }
-    setLoadingMoreWallPosts(true);
-    try {
-      const wallOwnerIds = Array.from(new Set([user.uid, ...friendsList.map((f:any) => f.friendUid).filter(Boolean)]));
-      const allPosts:any[] = reset ? [] : [...wallPosts];
-      let anyMore = false;
-      for (const wallOwnerId of wallOwnerIds) {
-        const wallRef = collection(db, 'users', wallOwnerId, 'wall_posts');
-        const cursor = wallCursorsRef.current[wallOwnerId];
-        const q = cursor ? query(wallRef, orderBy('createdAt','desc'), startAfter(cursor), limit(20)) : query(wallRef, orderBy('createdAt','desc'), limit(20));
-        const snap = await getDocs(q);
-        if (snap.docs.length) wallCursorsRef.current[wallOwnerId] = snap.docs[snap.docs.length-1];
-        wallHasMoreRef.current[wallOwnerId] = snap.docs.length === 20;
-        if (snap.docs.length === 20) anyMore = true;
-        snap.docs.forEach(d => { const post={id:d.id,wallOwnerId,...(d.data() as any)}; if (!allPosts.some(x=>x.wallOwnerId===wallOwnerId&&x.id===d.id)) allPosts.push(post); });
-      }
-      allPosts.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-      setWallPosts(allPosts);
-      setHasMoreWallPosts(anyMore);
-    } finally { setLoadingMoreWallPosts(false); }
-  };
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!showWallModal || !user) return;
-    fetchWallPage(true);
-  }, [showWallModal, user, friendsList]);
+    const wallRef = collection(db, 'users', user.uid, 'wall_posts');
+    const q = query(wallRef, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, snap => setWallPosts(snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))));
+  }, [showWallModal, user]);
 
   useEffect(() => {
-    const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'), limit(20));
-    newsCursorRef.current = null;
-    setHasMoreNews(false);
+    const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, snap => {
-      newsCursorRef.current = snap.docs.length ? snap.docs[snap.docs.length-1] : null;
-      setHasMoreNews(snap.docs.length === 20);
-      const items = snap.docs.map(d => ({ id:d.id, ...(d.data() as any) }));
-      setNewsItems(prev => {
-        const map=new Map(prev.map((n:any)=>[n.id,n])); items.forEach((n:any)=>map.set(n.id,n));
-        return Array.from(map.values()).sort((a:any,b:any)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned)) || ((b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)));
-      });
+      const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      items.sort((a,b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      setNewsItems(items);
     });
   }, []);
 
-  const loadMoreNews = async () => {
-    if (!newsCursorRef.current || loadingMoreNews) return;
-    setLoadingMoreNews(true);
-    try {
-      const snap=await getDocs(query(collection(db,'news'),orderBy('createdAt','desc'),startAfter(newsCursorRef.current),limit(20)));
-      if (snap.docs.length) newsCursorRef.current=snap.docs[snap.docs.length-1];
-      setHasMoreNews(snap.docs.length===20);
-      const older=snap.docs.map(d=>({id:d.id,...(d.data() as any)}));
-      setNewsItems(prev=>{const map=new Map(prev.map((n:any)=>[n.id,n]));older.forEach((n:any)=>map.set(n.id,n));return Array.from(map.values()).sort((a:any,b:any)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned))||((b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)));});
-    } finally { setLoadingMoreNews(false); }
-  };
-
-  useEffect(() => {
-    if (!showNewsModal || !newsItems.length || !user) return;
-    const timer = window.setTimeout(() => markNewsSeen(newsItems.map(n => n.id)), 250);
-    return () => window.clearTimeout(timer);
-  }, [showNewsModal, newsItems.length, user]);
-
-  useEffect(() => {
-    if (!showWallModal || !wallPosts.length || !user) return;
-    const timer = window.setTimeout(() => markWallSeen(wallPosts.map(p => `${p.wallOwnerId || user.uid}_${p.id}`)), 250);
-    return () => window.clearTimeout(timer);
-  }, [showWallModal, wallPosts.length, user]);
-
   useEffect(() => {
     if (!selectedRoom) return;
-    roomMessagesCursorRef.current = null;
-    roomMessagesLoadedMoreRef.current = false;
-    setHasMoreRoomMessages(false);
-    const msgQuery = query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),limit(20));
-    return onSnapshot(msgQuery,(snapshot)=>{
-      roomMessagesCursorRef.current = snapshot.docs.length ? snapshot.docs[snapshot.docs.length-1] : null;
-      setHasMoreRoomMessages(snapshot.docs.length===20);
-      const now=Date.now();
-      const incoming=snapshot.docs.map(d=>{const data=d.data();const expired=!!(data.isSystemSpecial&&data.createdAt&&now-(data.createdAt.toMillis?data.createdAt.toMillis():Date.now())>5*60*1000);return {id:d.id,isExpired:expired,...data};}).filter((m:any)=>!m.isExpired);
-      setMessages(prev=>{const map=new Map(prev.map((m:any)=>[m.id,m]));incoming.forEach((m:any)=>map.set(m.id,m));return Array.from(map.values()).sort((a:any,b:any)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));});
-      if (!roomMessagesLoadedMoreRef.current) setTimeout(()=>chatBottomRef.current?.scrollIntoView({behavior:'smooth'}),100);
+    const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'));
+    return onSnapshot(msgQuery, (snapshot) => {
+      const now = Date.now();
+      const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+      const msgs = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        let isExpired = false;
+
+        if (data.isSystemSpecial && data.createdAt) {
+          const msgTime = data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now();
+          if (now - msgTime > FIVE_MINUTES_MS) {
+            isExpired = true;
+          }
+        }
+
+        return {
+          id: docSnap.id,
+          isExpired,
+          ...data
+        };
+      }).filter(m => !m.isExpired);
+
+      setMessages(msgs);
+      setTimeout(() => {
+        chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     });
   }, [selectedRoom]);
-
-  const loadMoreRoomMessages = async () => {
-    if (!selectedRoom || !roomMessagesCursorRef.current || loadingMoreRoomMessages) return;
-    setLoadingMoreRoomMessages(true);
-    const scrollEl = chatScrollRef.current;
-    const beforeHeight = scrollEl?.scrollHeight || 0;
-    try {
-      const snap=await getDocs(query(collection(db,'rooms',selectedRoom.id,'messages'),orderBy('createdAt','desc'),startAfter(roomMessagesCursorRef.current),limit(20)));
-      if (snap.docs.length) roomMessagesCursorRef.current=snap.docs[snap.docs.length-1];
-      setHasMoreRoomMessages(snap.docs.length===20);
-      const now=Date.now();
-      const older=snap.docs.map(d=>{const data=d.data();const expired=!!(data.isSystemSpecial&&data.createdAt&&now-(data.createdAt.toMillis?data.createdAt.toMillis():Date.now())>5*60*1000);return {id:d.id,isExpired:expired,...data};}).filter((m:any)=>!m.isExpired);
-      roomMessagesLoadedMoreRef.current=true;
-      setMessages(prev=>{const map=new Map(prev.map((m:any)=>[m.id,m]));older.forEach((m:any)=>map.set(m.id,m));return Array.from(map.values()).sort((a:any,b:any)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));});
-    } finally { setLoadingMoreRoomMessages(false); }
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1216,35 +1077,9 @@ export default function App() {
     }
   };
 
-  const publishPresenceForRoomImmediately = async (room: { id: string; name: string; flag?: string }) => {
-    if (!user) return;
-    const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
-    const userName = user.isAnonymous ? (user.displayName || storedGuest || 'زائر') : (user.displayName || user.email?.split('@')[0] || 'عضو');
-    const roomId = room.id;
-    const roomName = room.name;
-    const payload = {
-      userId: user.uid, userName, email: (user.email || '').trim().toLowerCase(),
-      role: user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole)),
-      flag: room.flag || currentFlag, gender: profileGender, country: profileCountry,
-      avatarUrl: profileAvatar, coverUrl: profileCover, profileSongUrl: profileSong,
-      nameColor, nameStyle, profileBgColor, joinedDate: userJoinedDate || new Date().toISOString().slice(0,10),
-      roomId, roomName, lastSeen: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-      lastActive: Date.now(), online: true, points: 0
-    };
-    // تحديث Firebase مباشرة عند الضغط على دخول الغرفة، بدون انتظار دورة useEffect.
-    await set(ref(rdb, `room_presence_live/${roomId}/${user.uid}`), payload).catch(() => {});
-    setOnlineUsersList(prev => {
-      const self = { id:user.uid, ...payload };
-      return [self, ...prev.filter((u:any) => u.userId !== user.uid)];
-    });
-    setRoomCounts(prev => ({...prev, [roomId]: Math.max(Number(prev[roomId] || 0), 1)}));
-  };
-
   const enterRoom = async (room: { id: string; name: string; flag?: string }) => {
     setShowRoomsModal(false);
     setSelectedRoom(room);
-    // الظهور في الروم الجديدة يكون فورياً عند الضغط، وليس بعد انتظار listener.
-    await publishPresenceForRoomImmediately(room);
     setCurrentView('chat');
     localStorage.setItem('gat_current_room_id', room.id);
     localStorage.setItem('gat_current_room_name', room.name);
@@ -1297,24 +1132,6 @@ export default function App() {
     return { senderName, roleText };
   };
 
-  const uploadBlobToStorage = async (blob: Blob, path: string, contentType?: string) => {
-    const fileRef = storageRef(storage, path);
-    await uploadBytes(fileRef, blob, contentType ? { contentType } : undefined);
-    return await getDownloadURL(fileRef);
-  };
-
-  const uploadDataUrlToStorage = async (dataUrl: string, path: string, contentType?: string) => {
-    const fileRef = storageRef(storage, path);
-    const raw = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-    await uploadString(fileRef, raw, 'base64', contentType ? { contentType } : undefined);
-    return await getDownloadURL(fileRef);
-  };
-
-  const dataUrlToBlob = async (dataUrl: string) => {
-    const res = await fetch(dataUrl);
-    return await res.blob();
-  };
-
   const handleChatImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -1326,34 +1143,16 @@ export default function App() {
   };
 
   const sendChatMedia = async (mediaType: 'image'|'voice', mediaData: string, mediaName = 'media') => {
-    if (!selectedRoom || !user || !mediaData) return;
+    if (!selectedRoom || !user) return;
     const { senderName, roleText } = getSenderInfo();
     try {
-      const safeName = mediaName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
-      const raw = mediaData.includes(',') ? mediaData.split(',')[1] : mediaData;
-      const mime = mediaType === 'voice' ? 'audio/webm' : 'image/jpeg';
-      let mediaUrl = '';
-      try {
-        // uploadString يتعامل مباشرة مع Data URL وهو أكثر ثباتاً على الهاتف.
-        const fileRef = storageRef(storage, path);
-        await uploadString(fileRef, raw, 'base64', { contentType: mime });
-        mediaUrl = await getDownloadURL(fileRef);
-      } catch (storageError) {
-        // محاولة ثانية باستخدام Blob إذا فشل الرفع الأول.
-        const blob = await dataUrlToBlob(mediaData);
-        mediaUrl = await uploadBlobToStorage(blob, path, blob.type || mime);
-      }
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
-        mediaType, mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
-      setPendingChatImage(null); setPendingChatImageName('image.jpg'); setRecordingData(null); setRecordingSeconds(0);
-    } catch (e:any) {
-      console.error('فشل إرسال الوسائط:', e);
-      alert(`تعذر إرسال ${mediaType === 'image' ? 'الصورة' : 'الفويس'}. تأكد من Firebase Storage Rules ثم أعد المحاولة.`);
-    }
+      setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
+    } catch (e) { console.error(e); }
   };
 
   const startVoiceRecording = async () => {
@@ -1398,61 +1197,28 @@ export default function App() {
     await addDoc(collection(db, 'users', user.uid, 'wall_posts'), { userId: user.uid, userName: senderName, text: wallInput.trim(), likes: [], comments: [], createdAt: serverTimestamp() });
     setWallInput('');
   };
-
-  const canInteractWithAuthor = async (authorId: string) => {
-    if (!user) return false;
-    if (!authorId || authorId === user.uid) return true;
-    return friendsList.some((f:any) => f.friendUid === authorId);
-  };
-
   const toggleWallLike = async (post:any) => {
-    if (!user || !(await canInteractWithAuthor(post.userId))) return;
+    if (!user) return;
     const likes = Array.isArray(post.likes) ? post.likes : [];
     const next = likes.includes(user.uid) ? likes.filter((x:string)=>x!==user.uid) : [...likes, user.uid];
-    await updateDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', post.id), { likes: next });
+    await updateDoc(doc(db, 'users', user.uid, 'wall_posts', post.id), { likes: next });
   };
-
   const addWallComment = async (post:any) => {
-    if (!user || !(await canInteractWithAuthor(post.userId))) return;
+    if (!user) return;
     const text = (wallCommentInputs[post.id] || '').trim(); if (!text) return;
     const { senderName } = getSenderInfo();
     const comments = Array.isArray(post.comments) ? post.comments : [];
-    await updateDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', post.id), { comments: [...comments, { uid:user.uid, name:senderName, text, createdAt:new Date().toISOString() }] });
+    await updateDoc(doc(db, 'users', user.uid, 'wall_posts', post.id), { comments: [...comments, { uid:user.uid, name:senderName, text, createdAt:new Date().toISOString() }] });
     setWallCommentInputs(v => ({...v, [post.id]: ''}));
   };
-
-  const deleteWallPost = async (postId:string) => {
-    if (!user) return;
-    const post = wallPosts.find(p => p.id === postId);
-    if (!post) return;
-    const canDelete = isOwner || post.userId === user.uid;
-    if (!canDelete) return;
-    await deleteDoc(doc(db, 'users', post.wallOwnerId || user.uid, 'wall_posts', postId));
-  };
+  const deleteWallPost = async (postId:string) => { if (isOwner || (user && wallPosts.find(p=>p.id===postId)?.userId===user.uid)) await deleteDoc(doc(db, 'users', user!.uid, 'wall_posts', postId)); };
 
   const addNewsPost = async () => {
     if (!user || (!isOwner && !isSuperAdmin) || !newsInput.trim()) return;
     const { senderName } = getSenderInfo();
-    await addDoc(collection(db,'news'), { text:newsInput.trim(), image:newsImage, authorId:user.uid, authorName:senderName, authorAvatar:profileAvatar || '', pinned:false, likes:[], comments:[], createdAt:serverTimestamp() });
+    await addDoc(collection(db,'news'), { text:newsInput.trim(), image:newsImage, authorId:user.uid, authorName:senderName, pinned:false, createdAt:serverTimestamp() });
     setNewsInput(''); setNewsImage('');
   };
-
-  const toggleNewsLike = async (item:any) => {
-    if (!user || !(await canInteractWithAuthor(item.authorId))) return;
-    const likes = Array.isArray(item.likes) ? item.likes : [];
-    const next = likes.includes(user.uid) ? likes.filter((x:string)=>x!==user.uid) : [...likes, user.uid];
-    await updateDoc(doc(db, 'news', item.id), { likes: next });
-  };
-
-  const addNewsComment = async (item:any) => {
-    if (!user || !(await canInteractWithAuthor(item.authorId))) return;
-    const text = (newsCommentInputs[item.id] || '').trim(); if (!text) return;
-    const { senderName } = getSenderInfo();
-    const comments = Array.isArray(item.comments) ? item.comments : [];
-    await updateDoc(doc(db, 'news', item.id), { comments: [...comments, { uid:user.uid, name:senderName, text, createdAt:new Date().toISOString() }] });
-    setNewsCommentInputs(v => ({...v, [item.id]: ''}));
-  };
-
   const deleteNewsPost = async (id:string) => { if (isOwner) await deleteDoc(doc(db,'news',id)); };
   const toggleNewsPin = async (item:any) => { if (isOwner) await updateDoc(doc(db,'news',item.id), { pinned: !item.pinned }); };
 
@@ -1698,10 +1464,15 @@ export default function App() {
         selectedProfileUser?.name ||
         'المستخدم';
 
-      const oldRole = normalizeRole(targetUserData.role || 'Member');
-      // عند سحب السوبر أدمن/الأدمن نحفظ الرتبة الجديدة فعلياً كعضو،
-      // ولا نعيد الرتبة القديمة تلقائياً. هذا يجعل القائمة تختفي فوراً وتحفظ الحالة دائماً.
-      const roleToSave = normalizedNewRole === 'Guest' ? 'Guest' : (normalizedNewRole === 'Member' ? 'Member' : normalizedNewRole);
+      const oldRole = targetUserData.role || 'Member';
+      let roleToSave = normalizedNewRole;
+
+      if (normalizedNewRole === 'Member' || normalizedNewRole === 'Guest') {
+        roleToSave = targetUserData.previousRole && !['Member', 'Guest'].includes(targetUserData.previousRole) 
+          ? targetUserData.previousRole 
+          : 'Member';
+      }
+
       const permissions = rolePermissions[roleToSave] || [];
 
       await setDoc(
@@ -1754,9 +1525,8 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
-      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
-
       if (selectedRoom) {
+        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
@@ -1924,12 +1694,7 @@ export default function App() {
     };
   }, []);
 
-  const filteredOnlineUsers = onlineUsersList
-    .filter(u => String(u.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a,b) => {
-      const rank=(u:any)=>{ const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5; };
-      return rank(a)-rank(b) || String(a.name||'').localeCompare(String(b.name||''));
-    });
+  const filteredOnlineUsers = onlineUsersList.filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && u.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a,b) => { const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5;}; return rank(a)-rank(b); });
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
 
   const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
@@ -2163,10 +1928,12 @@ export default function App() {
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
-        .video-chat-scroll > div { min-height:34px !important; padding:2px 4px !important; gap:5px !important; border-bottom:0 !important; background:transparent !important; box-shadow:none !important; }
+        .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
+        .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
         .video-chat-scroll > div > div:first-child { width:34px !important; height:34px !important; border-width:1px !important; font-size:14px !important; }
-        .video-chat-scroll > div > div:nth-child(2) { font-size:11px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
+        .video-chat-scroll > div > div:nth-child(2) { font-size:12px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
         .video-chat-scroll > div > div:nth-child(2) span { font-size:inherit !important; }
         .video-composer { min-height:64px !important; border-top:1px solid #d8d8d8 !important; padding:6px 8px !important; gap:6px !important; }
         .video-composer input { font-size:12px !important; color:#333 !important; }
@@ -2175,7 +1942,7 @@ export default function App() {
         .video-composer > button[type=submit] { width:46px !important; height:46px !important; background:#003d43 !important; font-size:20px !important; }
         .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:48px !important; min-height:48px !important; padding:0 4px !important; }
         .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:0 !important; flex:1 !important; padding:3px 2px !important; }
-        .video-bottom-nav > div div:first-child { font-size:16px !important; color:#fff !important; }
+        .video-bottom-nav > div div:first-child { font-size:18px !important; color:#fff !important; }
         .video-bottom-nav > div div:last-child { font-size:9px !important; font-weight:500 !important; color:#fff !important; }
         .video-rooms-overlay { background:rgba(0,0,0,.42) !important; }
         .video-rooms-panel { width:100% !important; max-width:100% !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
@@ -2192,8 +1959,8 @@ export default function App() {
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
           .video-topbar .brand-logo { font-size:18px !important; }
-          .video-chat-scroll > div { min-height:42px !important; }
-          .video-chat-scroll > div > div:nth-child(2) { font-size:11px !important; }
+          .video-chat-scroll > div { min-height:44px !important; }
+          .video-chat-scroll > div > div:nth-child(2) { font-size:12px !important; }
           .video-rooms-panel { width:100% !important; }
         }
       `}</style>
@@ -2241,7 +2008,7 @@ export default function App() {
                 <div onClick={()=>setShowMessagesModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="mail" size={20}/></span><span>رسالة</span>{totalUnreadMessages>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{totalUnreadMessages}</b>}</div>
                 <div onClick={()=>setShowRequestsModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="request" size={20}/></span><span>طلب</span>{pendingRequests.length>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{pendingRequests.length}</b>}</div>
                 <div onClick={handleOpenNotifications} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="bell" size={20}/></span><span>إشعار</span>{unreadNotificationsCount>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{unreadNotificationsCount}</b>}</div>
-                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff'}}><span style={{display:'flex'}}><VideoIcon type="settings" size={18}/></span><span>اعدادات</span></div>
+                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff'}}><span style={{display:'flex'}}><VideoIcon type="settings" size={20}/></span><span>اعدادات</span></div>
               </div>
             </>
           )}
@@ -2366,9 +2133,8 @@ export default function App() {
               </div>
             )}
 
-            <div ref={chatScrollRef} className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
+            <div className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
               
-              {hasMoreRoomMessages && <button type="button" onClick={loadMoreRoomMessages} disabled={loadingMoreRoomMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'6px',position:'sticky',top:'4px',zIndex:2}}>{loadingMoreRoomMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
                   لا توجد رسائل في هذه الغرفة بعد. اكتب شيئاً وابدأ المحادثة! 💬
@@ -2394,16 +2160,14 @@ export default function App() {
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: 'transparent',
-                        background: 'transparent',
-                        boxShadow: 'none',
-                        padding: '2px 2px',
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', 
+                        padding: '4px 6px', 
                         minHeight: '30px',
-                        borderBottom: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '7px',
-                        direction: 'rtl'
+                        borderBottom: '1px solid #e7e7e7', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px', 
+                        direction: 'rtl' 
                       }}
                     >
                       
@@ -2434,11 +2198,11 @@ export default function App() {
 
                         {m.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
-                            <img src={m.mediaUrl || m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
-                            <a href={m.mediaUrl || m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
+                            <img src={m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
+                            <a href={m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
                           </div>
                         ) : m.mediaType === 'voice' ? (
-                          <audio controls src={m.mediaUrl || m.mediaData} style={{width:'190px',height:'34px'}} />
+                          <audio controls src={m.mediaData} style={{width:'190px',height:'34px'}} />
                         ) : youtubeEmbedUrl ? (
                           <button 
                             onClick={() => setActiveVideoUrl(youtubeEmbedUrl)}
@@ -2472,8 +2236,6 @@ export default function App() {
                           onClick={async () => {
                             try {
                               await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
-                              // حذف فوري من الواجهة بدون انتظار إعادة تحميل الصفحة أو تحديث listener.
-                              setMessages(prev => prev.filter((item:any) => item.id !== m.id));
                             } catch (e) {
                               console.error(e);
                             }
@@ -2539,8 +2301,7 @@ export default function App() {
             </div>
           </div>
 
-          <div ref={privateChatScrollRef} style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px',margin:'4px',position:'sticky',top:'4px',zIndex:2}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
+          <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {privateMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
                 ابدأ محادثتك الخاصة الآن مع {activePrivateChat.peerName} 💬
@@ -2622,11 +2383,11 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'48px',minHeight:'48px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
-          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={18}/></div><div>الغرف</div></div>
-          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={18}/></div><div>المتصلين</div></div>
-          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={18}/></div><div>الأصدقاء</div></div>
-          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={18}/></div><div>خيارات</div></div>
+        <nav className="video-bottom-nav" style={{height:'50px',minHeight:'50px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
+          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
+          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
+          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
+          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={20}/></div><div>خيارات</div></div>
         </nav>
       )}
 
@@ -2636,7 +2397,7 @@ export default function App() {
             <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
             {[
               ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}],['⟳','تحديث الصفحة',()=>window.location.reload()]
-            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'50px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',fontSize:'14px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'18px'}}>{icon as any}</span><span style={{display:'flex',alignItems:'center',gap:'7px'}}>{label as any}{label==='الأخبار'&&newsItems.filter(n=>!seenNewsIds.includes(n.id)).length>0&&<b style={{background:'#ef233c',color:'#fff',fontSize:'9px',borderRadius:'4px',padding:'1px 5px'}}>{newsItems.filter(n=>!seenNewsIds.includes(n.id)).length}</b>}</span></button>)}
+            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'54px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px',fontSize:'15px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'20px'}}>{icon as any}</span><span>{label as any}</span></button>)}
           </div>
         </div>
       )}
@@ -2736,45 +2497,19 @@ export default function App() {
       {showWallModal && user && (
         <div style={{position:'fixed',inset:0,zIndex:280,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'flex-start',direction:'rtl'}} onClick={()=>setShowWallModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'86%',maxWidth:'430px',height:'100%',background:'#fff',display:'flex',flexDirection:'column',boxShadow:'-8px 0 25px rgba(0,0,0,.2)'}}>
-            <div style={{height:'48px',background:'#003f45',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px'}}><b style={{fontSize:'14px'}}>حائط الأصدقاء</b><button onClick={()=>setShowWallModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{padding:'9px',borderBottom:'1px solid #e5e7eb'}}><textarea value={wallInput} onChange={e=>setWallInput(e.target.value)} placeholder='اكتب منشوراً جديداً على حائطك...' style={{width:'100%',minHeight:'64px',resize:'none',border:'1px solid #d6dce1',borderRadius:'8px',padding:'8px',fontSize:'11px',outline:'none',direction:'rtl'}}/><button onClick={addWallPost} style={{marginTop:'6px',background:'#16a34a',color:'#fff',border:0,borderRadius:'7px',padding:'6px 13px',fontSize:'10px',fontWeight:'700'}}>نشر</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'8px',background:'#fafafa'}}>
-              {wallPosts.length===0 ? <div style={{textAlign:'center',padding:'35px 10px',color:'#94a3b8',fontSize:'11px'}}>لا توجد منشورات على حائطك بعد.</div> : wallPosts.map(p=>{
-                const canInteract = p.userId === user.uid || isOwner || friendsList.some((f:any)=>f.friendUid===p.userId);
-                return <div key={p.id} style={{border:'1px solid #e2e8f0',borderRadius:'8px',padding:'8px',marginBottom:'7px',background:'#fff'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',fontWeight:'bold'}}><span>{p.userName} { !seenWallIds.includes(`${p.wallOwnerId || user.uid}_${p.id}`) && <span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px',fontSize:'9px'}}>جديد</span>}</span>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)} style={{border:0,background:'none',color:'#dc2626',fontSize:'11px'}}>حذف</button>}</div>
-                  <div style={{fontSize:'11px',margin:'6px 0',lineHeight:1.65}}>{p.text}</div>
-                  <div style={{display:'flex',gap:'7px',alignItems:'center',borderTop:'1px solid #f1f5f9',paddingTop:'5px'}}>{canInteract?<button onClick={()=>toggleWallLike(p)} style={{border:0,background:'none',fontSize:'10px',color:(p.likes||[]).includes(user.uid)?'#2563eb':'#64748b'}}>👍 {(p.likes||[]).length}</button>:<span style={{fontSize:'10px',color:'#94a3b8'}}>👍 {(p.likes||[]).length}</span>}<span style={{fontSize:'10px',color:'#64748b'}}>💬 {(p.comments||[]).length}</span></div>
-                  {(p.comments||[]).map((c:any,i:number)=><div key={i} style={{fontSize:'10px',background:'#f8fafc',padding:'5px',borderRadius:'5px',marginTop:'4px'}}><b>{c.name}:</b> {c.text}</div>)}
-                  {canInteract&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={wallCommentInputs[p.id]||''} onChange={e=>setWallCommentInputs(v=>({...v,[p.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'5px',fontSize:'10px',outline:'none'}}/><button onClick={()=>addWallComment(p)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 8px',fontSize:'10px'}}>تعليق</button></div>}
-                </div>
-              })}
-              {hasMoreWallPosts && <button onClick={()=>fetchWallPage(false)} disabled={loadingMoreWallPosts} style={{display:'block',margin:'10px auto',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'7px 14px',fontSize:'10px'}}>{loadingMoreWallPosts?'جاري التحميل...':'تحميل المزيد'}</button>}
-            </div>
+            <div style={{height:'50px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px'}}><b style={{fontSize:'14px'}}>حائط الأصدقاء</b><button onClick={()=>setShowWallModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'28px'}}>×</button></div>
+            <div style={{padding:'10px',borderBottom:'1px solid #ddd'}}><textarea value={wallInput} onChange={e=>setWallInput(e.target.value)} placeholder='اكتب منشوراً على حائطك...' style={{width:'100%',minHeight:'70px',resize:'none',border:'1px solid #ddd',borderRadius:'9px',padding:'8px',fontSize:'12px',outline:'none',direction:'rtl'}}/><button onClick={addWallPost} style={{marginTop:'6px',background:'#16a34a',color:'#fff',border:0,borderRadius:'7px',padding:'7px 14px',fontSize:'11px'}}>نشر</button></div>
+            <div style={{flex:1,overflowY:'auto',padding:'8px'}}>{wallPosts.map(p=><div key={p.id} style={{border:'1px solid #e2e8f0',borderRadius:'9px',padding:'9px',marginBottom:'8px',background:'#fff'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',fontWeight:'bold'}}><span>{p.userName}</span>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)} style={{border:0,background:'none',color:'#dc2626',fontSize:'12px'}}>حذف</button>}</div><div style={{fontSize:'12px',margin:'7px 0',lineHeight:1.6}}>{p.text}</div><div style={{display:'flex',gap:'6px',alignItems:'center',borderTop:'1px solid #f1f5f9',paddingTop:'6px'}}><button onClick={()=>toggleWallLike(p)} style={{border:0,background:'none',fontSize:'11px',color:(p.likes||[]).includes(user.uid)?'#2563eb':'#64748b'}}>👍 {(p.likes||[]).length}</button><span style={{fontSize:'10px',color:'#64748b'}}>💬 {(p.comments||[]).length}</span></div>{(p.comments||[]).map((c:any,i:number)=><div key={i} style={{fontSize:'10px',background:'#f8fafc',padding:'5px',borderRadius:'5px',marginTop:'4px'}}><b>{c.name}:</b> {c.text}</div>)}<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={wallCommentInputs[p.id]||''} onChange={e=>setWallCommentInputs(v=>({...v,[p.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'5px',fontSize:'10px',outline:'none'}}/><button onClick={()=>addWallComment(p)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 8px',fontSize:'10px'}}>تعليق</button></div></div>)}</div>
           </div>
         </div>
       )}
 
       {showNewsModal && (
-        <div style={{position:'fixed',inset:0,zIndex:281,background:'#fff',display:'flex',justifyContent:'center',direction:'rtl'}}>
-          <div style={{width:'100%',maxWidth:'430px',height:'100%',background:'#fff',display:'flex',flexDirection:'column'}}>
-            <div style={{height:'52px',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',gap:'10px',padding:'0 12px'}}><button onClick={()=>setShowNewsModal(false)} style={{border:0,background:'transparent',fontSize:'28px',color:'#444'}}>×</button><div style={{flex:1,textAlign:'center',fontSize:'16px',color:'#333'}}>الأخبار 📰</div></div>
-            {(isOwner || isSuperAdmin)&&<div style={{padding:'8px',borderBottom:'1px solid #e5e7eb'}}><textarea value={newsInput} onChange={e=>setNewsInput(e.target.value)} placeholder='اكتب خبراً جديداً...' style={{width:'100%',minHeight:'58px',border:'1px solid #d6dce1',borderRadius:'7px',padding:'7px',fontSize:'11px',resize:'none',outline:'none'}}/><button onClick={addNewsPost} style={{marginTop:'5px',background:'#16a34a',color:'#fff',border:0,borderRadius:'6px',padding:'6px 12px',fontSize:'10px',fontWeight:'700'}}>نشر الخبر</button></div>}
-            <div style={{flex:1,overflowY:'auto',padding:'0 10px'}}>
-              {newsItems.length===0?<div style={{textAlign:'center',padding:'40px',color:'#777',fontSize:'12px'}}>لا توجد أخبار حالياً.</div>:newsItems.map(n=>{
-                const canInteract=Boolean(user&&(n.authorId===user.uid||friendsList.some((f:any)=>f.friendUid===n.authorId)));
-                const likes=Array.isArray(n.likes)?n.likes:[]; const comments=Array.isArray(n.comments)?n.comments:[];
-                return <div key={n.id} style={{padding:'14px 6px 12px',borderBottom:'1px solid #e5e7eb'}}>
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}><div style={{display:'flex',alignItems:'center',gap:'7px'}}><div style={{width:'42px',height:'42px',borderRadius:'50%',overflow:'hidden',background:'#ddd'}}>{n.authorAvatar?<img src={n.authorAvatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',fontSize:'20px'}}>👤</span>}</div><div><div style={{fontSize:'12px',fontWeight:'700'}}>{n.authorName||'الإدارة'}</div><div style={{fontSize:'9px',color:'#888'}}>{n.createdAt?.toDate?n.createdAt.toDate().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'}):'جديد'} {!seenNewsIds.includes(n.id)&&<span style={{background:'#ef4444',color:'#fff',borderRadius:'3px',padding:'1px 5px'}}>جديد</span>}</div></div></div>{n.pinned&&<span style={{fontSize:'18px'}}>⚑</span>}</div>
-                  {n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'220px',objectFit:'cover',borderRadius:'6px',marginBottom:'7px'}}/>}<div style={{fontSize:'12px',lineHeight:1.75,color:'#333',whiteSpace:'pre-wrap'}}>{n.text}</div>
-                  <div style={{display:'flex',alignItems:'center',gap:'10px',marginTop:'9px',paddingTop:'6px',borderTop:'1px solid #f1f1f1'}}>{canInteract?<button onClick={()=>toggleNewsLike(n)} style={{border:0,background:'transparent',fontSize:'11px',color:likes.includes(user?.uid)?'#e11d48':'#555'}}>❤️ {likes.length}</button>:<span style={{fontSize:'11px',color:'#999'}}>❤️ {likes.length}</span>}<span style={{fontSize:'11px',color:'#555'}}>💬 {comments.length}</span></div>
-                  {comments.map((c:any,i:number)=><div key={i} style={{marginTop:'4px',background:'#f8fafc',padding:'5px 7px',borderRadius:'5px',fontSize:'10px'}}><b>{c.name}:</b> {c.text}</div>)}
-                  {canInteract&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={newsCommentInputs[n.id]||''} onChange={e=>setNewsCommentInputs(v=>({...v,[n.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'5px',fontSize:'10px'}}/><button onClick={()=>addNewsComment(n)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 8px',fontSize:'10px'}}>تعليق</button></div>}
-                  {isOwner&&<div style={{display:'flex',gap:'5px',marginTop:'7px'}}><button onClick={()=>toggleNewsPin(n)} style={{border:0,background:'#fef3c7',color:'#92400e',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>{n.pinned?'إلغاء التثبيت':'تثبيت المنشور'}</button><button onClick={()=>deleteNewsPost(n.id)} style={{border:0,background:'#fee2e2',color:'#dc2626',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>حذف</button></div>}
-                </div>;
-              })}
-              {hasMoreNews && <button onClick={loadMoreNews} disabled={loadingMoreNews} style={{display:'block',margin:'10px auto',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'7px 14px',fontSize:'10px'}}>{loadingMoreNews?'جاري التحميل...':'تحميل المزيد'}</button>}
-            </div>
+        <div style={{position:'fixed',inset:0,zIndex:281,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowNewsModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'390px',maxHeight:'88dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>الأخبار</b><button onClick={()=>setShowNewsModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
+            {(isOwner || isSuperAdmin) && <div style={{padding:'8px',borderBottom:'1px solid #ddd'}}><textarea value={newsInput} onChange={e=>setNewsInput(e.target.value)} placeholder='اكتب خبراً...' style={{width:'100%',minHeight:'55px',border:'1px solid #ddd',borderRadius:'7px',padding:'7px',fontSize:'11px',resize:'none'}}/><button onClick={addNewsPost} style={{marginTop:'5px',background:'#16a34a',color:'#fff',border:0,borderRadius:'6px',padding:'6px 12px',fontSize:'10px'}}>نشر الخبر</button></div>}
+            <div style={{flex:1,overflowY:'auto',padding:'8px'}}>{newsItems.length===0?<div style={{textAlign:'center',padding:'30px',color:'#64748b',fontSize:'12px'}}>لا توجد أخبار حالياً.</div>:newsItems.map(n=><div key={n.id} style={{border:'1px solid #e2e8f0',borderRight:n.pinned?'3px solid #eab308':'1px solid #e2e8f0',borderRadius:'8px',padding:'9px',marginBottom:'7px'}}>{n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'180px',objectFit:'cover',borderRadius:'6px'}}/>}<div style={{fontSize:'12px',lineHeight:1.6,marginBottom:'6px'}}>{n.text}</div><div style={{fontSize:'9px',color:'#64748b'}}>بواسطة {n.authorName||'الإدارة'}</div>{isOwner&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><button onClick={()=>toggleNewsPin(n)} style={{border:0,background:'#fef3c7',color:'#92400e',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>{n.pinned?'إلغاء التثبيت':'تثبيت'}</button><button onClick={()=>deleteNewsPost(n.id)} style={{border:0,background:'#fee2e2',color:'#dc2626',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>حذف</button></div>}</div>)}</div>
           </div>
         </div>
       )}
@@ -2783,9 +2518,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>
-              {rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).sort((a,b)=>{const rr=(u:any)=>{const r=normalizeRole(u.role);if(r==='Owner'||String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase())return 1;if(r==='Super Admin')return 2;if(r==='Admin')return 3;return 9;};return rr(a)-rr(b)||String(a.displayName||'').localeCompare(String(b.displayName||''));}).map((u:any,i:number)=><div key={u.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'34px',height:'34px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center'}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div><div style={{fontSize:'12px',fontWeight:'bold'}}>{u.displayName||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div></div></div>)}
-            </div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'34px',height:'34px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center'}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div><div style={{fontSize:'12px',fontWeight:'bold'}}>{u.displayName||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div></div></div>)}</div>
           </div>
         </div>
       )}
@@ -2852,7 +2585,6 @@ export default function App() {
                   </div>
                 ))
               )}
-              {hasMoreNotifications && <button onClick={loadMoreNotifications} disabled={loadingMoreNotifications} style={{alignSelf:'center',border:0,background:'#0284c7',color:'#fff',borderRadius:'7px',padding:'6px 12px',fontSize:'10px'}}>{loadingMoreNotifications?'جاري التحميل...':'تحميل المزيد'}</button>}
             </div>
 
           </div>
