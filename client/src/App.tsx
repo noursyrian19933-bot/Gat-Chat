@@ -1581,7 +1581,7 @@ export default function App() {
           {successMessage && <div style={{ color: '#22c55e', fontSize: '11px', background: 'rgba(34,197,94,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(34,197,94,0.3)' }}>{successMessage}</div>}
 
           {authMode === 'menu' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button 
                 onClick={() => { setAuthMode('register'); setErrorMessage(''); setSuccessMessage(''); }}
                 style={{ width: '100%', padding: '12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
@@ -1640,7 +1640,7 @@ export default function App() {
               </div>
               
               <button type="submit" style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>إنشاء حساب</button>
-              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
 
@@ -1662,12 +1662,12 @@ export default function App() {
               </div>
 
               <button type="submit" style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '4px' }}>تسجيل الدخول</button>
-              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
 
           {authMode === 'forgot' && (
-            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.5' }}>
                 أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لإعادة تعيين كلمة المرور فوراً.
               </div>
@@ -1676,7 +1676,7 @@ export default function App() {
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>إرسال رابط الاستعادة</button>
-              <button type="button" onClick={() => setAuthMode('login')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← العودة لتسجيل الدخول</button>
+              <button type="button" onClick={() => setAuthMode('login')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← العودة لتسجيل الدخول</button>
             </form>
           )}
 
@@ -1687,7 +1687,7 @@ export default function App() {
                 <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} required placeholder="اكتب اسمك المستعار..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
               <button type="submit" style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '6px' }}>دخول زائر</button>
-              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>← رجوع للقائمة الرئيسية</button>
+              <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
 
@@ -1738,7 +1738,8 @@ export default function App() {
   const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
 
   return (
-    <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#0b141a', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
+    <div style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#004247', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
+      <style>{`*{box-sizing:border-box} body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#004247} button,input,textarea,select{font-family:inherit} ::-webkit-scrollbar{width:4px;height:4px} ::-webkit-scrollbar-thumb{background:#aab7b8;border-radius:10px}`}</style>
       
       <input 
         type="file" 
@@ -1763,7 +1764,7 @@ export default function App() {
       />
 
       {currentView === 'chat' && (
-        <header style={{ height: '56px', minHeight: '56px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+        <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, background: '#004247', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 7px rgba(0,0,0,0.18)' }}>
           
           <div style={{ cursor: 'pointer', fontSize: '20px', color: '#38bdf8', padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             ☰
@@ -1771,12 +1772,12 @@ export default function App() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
             
-            <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px' }}>
+            <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px' }}>
               <span style={{ fontSize: '15px', color: '#38bdf8' }}>👤</span>
               <span style={{ marginTop: '1px', fontWeight: '600' }}>اعدادات</span>
             </div>
 
-            <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+            <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px', position: 'relative' }}>
               <span style={{ fontSize: '15px', color: '#eab308' }}>🔔</span>
               <span style={{ marginTop: '1px', fontWeight: '600' }}>إشعار</span>
               {unreadNotificationsCount > 0 && (
@@ -1786,7 +1787,7 @@ export default function App() {
               )}
             </div>
 
-            <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+            <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px', position: 'relative' }}>
               <span style={{ fontSize: '15px', color: '#22c55e' }}>👥⁺</span>
               <span style={{ marginTop: '1px', fontWeight: '600' }}>طلب</span>
               {pendingRequests.length > 0 && (
@@ -1796,7 +1797,7 @@ export default function App() {
               )}
             </div>
 
-            <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 8px', border: '1px solid rgba(255,255,255,0.05)', minWidth: '40px', position: 'relative' }}>
+            <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px', position: 'relative' }}>
               <span style={{ fontSize: '15px', color: '#a855f7' }}>💬</span>
               <span style={{ marginTop: '1px', fontWeight: '600' }}>رسالة</span>
               {totalUnreadMessages > 0 && (
@@ -1817,7 +1818,7 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#f1f5f9', minHeight: 0, position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#ffffff', minHeight: 0, position: 'relative' }}>
         
         {currentView === 'rooms' && (
           <div style={{ padding: '12px', overflowY: 'auto', flex: 1, direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1832,16 +1833,16 @@ export default function App() {
                     value={newRoomName}
                     onChange={(e) => setNewRoomName(e.target.value)}
                     required
-                    style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   />
                   <input 
                     type="text" 
                     placeholder="الإيموجي/العلم" 
                     value={newRoomFlag}
                     onChange={(e) => setNewRoomFlag(e.target.value)}
-                    style={{ width: '60px', padding: '8px', textAlign: 'center', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                    style={{ width: '60px', padding: '8px', textAlign: 'center', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   />
-                  <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>إنشاء</button>
+                  <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>إنشاء</button>
                 </div>
               </form>
             )}
@@ -1872,7 +1873,7 @@ export default function App() {
                     <span>{room.flag}</span>
                     <span>{room.name}</span>
                     <span style={{ color: '#64748b', fontSize: '11px' }}>||</span>
-                    <span style={{ color: '#059669', fontSize: '12px' }}>{count} 👥</span>
+                    <span style={{ color: '#059669', fontSize: '13px' }}>{count} 👥</span>
                   </div>
                 </div>
               );
@@ -1975,7 +1976,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl' }}>
+            <div style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
               
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
@@ -1989,7 +1990,7 @@ export default function App() {
                   if (m.isSystemSpecial) {
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
-                        <div style={{ backgroundColor: '#fefce8', border: '1px solid #fef08a', color: '#854d0e', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+                        <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
                           📢 {m.text}
                         </div>
                       </div>
@@ -2002,9 +2003,10 @@ export default function App() {
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', 
-                        padding: '8px 10px', 
-                        borderBottom: '1px solid #e2e8f0', 
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', 
+                        padding: '4px 6px', 
+                        minHeight: '34px',
+                        borderBottom: '1px solid #e7e7e7', 
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: '10px', 
@@ -2012,7 +2014,7 @@ export default function App() {
                       }}
                     >
                       
-                      <div onClick={() => openUserProfile(m)} style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                      <div onClick={() => openUserProfile(m)} style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
                         {m.avatarUrl ? (
                           <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -2020,7 +2022,7 @@ export default function App() {
                         )}
                       </div>
 
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
                         <span style={{ color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🚩</span>
                         
                         <span 
@@ -2100,19 +2102,19 @@ export default function App() {
               </div>
             )}
 
-            <form onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#f1f5f9', padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
+            <form onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
               
-              <button type="submit" style={{ background: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>
+              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>
                 ➤
               </button>
 
-              <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '38px' }}>
+              <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '40px' }}>
                 <input 
                   type="text" 
                   value={inputText} 
                   onChange={(e) => setInputText(e.target.value)} 
                   placeholder="اكتب هنا أو ألصق رابط يوتيوب..." 
-                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '12px' }}
+                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '13px' }}
                 />
                 <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '0' }}>😊</button>
               </div>
@@ -2133,7 +2135,7 @@ export default function App() {
           
           <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{activePrivateChat.peerName}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '16px', cursor: 'pointer' }}>⚙</span>
               <button onClick={() => setActivePrivateChat(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
@@ -2162,13 +2164,13 @@ export default function App() {
 
           <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
             <button type="submit" style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px' }}>➤</button>
-            <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '38px' }}>
+            <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '40px' }}>
               <input 
                 type="text" 
                 value={privateInputText} 
                 onChange={(e) => setPrivateInputText(e.target.value)} 
                 placeholder="اكتب هنا..." 
-                style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '12px' }}
+                style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '13px' }}
               />
             </div>
             <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>📎</button>
@@ -2221,24 +2223,24 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav style={{ height: '60px', minHeight: '60px', flexShrink: 0, background: 'linear-gradient(135deg, #0b141a 0%, #111b21 100%)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 10px rgba(0,0,0,0.3)', padding: '0 8px' }}>
+        <nav style={{ height: '62px', minHeight: '62px', flexShrink: 0, background: '#004247', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.12)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 8px rgba(0,0,0,0.18)', padding: '0 8px' }}>
           
-          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'transparent', borderRadius: '12px', padding: '3px 12px', border: '1px solid transparent' }}>
             <span style={{ fontSize: '18px', color: '#38bdf8' }}>⚙</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
           </div>
 
-          <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+          <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
             <span style={{ fontSize: '18px', color: '#22c55e' }}>👥⁺</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
           </div>
 
-          <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+          <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
             <span style={{ fontSize: '18px', color: '#eab308' }}>👥</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
           </div>
 
-          <div onClick={() => setShowRoomsModal(true)} style={{ color: showRoomsModal || currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showRoomsModal || currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px 14px', border: showRoomsModal || currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+          <div onClick={() => setShowRoomsModal(true)} style={{ color: showRoomsModal || currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showRoomsModal || currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showRoomsModal || currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
             <span style={{ fontSize: '18px', color: '#a855f7' }}>🏠</span>
             <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
           </div>
@@ -2270,27 +2272,27 @@ export default function App() {
               bottom: 0,
               width: '78%',
               maxWidth: '560px',
-              minWidth: '300px',
-              background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+              minWidth: '290px',
+              background: '#ffffff',
               boxShadow: '-12px 0 30px rgba(0,0,0,0.18)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden'
             }}
           >
-            <div style={{ background: 'linear-gradient(135deg, #0b141a 0%, #122331 100%)', color: '#fff', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <div style={{ fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '7px' }}>قائمة الغرف <span>🏠</span></div>
-              <button onClick={() => setShowRoomsModal(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '34px', lineHeight: 1, cursor: 'pointer', fontWeight: '300', padding: 0 }}>×</button>
+            <div style={{ background: '#004247', color: '#fff', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ fontSize: '17px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '7px' }}>قائمة الغرف <span>🏠</span></div>
+              <button onClick={() => setShowRoomsModal(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '32px', lineHeight: 1, cursor: 'pointer', fontWeight: '300', padding: 0 }}>×</button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {isOwner && (
-                <form onSubmit={handleCreateRoom} style={{ background: 'linear-gradient(135deg,#f0f9ff,#ffffff)', border: '1px solid #dbeafe', borderRadius: '18px', padding: '14px', boxShadow: '0 5px 16px rgba(15,23,42,0.06)' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '11px', textAlign: 'center' }}>إدارة الغرف — صاحب الموقع فقط ⚙️</div>
+                <form onSubmit={handleCreateRoom} style={{ background: 'linear-gradient(135deg,#f0f9ff,#ffffff)', border: '1px solid #dbeafe', borderRadius: '14px', padding: '12px', boxShadow: '0 5px 16px rgba(15,23,42,0.06)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '11px', textAlign: 'center' }}>إدارة الغرف — صاحب الموقع فقط ⚙️</div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input type="text" placeholder="اسم الغرفة..." value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required style={{ flex: 1, minWidth: 0, padding: '11px 12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '12px', outline: 'none', textAlign: 'right' }} />
-                    <input type="text" value={newRoomFlag} onChange={(e) => setNewRoomFlag(e.target.value)} aria-label="رمز الغرفة" style={{ width: '52px', padding: '10px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '18px', textAlign: 'center', outline: 'none' }} />
-                    <button type="submit" style={{ background: 'linear-gradient(135deg,#10b981,#16a34a)', color: '#fff', border: 'none', padding: '11px 14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap', boxShadow: '0 5px 12px rgba(16,185,129,0.22)' }}>+ إضافة</button>
+                    <input type="text" placeholder="اسم الغرفة..." value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required style={{ flex: 1, minWidth: 0, padding: '11px 12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '11px', outline: 'none', textAlign: 'right' }} />
+                    <input type="text" value={newRoomFlag} onChange={(e) => setNewRoomFlag(e.target.value)} aria-label="رمز الغرفة" style={{ width: '52px', padding: '10px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '16px', textAlign: 'center', outline: 'none' }} />
+                    <button type="submit" style={{ background: 'linear-gradient(135deg,#10b981,#16a34a)', color: '#fff', border: 'none', padding: '11px 14px', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap', boxShadow: '0 5px 12px rgba(16,185,129,0.22)' }}>+ إضافة</button>
                   </div>
                 </form>
               )}
@@ -2299,23 +2301,23 @@ export default function App() {
                 const count = roomCounts[room.id] || 0;
                 const isCurrentRoom = selectedRoom?.id === room.id;
                 return (
-                  <div key={room.id} style={{ background: isCurrentRoom ? 'linear-gradient(135deg,#eff6ff,#ffffff)' : '#ffffff', borderRadius: '18px', padding: '13px', border: isCurrentRoom ? '1.5px solid #38bdf8' : '1px solid #e2e8f0', boxShadow: '0 5px 16px rgba(15,23,42,0.07)', display: 'flex', alignItems: 'center', gap: '10px', minHeight: '76px' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: isCurrentRoom ? '#dbeafe' : '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '23px', flexShrink: 0 }}>{room.flag || '🏠'}</div>
+                  <div key={room.id} style={{ background: isCurrentRoom ? 'linear-gradient(135deg,#eff6ff,#ffffff)' : '#ffffff', borderRadius: '12px', padding: '10px', border: isCurrentRoom ? '1.5px solid #38bdf8' : '1px solid #e2e8f0', boxShadow: '0 5px 16px rgba(15,23,42,0.07)', display: 'flex', alignItems: 'center', gap: '10px', minHeight: '62px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isCurrentRoom ? '#dbeafe' : '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px', flexShrink: 0 }}>{room.flag || '🏠'}</div>
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                        <span style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '12px', fontWeight: '700' }}>👥 {count}</div>
-                      {isCurrentRoom && <span style={{ alignSelf: 'flex-start', background: '#dcfce7', color: '#059669', borderRadius: '999px', padding: '3px 8px', fontSize: '10px', fontWeight: '800' }}>● الغرفة الحالية</span>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px', fontWeight: '700' }}>👥 {count}</div>
+                      {isCurrentRoom && <span style={{ alignSelf: 'flex-start', background: '#dcfce7', color: '#059669', borderRadius: '999px', padding: '2px 7px', fontSize: '9px', fontWeight: '800' }}>● الغرفة الحالية</span>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '7px', flexShrink: 0 }}>
                       {isCurrentRoom ? (
                         <button disabled style={{ background: '#94a3b8', color: '#fff', border: 'none', padding: '10px 12px', borderRadius: '999px', fontWeight: '800', fontSize: '11px', minWidth: '105px', opacity: 0.95 }}>الغرفة الحالية</button>
                       ) : (
-                        <button onClick={() => enterRoom(room)} style={{ background: 'linear-gradient(135deg,#0b141a,#173044)', color: '#fff', border: 'none', padding: '10px 13px', borderRadius: '999px', fontWeight: '800', cursor: 'pointer', fontSize: '11px', minWidth: '105px', boxShadow: '0 5px 12px rgba(11,20,26,0.16)' }}>دخول الغرفة 🚪</button>
+                        <button onClick={() => enterRoom(room)} style={{ background: 'linear-gradient(135deg,#0b141a,#173044)', color: '#fff', border: 'none', padding: '8px 11px', borderRadius: '999px', fontWeight: '800', cursor: 'pointer', fontSize: '10px', minWidth: '96px', boxShadow: '0 5px 12px rgba(11,20,26,0.16)' }}>دخول الغرفة 🚪</button>
                       )}
                       {isOwner && !isCurrentRoom && (
-                        <button onClick={() => handleDeleteRoom(room.id)} style={{ background: '#fff1f2', color: '#dc2626', border: '1px solid #fecdd3', padding: '7px 12px', borderRadius: '10px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}>حذف 🗑️</button>
+                        <button onClick={() => handleDeleteRoom(room.id)} style={{ background: '#fff1f2', color: '#dc2626', border: '1px solid #fecdd3', padding: '6px 10px', borderRadius: '9px', fontSize: '9px', fontWeight: '800', cursor: 'pointer' }}>حذف 🗑️</button>
                       )}
                     </div>
                   </div>
@@ -2344,7 +2346,7 @@ export default function App() {
                 pendingRequests.map((req) => (
                   <div key={req.id} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>👤</div>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>👤</div>
                       <div>
                         <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>{req.fromName}</div>
                         <div style={{ fontSize: '10px', color: '#64748b' }}>يرغب بإضافتك كصديق</div>
@@ -2519,7 +2521,7 @@ export default function App() {
 
             <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
               {settingsTab === 'info' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div>
                     <label style={{ fontSize: '11px', color: '#475569', display: 'block', marginBottom: '4px' }}>الدولة / العلم</label>
                     <select 
@@ -2528,7 +2530,7 @@ export default function App() {
                         setProfileCountry(e.target.value);
                         saveSettingToFirebase('country', e.target.value);
                       }}
-                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                     >
                       {COUNTRIES_LIST.map((c, i) => <option key={i} value={c}>{c} {getCountryFlag(c)}</option>)}
                     </select>
@@ -2542,7 +2544,7 @@ export default function App() {
                         setProfileGender(e.target.value);
                         saveSettingToFirebase('gender', e.target.value);
                       }}
-                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                     >
                       <option value="ذكر">ذكر</option>
                       <option value="أنثى">أنثى</option>
@@ -2618,7 +2620,7 @@ export default function App() {
                             setNameStyle(e.target.value);
                             saveSettingToFirebase('nameStyle', e.target.value);
                           }}
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #f0abfc', fontSize: '12px' }}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #f0abfc', fontSize: '13px' }}
                         >
                           <option value="normal">عادي (بدون زخرفة)</option>
                           <option value="glowing">متوهج 🌟</option>
@@ -2681,7 +2683,7 @@ export default function App() {
                       localStorage.clear();
                       window.location.reload();
                     }} 
-                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
                   >
                     تسجيل الخروج 🚪
                   </button>
@@ -2830,7 +2832,7 @@ export default function App() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px', width: '100%' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
+                  <span style={{ fontSize: '15px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
                     {selectedProfileUser.name}
                   </span>
                   {canModifyTargetName && (
@@ -2930,13 +2932,13 @@ export default function App() {
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                   <button 
                     onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
-                    style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
+                    style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
                   >
                     محادثة خاصة ✉️
                   </button>
                   <button 
                     onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
-                    style={{ flex: 1, backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
+                    style={{ flex: 1, backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
                   >
                     إضافة صديق 👤⁺
                   </button>
