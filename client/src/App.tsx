@@ -212,6 +212,7 @@ export default function App() {
   const [wallCommentInputs, setWallCommentInputs] = useState<Record<string,string>>({});
   const [newsItems, setNewsItems] = useState<any[]>([]);
   const [newsInput, setNewsInput] = useState('');
+  const [newsCommentInputs, setNewsCommentInputs] = useState<Record<string,string>>({});
   const [newsImage, setNewsImage] = useState('');
   const [rankedUsers, setRankedUsers] = useState<any[]>([]);
   const [pendingChatImage, setPendingChatImage] = useState<string | null>(null);
@@ -1335,11 +1336,33 @@ export default function App() {
   const addNewsPost = async () => {
     if (!user || (!isOwner && !isSuperAdmin) || !newsInput.trim()) return;
     const { senderName } = getSenderInfo();
-    await addDoc(collection(db,'news'), { text:newsInput.trim(), image:newsImage, authorId:user.uid, authorName:senderName, pinned:false, createdAt:serverTimestamp() });
+    await addDoc(collection(db,'news'), {
+      text:newsInput.trim(), image:newsImage, authorId:user.uid, authorName:senderName,
+      authorRole:isOwner?'Owner':normalizeRole(currentUserRole), authorAvatar:profileAvatar || '',
+      authorNameColor:nameColor || '#2563eb', likes:[], comments:[], pinned:false, createdAt:serverTimestamp()
+    });
     setNewsInput(''); setNewsImage('');
   };
   const deleteNewsPost = async (id:string) => { if (isOwner) await deleteDoc(doc(db,'news',id)); };
   const toggleNewsPin = async (item:any) => { if (isOwner) await updateDoc(doc(db,'news',item.id), { pinned: !item.pinned }); };
+  const canInteractWithNews = (item:any) => {
+    if (!user) return false;
+    if (item.authorId === user.uid) return true;
+    return friendsList.some((f:any) => (f.id || f.userId || f.uid) === item.authorId);
+  };
+  const toggleNewsLike = async (item:any) => {
+    if (!canInteractWithNews(item)) return;
+    const likes = Array.isArray(item.likes) ? item.likes : [];
+    const next = likes.includes(user!.uid) ? likes.filter((x:string)=>x!==user!.uid) : [...likes, user!.uid];
+    await updateDoc(doc(db,'news',item.id), {likes:next});
+  };
+  const addNewsComment = async (item:any) => {
+    if (!canInteractWithNews(item) || !newsCommentInputs[item.id]?.trim()) return;
+    const comments = Array.isArray(item.comments) ? item.comments : [];
+    const {senderName} = getSenderInfo();
+    await updateDoc(doc(db,'news',item.id), {comments:[...comments,{uid:user!.uid,name:senderName,text:newsCommentInputs[item.id].trim(),createdAt:new Date().toISOString()}]});
+    setNewsCommentInputs(v=>({...v,[item.id]:''}));
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2074,7 +2097,7 @@ export default function App() {
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
-        .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
+        .video-composer button { min-width: 28px !important; } .video-composer { min-height: 46px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
           .video-topbar .brand-logo { font-size:18px !important; }
@@ -2359,7 +2382,7 @@ export default function App() {
                               console.error(e);
                             }
                           }}
-                          style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px' }}
+                          style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '13px', cursor: 'pointer', fontWeight: '500', padding: '0 2px', marginRight: '3px', alignSelf: 'center', borderRadius: '4px' }}
                           title="حذف الكلام"
                         >
                           ✕
@@ -2374,7 +2397,8 @@ export default function App() {
             </div>
 
             {showEmojiPicker && (
-              <div className="emoji-panel" style={{ backgroundColor:'#f8fafc', borderTop:'1px solid #cbd5e1', padding:'7px', display:'grid', gridTemplateColumns:'repeat(9,1fr)', gap:'2px', maxHeight:'180px', overflowY:'auto', flexShrink:0 }}>
+              <div className="emoji-panel" style={{ backgroundColor:'#f8fafc', borderTop:'1px solid #cbd5e1', padding:'5px', display:'grid', gridTemplateColumns:'repeat(9,1fr)', gap:'2px', maxHeight:'160px', overflowY:'auto', flexShrink:0, position:'relative' }}>
+                <button type="button" onClick={()=>setShowEmojiPicker(false)} aria-label="إغلاق السمايلات" style={{position:'absolute',top:'3px',left:'5px',width:'22px',height:'22px',border:'1px solid #cbd5e1',borderRadius:'50%',background:'#fff',color:'#334155',fontSize:'15px',lineHeight:'18px',cursor:'pointer',zIndex:2}}>×</button>
                 {EMOJIS_LIST.map((emoji, idx) => (
                   <button key={idx} onClick={() => setInputText(prev => prev + emoji)} className={idx % 17 === 0 ? 'animated-emoji' : ''} style={{background:'transparent',border:'none',fontSize:'20px',cursor:'pointer',padding:'3px',lineHeight:1}}>{emoji}</button>
                 ))}
@@ -2395,12 +2419,12 @@ export default function App() {
               </div>
             )}
             <form className="video-composer" onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '7px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
-              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px', flexShrink: 0 }}>➤</button>
+              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '13px', flexShrink: 0 }}>➤</button>
               <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 10px', border: '1px solid #cbd5e1', height: '40px' }}>
                 <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتب هنا أو ألصق رابط يوتيوب..." style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '12px' }} />
-                <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{background:'transparent',border:'none',fontSize:'18px',cursor:'pointer',padding:'0'}}>😊</button>
+                <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{background:'transparent',border:'none',fontSize:'16px',cursor:'pointer',padding:'0 2px'}}>😊</button>
               </div>
-              <button type="button" onClick={isRecording ? stopVoiceRecording : startVoiceRecording} style={{background:'transparent',border:'none',fontSize:'19px',cursor:'pointer',color:isRecording?'#dc2626':'#64748b',padding:'0 2px'}}>🎙</button>
+              <button type="button" onClick={isRecording ? stopVoiceRecording : startVoiceRecording} style={{background:'transparent',border:'none',fontSize:'17px',cursor:'pointer',color:isRecording?'#dc2626':'#64748b',padding:'0 2px'}}>🎙</button>
               <button type="button" onClick={() => chatImageInputRef.current?.click()} style={{background:'transparent',border:'none',fontSize:'19px',cursor:'pointer',color:'#64748b',padding:'0 2px'}}>🖼️</button>
             </form>
 
@@ -2527,7 +2551,7 @@ export default function App() {
         <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#fff',zIndex:270,direction:'rtl',display:'flex',flexDirection:'column'}}>
           <div style={{height:'82px',display:'flex',alignItems:'center',gap:'14px',padding:'0 18px',borderBottom:'1px solid #ddd'}}>
             <button onClick={()=>setShowTopSearch(false)} style={{border:0,background:'transparent',fontSize:'38px',color:'#444',cursor:'pointer'}}>×</button>
-            <div style={{flex:1,fontSize:'21px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>البحث عن أشخاص <span style={{color:'#16a6d4',fontSize:'32px'}}>⌕</span></div>
+            <div style={{flex:1,fontSize:'21px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>البحث عن أشخاص <span style={{color:'#16a6d4',fontSize:'32px'}}>⌕</span></div><button type="button" onClick={()=>{setShowTopSearch(false);setShowVipModal(true)}} title="كبار الشخصيات" style={{border:0,background:'transparent',fontSize:'24px',cursor:'pointer'}}>⭐</button>
           </div>
           <div style={{textAlign:'center',fontSize:'18px',padding:'24px'}}>إعلان ترويجي</div>
           <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=><div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px',cursor:'pointer'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><span style={{fontSize:'20px',fontWeight:'700',color:'#333'}}>{u.name}</span></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'3px solid #17a7d2',background:'#eee'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}>👤</span>}</div></div>)}</div>
@@ -2588,7 +2612,7 @@ export default function App() {
                 const isCurrentRoom = selectedRoom?.id === room.id;
                 return (
                   <div key={room.id} style={{ background: isCurrentRoom ? 'linear-gradient(135deg,#eff6ff,#ffffff)' : '#ffffff', borderRadius: '12px', padding: '10px', border: isCurrentRoom ? '1.5px solid #38bdf8' : '1px solid #e2e8f0', boxShadow: '0 5px 16px rgba(15,23,42,0.07)', display: 'flex', alignItems: 'center', gap: '10px', minHeight: '62px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isCurrentRoom ? '#dbeafe' : '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px', flexShrink: 0 }}>{room.flag || '🏠'}</div>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isCurrentRoom ? '#dbeafe' : '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px', flexShrink: 0 }}>{room.flag || '🏠'}</div>
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                         <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
@@ -2637,11 +2661,36 @@ export default function App() {
       )}
 
       {showNewsModal && (
-        <div style={{position:'fixed',inset:0,zIndex:281,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowNewsModal(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'390px',maxHeight:'88dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-            <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>الأخبار</b><button onClick={()=>setShowNewsModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            {(isOwner || isSuperAdmin) && <div style={{padding:'8px',borderBottom:'1px solid #ddd'}}><textarea value={newsInput} onChange={e=>setNewsInput(e.target.value)} placeholder='اكتب خبراً...' style={{width:'100%',minHeight:'55px',border:'1px solid #ddd',borderRadius:'7px',padding:'7px',fontSize:'11px',resize:'none'}}/><button onClick={addNewsPost} style={{marginTop:'5px',background:'#16a34a',color:'#fff',border:0,borderRadius:'6px',padding:'6px 12px',fontSize:'10px'}}>نشر الخبر</button></div>}
-            <div style={{flex:1,overflowY:'auto',padding:'8px'}}>{newsItems.length===0?<div style={{textAlign:'center',padding:'30px',color:'#64748b',fontSize:'12px'}}>لا توجد أخبار حالياً.</div>:newsItems.map(n=><div key={n.id} style={{border:'1px solid #e2e8f0',borderRight:n.pinned?'3px solid #eab308':'1px solid #e2e8f0',borderRadius:'8px',padding:'9px',marginBottom:'7px'}}>{n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'180px',objectFit:'cover',borderRadius:'6px'}}/>}<div style={{fontSize:'12px',lineHeight:1.6,marginBottom:'6px'}}>{n.text}</div><div style={{fontSize:'9px',color:'#64748b'}}>بواسطة {n.authorName||'الإدارة'}</div>{isOwner&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><button onClick={()=>toggleNewsPin(n)} style={{border:0,background:'#fef3c7',color:'#92400e',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>{n.pinned?'إلغاء التثبيت':'تثبيت'}</button><button onClick={()=>deleteNewsPost(n.id)} style={{border:0,background:'#fee2e2',color:'#dc2626',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>حذف</button></div>}</div>)}</div>
+        <div style={{position:'fixed',inset:0,zIndex:281,background:'#f8fafc',display:'flex',flexDirection:'column',direction:'rtl'}}>
+          <div style={{height:'52px',flexShrink:0,background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px'}}>
+            <b style={{fontSize:'15px'}}>الأخبار</b>
+            <button onClick={()=>setShowNewsModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'27px',cursor:'pointer'}}>×</button>
+          </div>
+          {(isOwner || isSuperAdmin) && <div style={{background:'#fff',padding:'8px',borderBottom:'1px solid #e2e8f0'}}>
+            <textarea value={newsInput} onChange={e=>setNewsInput(e.target.value)} placeholder='اكتب خبراً...' style={{width:'100%',minHeight:'55px',boxSizing:'border-box',border:'1px solid #cbd5e1',borderRadius:'8px',padding:'7px',fontSize:'11px',resize:'none',outline:'none'}}/>
+            <button onClick={addNewsPost} style={{marginTop:'5px',background:'#16a34a',color:'#fff',border:0,borderRadius:'7px',padding:'6px 14px',fontSize:'10px',cursor:'pointer'}}>نشر الخبر</button>
+          </div>}
+          <div style={{flex:1,overflowY:'auto',padding:'10px'}}>
+            {newsItems.length===0 ? <div style={{textAlign:'center',padding:'40px',color:'#64748b',fontSize:'12px'}}>لا توجد أخبار حالياً.</div> : newsItems.map(n=>{
+              const likes=Array.isArray(n.likes)?n.likes:[]; const comments=Array.isArray(n.comments)?n.comments:[]; const interact=canInteractWithNews(n);
+              const roleLabel=n.authorRole==='Owner'?'صاحب الموقع':n.authorRole==='Super Admin'?'سوبر أدمن':n.authorRole==='Admin'?'أدمن':(n.authorRole||'عضو');
+              return <article key={n.id} style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'10px',marginBottom:'9px',boxShadow:'0 1px 3px rgba(0,0,0,.05)',borderRight:n.pinned?'3px solid #eab308':'1px solid #e2e8f0'}}>
+                {n.pinned&&<div style={{fontSize:'10px',color:'#92400e',marginBottom:'5px'}}>📌 منشور مثبت</div>}
+                <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
+                  <div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#e2e8f0',flexShrink:0}}>{n.authorAvatar?<img src={n.authorAvatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',fontSize:'18px'}}>👤</span>}</div>
+                  <div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'800',color:n.authorNameColor||'#2563eb'}}>{n.authorName||'الإدارة'}</div><div style={{fontSize:'9px',color:'#64748b'}}>{roleLabel}</div></div>
+                </div>
+                {n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'280px',objectFit:'cover',borderRadius:'7px',marginBottom:'7px'}}/>}
+                <div style={{fontSize:'12px',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{n.text}</div>
+                <div style={{display:'flex',alignItems:'center',gap:'12px',borderTop:'1px solid #f1f5f9',marginTop:'8px',paddingTop:'7px'}}>
+                  <button onClick={()=>toggleNewsLike(n)} disabled={!interact} style={{border:0,background:'none',fontSize:'11px',color:likes.includes(user?.uid)?'#2563eb':interact?'#475569':'#cbd5e1',cursor:interact?'pointer':'default'}}>👍 {likes.length}</button>
+                  <span style={{fontSize:'10px',color:'#64748b'}}>💬 {comments.length}</span>
+                  {isOwner&&<><button onClick={()=>toggleNewsPin(n)} style={{marginRight:'auto',border:0,background:'#fef3c7',color:'#92400e',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>{n.pinned?'إلغاء التثبيت':'تثبيت'}</button><button onClick={()=>deleteNewsPost(n.id)} style={{border:0,background:'#fee2e2',color:'#b91c1c',borderRadius:'5px',padding:'4px 7px',fontSize:'9px'}}>حذف</button></>}
+                </div>
+                {comments.map((c:any,i:number)=><div key={i} style={{fontSize:'10px',background:'#f8fafc',padding:'5px 7px',borderRadius:'5px',marginTop:'5px'}}><b>{c.name}:</b> {c.text}</div>)}
+                {interact&&<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={newsCommentInputs[n.id]||''} onChange={e=>setNewsCommentInputs(v=>({...v,[n.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'6px',fontSize:'10px',outline:'none'}}/><button onClick={()=>addNewsComment(n)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 9px',fontSize:'10px'}}>تعليق</button></div>}
+              </article>
+            })}
           </div>
         </div>
       )}
@@ -2650,7 +2699,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'34px',height:'34px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center'}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div><div style={{fontSize:'12px',fontWeight:'bold'}}>{u.displayName||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
           </div>
         </div>
       )}
