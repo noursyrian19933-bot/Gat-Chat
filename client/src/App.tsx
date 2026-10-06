@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -50,6 +51,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rdb = getDatabase(app);
+const storage = getStorage(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
@@ -745,15 +747,20 @@ export default function App() {
     const maxH = type === 'avatar' ? 350 : 400;
 
     compressAndUploadImage(file, maxW, maxH, async (base64) => {
-      if (type === 'avatar') {
-        setProfileAvatar(base64);
-        setSelectedProfileUser((prev: any) => prev ? { ...prev, avatarUrl: base64 } : null);
-        await saveSettingToFirebase('avatarUrl', base64);
-      } else {
-        setProfileCover(base64);
-        setSelectedProfileUser((prev: any) => prev ? { ...prev, coverUrl: base64 } : null);
-        await saveSettingToFirebase('coverUrl', base64);
-      }
+      try {
+        const blob = await dataUrlToBlob(base64);
+        const path = `users/${user.uid}/${type}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const url = await uploadBlobToStorage(blob, path, blob.type);
+        if (type === 'avatar') {
+          setProfileAvatar(url);
+          setSelectedProfileUser((prev: any) => prev ? { ...prev, avatarUrl: url } : null);
+          await saveSettingToFirebase('avatarUrl', url);
+        } else {
+          setProfileCover(url);
+          setSelectedProfileUser((prev: any) => prev ? { ...prev, coverUrl: url } : null);
+          await saveSettingToFirebase('coverUrl', url);
+        }
+      } catch (err) { console.error('فشل رفع الصورة:', err); }
     });
   };
 
@@ -767,9 +774,14 @@ export default function App() {
     reader.readAsDataURL(file);
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
-      setProfileSong(base64);
-      setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: base64 } : null);
-      await saveSettingToFirebase('profileSongUrl', base64);
+      try {
+        const blob = await dataUrlToBlob(base64);
+        const path = `users/${user.uid}/songs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const url = await uploadBlobToStorage(blob, path, blob.type);
+        setProfileSong(url);
+        setSelectedProfileUser((prev: any) => prev ? { ...prev, profileSongUrl: url } : null);
+        await saveSettingToFirebase('profileSongUrl', url);
+      } catch (err) { console.error('فشل رفع الأغنية:', err); }
     };
     e.target.value = '';
   };
@@ -1259,6 +1271,17 @@ export default function App() {
     return { senderName, roleText };
   };
 
+  const uploadBlobToStorage = async (blob: Blob, path: string, contentType?: string) => {
+    const fileRef = storageRef(storage, path);
+    await uploadBytes(fileRef, blob, contentType ? { contentType } : undefined);
+    return await getDownloadURL(fileRef);
+  };
+
+  const dataUrlToBlob = async (dataUrl: string) => {
+    const res = await fetch(dataUrl);
+    return await res.blob();
+  };
+
   const handleChatImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -1273,13 +1296,17 @@ export default function App() {
     if (!selectedRoom || !user) return;
     const { senderName, roleText } = getSenderInfo();
     try {
+      const blob = await dataUrlToBlob(mediaData);
+      const safeName = mediaName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
+      const mediaUrl = await uploadBlobToStorage(blob, path, blob.type);
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
-        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error('فشل رفع الوسائط:', e); }
   };
 
   const startVoiceRecording = async () => {
