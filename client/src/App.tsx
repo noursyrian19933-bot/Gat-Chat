@@ -179,6 +179,8 @@ export default function App() {
   const [showMessagesModal, setShowMessagesModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [showRoomsModal, setShowRoomsModal] = useState(false);
+  const [showMainMenu, setShowMainMenu] = useState(false);
+  const [showTopSearch, setShowTopSearch] = useState(false);
 
   const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
@@ -1743,12 +1745,11 @@ export default function App() {
         .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
-        .video-topbar > div:first-child { order:2; }
-        .video-topbar > div:last-child { order:1; }
-        .video-topbar .brand-logo { font-size:25px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
+        .video-topbar .brand-logo { font-size:27px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; }
         .video-chat-scroll > div { min-height:54px !important; padding:5px 8px !important; border-bottom:1px solid #e5e5e5 !important; }
-        .video-chat-scroll > div:nth-child(even) { background:#f1f1f1 !important; }
+        .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
+        .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
         .video-composer { min-height:78px !important; border-top:1px solid #d8d8d8 !important; padding:8px 10px !important; gap:7px !important; }
         .video-composer input { font-size:17px !important; color:#333 !important; }
@@ -1760,7 +1761,7 @@ export default function App() {
         .video-bottom-nav > div span:first-child { font-size:30px !important; color:#fff !important; }
         .video-bottom-nav > div span:last-child { font-size:15px !important; font-weight:500 !important; color:#fff !important; }
         .video-rooms-overlay { background:rgba(0,0,0,.42) !important; }
-        .video-rooms-panel { width:78% !important; max-width:520px !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
+        .video-rooms-panel { width:100% !important; max-width:100% !important; background:#fff !important; box-shadow:-12px 0 30px rgba(0,0,0,.28) !important; }
         .video-rooms-panel > div:first-child { background:#003d43 !important; padding:18px 18px !important; }
         .video-rooms-panel > div:first-child div { font-size:20px !important; }
         .video-rooms-panel > div:nth-child(2) { padding:14px 14px 22px !important; gap:12px !important; }
@@ -1769,13 +1770,28 @@ export default function App() {
         .video-rooms-panel form button { border-radius:12px !important; }
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:16px !important; min-height:82px !important; padding:12px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
+        .video-chat-scroll { font-family: Tahoma, Arial, sans-serif !important; }
+        .video-chat-scroll > div { min-height:52px !important; padding:3px 8px !important; gap:8px !important; }
+        .video-chat-scroll > div > div:first-child { width:42px !important; height:42px !important; border-width:2px !important; }
+        .video-chat-scroll > div > div:nth-child(2) { font-size:17px !important; line-height:1.25 !important; justify-content:flex-start !important; }
+        .video-chat-scroll > div > div:nth-child(2) span { font-size:inherit !important; }
+        .video-composer { min-height:74px !important; padding:8px 10px !important; }
+        .video-composer > div { height:54px !important; border-radius:30px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; }
+        .video-composer input { font-size:17px !important; }
+        .video-composer > button[type=submit] { width:58px !important; height:58px !important; border-radius:50% !important; font-size:27px !important; }
+        .video-room-list { scrollbar-width:none; }
+        .video-room-list::-webkit-scrollbar { display:none; }
+        .video-room-card { font-family: Tahoma, Arial, sans-serif !important; }
+        .video-profile-backdrop { align-items:flex-start !important; padding-top:28px !important; }
+        .video-profile-backdrop > div { max-width:96% !important; width:96% !important; border-radius:20px !important; max-height:88dvh !important; }
+        .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
         @media (max-width:600px) {
           .video-topbar { height:82px !important; min-height:82px !important; }
           .video-topbar .brand-logo { font-size:21px !important; }
           .video-chat-scroll > div { min-height:56px !important; }
           .video-chat-scroll > div span { font-size:15px !important; }
           .video-chat-scroll > div span[style*="fontSize: '11px'"] { font-size:12px !important; }
-          .video-rooms-panel { width:82% !important; }
+          .video-rooms-panel { width:100% !important; }
         }
       `}</style>
 
@@ -1803,127 +1819,54 @@ export default function App() {
         onChange={handleSongSelect} 
       />
 
-      {currentView === 'chat' && (
-        <header style={{ height: '50px', minHeight: '50px', flexShrink: 0, background: '#004247', color: '#fff', padding: '0 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 2px 7px rgba(0,0,0,0.18)' }}>
-          
-          <div style={{ display:'flex', alignItems:'center', gap:'18px' }}>
-            <div style={{ cursor:'pointer', fontSize:'34px', color:'#fff', lineHeight:1 }}>☰</div>
-            <div className="brand-logo">Arabic<span style={{color:'#ff4b73'}}>chat</span></div>
-            <div style={{fontSize:'24px',color:'#fff'}}>♛</div>
-            <div style={{fontSize:'23px',color:'#fff'}}>💎</div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
-            
-            <div onClick={() => { setShowSettingsModal(true); setSettingsTab('info'); }} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px' }}>
-              <span style={{ fontSize: '15px', color: '#38bdf8' }}>👤</span>
-              <span style={{ marginTop: '1px', fontWeight: '600' }}>اعدادات</span>
-            </div>
-
-            <div onClick={handleOpenNotifications} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px', position: 'relative' }}>
-              <span style={{ fontSize: '15px', color: '#eab308' }}>🔔</span>
-              <span style={{ marginTop: '1px', fontWeight: '600' }}>إشعار</span>
-              {unreadNotificationsCount > 0 && (
-                <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#eab308', color: '#000000', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
-                  {unreadNotificationsCount}
-                </span>
-              )}
-            </div>
-
-            <div onClick={() => setShowRequestsModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px', position: 'relative' }}>
-              <span style={{ fontSize: '15px', color: '#22c55e' }}>👥⁺</span>
-              <span style={{ marginTop: '1px', fontWeight: '600' }}>طلب</span>
-              {pendingRequests.length > 0 && (
-                <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#dc2626', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
-                  {pendingRequests.length}
-                </span>
-              )}
-            </div>
-
-            <div onClick={() => setShowMessagesModal(true)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#94a3b8', background: 'transparent', borderRadius: '12px', padding: '4px 8px', border: '1px solid transparent', minWidth: '40px', position: 'relative' }}>
-              <span style={{ fontSize: '15px', color: '#a855f7' }}>💬</span>
-              <span style={{ marginTop: '1px', fontWeight: '600' }}>رسالة</span>
-              {totalUnreadMessages > 0 && (
-                <span style={{ position: 'absolute', top: '-4px', right: '-2px', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '9px', fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0b141a' }}>
-                  {totalUnreadMessages}
-                </span>
-              )}
-            </div>
-
-          </div>
-
+      {(currentView === 'chat' || currentView === 'rooms') && (
+        <header className="video-topbar" style={{height:'82px',minHeight:'82px',flexShrink:0,background:'#003f45',color:'#fff',padding:'0 18px',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',boxSizing:'border-box',zIndex:50}}>
+          {currentView === 'rooms' ? (
+            <>
+              <div className="brand-logo" style={{fontSize:'31px'}}>Arabic<span style={{color:'#ff4d76'}}>chat</span></div>
+              <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{width:'54px',height:'54px',borderRadius:'50%',overflow:'hidden',border:'2px solid rgba(255,255,255,.5)',background:'#334155',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{profileAvatar?<img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:'25px'}}>👤</span>}</div>
+            </>
+          ) : (
+            <>
+              <div style={{display:'flex',alignItems:'center',gap:'18px'}}>
+                <button onClick={()=>setShowMainMenu(true)} aria-label="القائمة" style={{background:'transparent',border:0,color:'#fff',fontSize:'36px',lineHeight:1,cursor:'pointer',padding:0}}>☰</button>
+                <button onClick={()=>setShowTopSearch(true)} aria-label="البحث" style={{background:'transparent',border:0,color:'#fff',fontSize:'31px',lineHeight:1,cursor:'pointer',padding:0}}>⌕</button>
+                <div style={{display:'flex',alignItems:'center',gap:'14px'}}><div style={{fontSize:'28px'}}>💎</div><div style={{fontSize:'28px'}}>♛</div></div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:'17px'}}>
+                <div onClick={()=>setShowMessagesModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff',position:'relative'}}><span style={{fontSize:'29px'}}>✉</span><span>رسالة</span>{totalUnreadMessages>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{totalUnreadMessages}</b>}</div>
+                <div onClick={()=>setShowRequestsModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff',position:'relative'}}><span style={{fontSize:'29px'}}>♟+</span><span>طلب</span>{pendingRequests.length>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{pendingRequests.length}</b>}</div>
+                <div onClick={handleOpenNotifications} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff',position:'relative'}}><span style={{fontSize:'29px'}}>♟</span><span>إشعار</span>{unreadNotificationsCount>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{unreadNotificationsCount}</b>}</div>
+                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'12px',color:'#fff'}}><span style={{fontSize:'29px'}}>●</span><span>اعدادات</span></div>
+              </div>
+            </>
+          )}
         </header>
-      )}
-
-      {currentView === 'chat' && (
-        <div style={{ backgroundColor: '#ffffff', color: '#000', fontSize: '12px', fontWeight: 'bold', padding: '2px 10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', flexShrink: 0, direction: 'rtl' }}>
-          .Points
-        </div>
       )}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#ffffff', minHeight: 0, position: 'relative' }}>
         
         {currentView === 'rooms' && (
-          <div style={{ padding: '12px', overflowY: 'auto', flex: 1, direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            
+          <div className="video-room-list" style={{padding:'20px 20px 0',overflowY:'auto',flex:1,direction:'rtl',background:'#eeeeee'}}>
             {isOwner && (
-              <form onSubmit={handleCreateRoom} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a' }}>🛠️ لوحة تحكم الأونر: إنشاء غرفة جديدة مستقلة</div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="اسم الغرفة..." 
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                    required
-                    style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="الإيموجي/العلم" 
-                    value={newRoomFlag}
-                    onChange={(e) => setNewRoomFlag(e.target.value)}
-                    style={{ width: '60px', padding: '8px', textAlign: 'center', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                  <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>إنشاء</button>
+              <form onSubmit={handleCreateRoom} style={{background:'#fff',borderRadius:'24px',padding:'14px 16px',marginBottom:'12px',border:'1px solid #ddd',boxShadow:'0 1px 4px rgba(0,0,0,.08)'}}>
+                <div style={{fontSize:'16px',fontWeight:'700',color:'#333',textAlign:'center',marginBottom:'10px'}}>إدارة الغرف — صاحب الموقع فقط</div>
+                <div style={{display:'flex',gap:'8px'}}>
+                  <input value={newRoomName} onChange={e=>setNewRoomName(e.target.value)} required placeholder="اسم الغرفة" style={{flex:1,padding:'11px',border:'1px solid #ddd',borderRadius:'12px',fontSize:'14px',textAlign:'right'}} />
+                  <input value={newRoomFlag} onChange={e=>setNewRoomFlag(e.target.value)} aria-label="رمز الغرفة" style={{width:'58px',padding:'10px',border:'1px solid #ddd',borderRadius:'12px',fontSize:'18px',textAlign:'center'}} />
+                  <button type="submit" style={{background:'#16a34a',color:'#fff',border:0,borderRadius:'12px',padding:'0 15px',fontWeight:'700'}}>إضافة</button>
                 </div>
               </form>
             )}
-
-            {rooms.map((room) => {
-              const count = roomCounts[room.id] || 0;
-              return (
-                <div key={room.id} style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button 
-                      onClick={() => enterRoom(room)}
-                      style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <span>دخول الغرفة</span>
-                      <span>🚪</span>
-                    </button>
-                    {isOwner && (
-                      <button 
-                        onClick={() => handleDeleteRoom(room.id)}
-                        style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                        title="حذف الغرفة"
-                      >
-                        🗑️ حذف
-                      </button>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#1e293b', fontSize: '13px' }}>
-                    <span>{room.flag}</span>
-                    <span>{room.name}</span>
-                    <span style={{ color: '#64748b', fontSize: '11px' }}>||</span>
-                    <span style={{ color: '#059669', fontSize: '13px' }}>{count} 👥</span>
-                  </div>
-                </div>
-              );
-            })}
+            {rooms.map(room=>{const count=roomCounts[room.id]||0;return (
+              <div key={room.id} className="video-room-card" style={{background:'#fff',borderRadius:'28px',padding:'18px 28px 14px',marginBottom:'14px',border:'1px solid #ddd',boxShadow:'0 1px 5px rgba(0,0,0,.08)',textAlign:'center'}}>
+                <div style={{fontSize:'27px',fontWeight:'700',color:'#333',lineHeight:1.3}}><span style={{color:'#20a8d1',fontWeight:'800'}}>{count}</span> <span style={{color:'#62b70c'}}>♣</span> <span style={{color:'#aaa'}}>│</span> {room.name} <span style={{color:'#aaa'}}>│</span> {room.flag||'🌐'}</div>
+                <button onClick={()=>enterRoom(room)} style={{marginTop:'12px',width:'100%',height:'58px',border:0,borderRadius:'30px',background:'#003f45',color:'#fff',fontSize:'20px',fontWeight:'700',cursor:'pointer'}}><span style={{background:'#69be00',borderRadius:'10px',padding:'3px 8px',marginLeft:'8px'}}>↪</span> دخول الغرفة</button>
+                {isOwner && <button onClick={()=>handleDeleteRoom(room.id)} style={{marginTop:'8px',background:'#fff0f0',color:'#d22',border:'1px solid #f2b3b3',borderRadius:'10px',padding:'6px 14px',fontSize:'12px',fontWeight:'700'}}>حذف الغرفة</button>}
+              </div>
+            )})}
           </div>
         )}
-
         {currentView === 'chat' && selectedRoom && (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
             
@@ -2266,30 +2209,35 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{ height: '82px', minHeight: '82px', flexShrink: 0, background: '#004247', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.12)', direction: 'rtl', boxSizing: 'border-box', zIndex: 10, boxShadow: '0 -2px 8px rgba(0,0,0,0.18)', padding: '0 8px' }}>
-          <div style={{display:'flex',alignItems:'center',gap:'8px',color:'#fff',minWidth:'92px',justifyContent:'center'}}><div style={{width:'42px',height:'42px',borderRadius:'50%',background:'#fff',color:'#003d43',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'23px'}}>▶</div><div style={{textAlign:'left',lineHeight:1.05}}><div style={{fontSize:'10px'}}>Radio</div><div style={{fontSize:'18px'}}>9090</div></div></div>
-          
-          <div onClick={() => { setShowSettingsModal(true); setSettingsTab('options'); }} style={{ color: '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'transparent', borderRadius: '12px', padding: '3px 12px', border: '1px solid transparent' }}>
-            <span style={{ fontSize: '28px', color: '#fff' }}>⚙</span>
-            <span style={{ marginTop: '2px', fontWeight: '600' }}>خيارات</span>
-          </div>
-
-          <div onClick={() => setShowFriendsModal(true)} style={{ color: showFriendsModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showFriendsModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showFriendsModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '28px', color: '#fff' }}>👥⁺</span>
-            <span style={{ marginTop: '2px', fontWeight: '600' }}>الأصدقاء</span>
-          </div>
-
-          <div onClick={() => setShowOnlineModal(true)} style={{ color: showOnlineModal ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showOnlineModal ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showOnlineModal ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '28px', color: '#fff' }}>👥</span>
-            <span style={{ marginTop: '2px', fontWeight: '600' }}>المتصلين</span>
-          </div>
-
-          <div onClick={() => setShowRoomsModal(true)} style={{ color: showRoomsModal || currentView === 'rooms' ? '#fff' : '#94a3b8', cursor: 'pointer', textAlign: 'center', fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: showRoomsModal || currentView === 'rooms' ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '3px 12px', border: showRoomsModal || currentView === 'rooms' ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '28px', color: '#fff' }}>⌂</span>
-            <span style={{ marginTop: '2px', fontWeight: '600' }}>الغرف</span>
-          </div>
-
+        <nav className="video-bottom-nav" style={{height:'88px',minHeight:'88px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 14px',zIndex:10}}>
+          <div style={{display:'flex',alignItems:'center',gap:'10px',color:'#fff'}}><div style={{fontSize:'34px'}}>☷</div><div style={{width:'50px',height:'50px',borderRadius:'50%',background:'#fff',color:'#003f45',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'25px'}}>▶</div><div style={{lineHeight:1.05,textAlign:'left'}}><div style={{fontSize:'16px',color:'#19a6d0'}}>Radio</div><div style={{fontSize:'20px'}}>9090</div></div></div>
+          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'35px',lineHeight:1}}>⌂</div><div>الغرف</div></div>
+          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'34px',lineHeight:1}}>♣</div><div>المتصلين</div></div>
+          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'34px',lineHeight:1}}>♟+</div><div>الأصدقاء</div></div>
+          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'13px',minWidth:'72px'}}><div style={{fontSize:'36px',lineHeight:1}}>⚙</div><div>خيارات</div></div>
         </nav>
+      )}
+
+      {showMainMenu && (
+        <div className="video-drawer-overlay" onClick={()=>setShowMainMenu(false)} style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.38)',zIndex:260,direction:'rtl'}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'44%',minWidth:'300px',maxWidth:'420px',height:'100%',background:'#fff',boxShadow:'8px 0 24px rgba(0,0,0,.2)',overflowY:'auto'}}>
+            <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'74px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'34px',textAlign:'left',padding:'0 22px',cursor:'pointer'}}>×</button>
+            {[
+              ['🟢','متصل',()=>{}],['📡','حائط الأصدقاء',()=>setShowFriendsModal(true)],['📰','الأخبار',()=>setShowNotificationsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>{}],['♛','الأمراء',()=>{}],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}],['⟳','تحديث الصفحة',()=>window.location.reload()]
+            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'67px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 22px',fontSize:'20px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'26px'}}>{icon as any}</span><span>{label as any}</span></button>)}
+          </div>
+        </div>
+      )}
+
+      {showTopSearch && (
+        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#fff',zIndex:270,direction:'rtl',display:'flex',flexDirection:'column'}}>
+          <div style={{height:'82px',display:'flex',alignItems:'center',gap:'14px',padding:'0 18px',borderBottom:'1px solid #ddd'}}>
+            <button onClick={()=>setShowTopSearch(false)} style={{border:0,background:'transparent',fontSize:'38px',color:'#444',cursor:'pointer'}}>×</button>
+            <div style={{flex:1,fontSize:'21px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>البحث عن أشخاص <span style={{color:'#16a6d4',fontSize:'32px'}}>⌕</span></div>
+          </div>
+          <div style={{textAlign:'center',fontSize:'18px',padding:'24px'}}>إعلان ترويجي</div>
+          <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=><div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px',cursor:'pointer'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><span style={{fontSize:'18px'}}>{u.flag||'🌐'}</span><span style={{fontSize:'20px',fontWeight:'700',color:'#333'}}>{u.name}</span></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'3px solid #17a7d2',background:'#eee'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}>👤</span>}</div></div>)}</div>
+        </div>
       )}
 
       {showRoomsModal && (
@@ -2297,9 +2245,9 @@ export default function App() {
           onClick={() => setShowRoomsModal(false)}
           style={{
             position: 'fixed',
-            top: currentView === 'chat' ? '56px' : '0',
+            top: currentView === 'chat' ? '82px' : '0',
             right: 0,
-            bottom: '64px',
+            bottom: currentView === 'chat' ? '88px' : '0',
             left: 0,
             backgroundColor: 'rgba(15,23,42,0.55)',
             zIndex: 200,
@@ -2314,8 +2262,8 @@ export default function App() {
               top: 0,
               right: 0,
               bottom: 0,
-              width: '78%',
-              maxWidth: '560px',
+              width: '100%',
+              maxWidth: '100%',
               minWidth: '290px',
               background: '#ffffff',
               boxShadow: '-12px 0 30px rgba(0,0,0,0.18)',
@@ -2352,7 +2300,7 @@ export default function App() {
                         <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{room.name}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px', fontWeight: '700' }}>👥 {count}</div>
-                      {isCurrentRoom && <span style={{ alignSelf: 'flex-start', background: '#dcfce7', color: '#059669', borderRadius: '999px', padding: '2px 7px', fontSize: '9px', fontWeight: '800' }}>● الغرفة الحالية</span>}
+                      {isCurrentRoom && <span style={{ alignSelf: 'flex-start', color: '#16a34a', fontSize: '9px', fontWeight: '800' }}>● الغرفة الحالية</span>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '7px', flexShrink: 0 }}>
                       {isCurrentRoom ? (
