@@ -154,79 +154,6 @@ const VideoIcon = ({ type, size = 20, stroke = 2.2 }: { type: string; size?: num
   return null;
 };
 
-
-/**
- * APK-derived specification (12-35.apk)
- * The APK is an Android WebView wrapper for https://www.arabic.chat, so the
- * actual chat UI/features are web features rather than native Android layouts.
- * Firebase configuration below is intentionally NOT changed from the user's App.tsx.
- */
-const APK_DERIVED_FEATURES = {
-  productName: 'شات عربي',
-  website: 'https://www.arabic.chat',
-  rtl: true,
-  capabilities: [
-    'public_chat', 'private_chat', 'group_private_chat', 'unlimited_text_messages',
-    'gallery_images', 'camera_images', 'smileys', 'custom_avatar', 'ignore_user',
-    'block_private_messages', 'online_user_search', 'custom_name_color',
-    'custom_message_background', 'moderation_kick', 'moderation_mute',
-    'moderator_colored_name', 'profile_edit', 'friends_requests', 'notifications',
-    'youtube_sharing', 'audio_radio', 'internet_images', 'wall_posts',
-    'rooms_by_country', 'font_family', 'font_size', 'font_color', 'account_details'
-  ] as const,
-  sourceNotes: [
-    'تغيير نوع الخط واللون والحجم',
-    'رسائل عامة وخاصة غير محدودة',
-    'صور من المعرض والكاميرا',
-    'سمايلي',
-    'تغيير الصورة الشخصية',
-    'تجاهل رسائل عضو معين عامة وخاصة',
-    'منع استقبال الرسائل الخاصة',
-    'البحث عن اسم في قائمة المتواجدين',
-    'تغيير لون الاسم',
-    'تغيير لون خلفية الرسائل',
-    'صلاحيات الإشراف: طرد وكتم عام ولون مميز',
-    'تعديل الجنس والعمر والحالة واللغة وكلمة المرور وتفاصيل الحساب',
-    'طلبات وإضافة أصدقاء',
-    'محادثات خاصة وجماعية',
-    'إشعارات',
-    'مشاركة YouTube',
-    'محطات الراديو والصوتيات',
-    'مشاركة الصور',
-    'حائط اليوميات'
-  ] as const
-};
-
-const APK_THEME = {
-  teal: '#003d43',
-  tealDark: '#00343a',
-  tealDeep: '#002f35',
-  page: '#eeeeee',
-  white: '#ffffff',
-  rowAlt: '#efefef',
-  line: '#d8d8d8',
-  blue: '#008dcc',
-  green: '#69be00',
-  red: '#ef233c',
-  text: '#333333',
-  muted: '#777777'
-};
-
-const APK_FONT_OPTIONS = [
-  { value: 'Tahoma', label: 'Tahoma' },
-  { value: 'Arial', label: 'Arial' },
-  { value: 'sans-serif', label: 'Sans Serif' },
-  { value: 'serif', label: 'Serif' },
-  { value: 'monospace', label: 'Monospace' }
-];
-
-const APK_FONT_SIZES = [
-  { value: 12, label: 'صغير' },
-  { value: 14, label: 'متوسط' },
-  { value: 16, label: 'كبير' },
-  { value: 18, label: 'كبير جداً' }
-];
-
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
@@ -350,25 +277,6 @@ export default function App() {
   const [profileSong, setProfileSong] = useState<string>('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
 
-  // APK/web feature settings: persisted per-user in Firestore where possible,
-  // with localStorage fallback so guest sessions also retain their choices.
-  const [chatFontFamily, setChatFontFamily] = useState(() => localStorage.getItem('arabic_chat_font_family') || 'Tahoma');
-  const [chatFontSize, setChatFontSize] = useState<number>(() => Number(localStorage.getItem('arabic_chat_font_size') || '14'));
-  const [chatTextColor, setChatTextColor] = useState(() => localStorage.getItem('arabic_chat_text_color') || '#333333');
-  const [chatMessageBg, setChatMessageBg] = useState(() => localStorage.getItem('arabic_chat_message_bg') || '#ffffff');
-  const [privateMessageBg, setPrivateMessageBg] = useState(() => localStorage.getItem('arabic_private_message_bg') || '#ffffff');
-  const [allowPrivateMessages, setAllowPrivateMessages] = useState(() => localStorage.getItem('arabic_allow_private') !== 'false');
-  const [allowPrivateImages, setAllowPrivateImages] = useState(() => localStorage.getItem('arabic_allow_private_images') !== 'false');
-  const [showJoinMessages, setShowJoinMessages] = useState(() => localStorage.getItem('arabic_show_join_messages') !== 'false');
-  const [muteSpamMessages, setMuteSpamMessages] = useState(() => localStorage.getItem('arabic_mute_spam') === 'true');
-  const [soundsEnabled, setSoundsEnabled] = useState(() => localStorage.getItem('arabic_sounds') !== 'false');
-  const [autoOpenUnreadPrivate, setAutoOpenUnreadPrivate] = useState(() => localStorage.getItem('arabic_auto_private') === 'true');
-  const [ignoredUserIds, setIgnoredUserIds] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('arabic_ignored_users') || '[]'); } catch { return []; }
-  });
-  const [showApkFeaturePanel, setShowApkFeaturePanel] = useState(false);
-
-
   const [userKickedUntil, setUserKickedUntil] = useState<number | null>(null);
   const [kickTimeLeft, setKickTimeLeft] = useState<number>(0);
 
@@ -385,45 +293,6 @@ export default function App() {
 
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
   const privateChatBottomRef = useRef<HTMLDivElement | null>(null);
-
-  const persistLocalFeature = (key: string, value: any) => {
-    try { localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)); } catch {}
-  };
-
-  const saveChatFeature = async (field: string, value: any, localKey: string) => {
-    persistLocalFeature(localKey, value);
-    if (!user) return;
-    try {
-      await updateDoc(doc(db, 'users', user.uid), { [field]: value });
-    } catch (e) {
-      // Some existing Firebase rules may not allow new preference fields; local persistence still works.
-      console.warn('Chat preference save failed:', field, e);
-    }
-  };
-
-  const toggleIgnoredUser = async (target: any) => {
-    const targetId = String(target?.userId || target?.uid || target?.id || '');
-    if (!targetId || (user && targetId === user.uid)) return;
-    setIgnoredUserIds(prev => {
-      const next = prev.includes(targetId) ? prev.filter(id => id !== targetId) : [...prev, targetId];
-      persistLocalFeature('arabic_ignored_users', next);
-      return next;
-    });
-    if (user) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          ignoredUserIds: ignoredUserIds.includes(targetId)
-            ? ignoredUserIds.filter(id => id !== targetId)
-            : [...ignoredUserIds, targetId]
-        });
-      } catch (e) { console.warn(e); }
-    }
-  };
-
-  const isIgnoredUser = (u: any) => {
-    const id = String(u?.userId || u?.uid || u?.id || '');
-    return Boolean(id && ignoredUserIds.includes(id));
-  };
 
   const normalizeRole = (role: any): string => {
     const value = String(role || '').trim().toLowerCase();
@@ -807,26 +676,6 @@ export default function App() {
       setHasMoreFriends(snap.docs.length === 20);
     } finally { setLoadingMoreFriends(false); }
   };
-
-  useEffect(() => {
-    if (!user) return;
-    getDoc(doc(db, 'users', user.uid)).then(snap => {
-      if (!snap.exists()) return;
-      const d: any = snap.data();
-      if (d.chatFontFamily) setChatFontFamily(d.chatFontFamily);
-      if (d.chatFontSize) setChatFontSize(Number(d.chatFontSize));
-      if (d.chatTextColor) setChatTextColor(d.chatTextColor);
-      if (d.chatMessageBg) setChatMessageBg(d.chatMessageBg);
-      if (d.privateMessageBg) setPrivateMessageBg(d.privateMessageBg);
-      if (typeof d.allowPrivateMessages === 'boolean') setAllowPrivateMessages(d.allowPrivateMessages);
-      if (typeof d.allowPrivateImages === 'boolean') setAllowPrivateImages(d.allowPrivateImages);
-      if (typeof d.showJoinMessages === 'boolean') setShowJoinMessages(d.showJoinMessages);
-      if (typeof d.muteSpamMessages === 'boolean') setMuteSpamMessages(d.muteSpamMessages);
-      if (typeof d.soundsEnabled === 'boolean') setSoundsEnabled(d.soundsEnabled);
-      if (typeof d.autoOpenUnreadPrivate === 'boolean') setAutoOpenUnreadPrivate(d.autoOpenUnreadPrivate);
-      if (Array.isArray(d.ignoredUserIds)) setIgnoredUserIds(d.ignoredUserIds.map(String));
-    }).catch(() => {});
-  }, [user]);
 
   const saveSettingToFirebase = async (field: string, value: any) => {
     if (!user) return;
@@ -1818,8 +1667,8 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
-      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
       if (selectedRoom) {
+        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
@@ -1987,7 +1836,7 @@ export default function App() {
     };
   }, []);
 
-  const filteredOnlineUsers = onlineUsersList.filter(u => !isIgnoredUser(u) && (!selectedRoom || u.roomId === selectedRoom.id) && u.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a,b) => { const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5;}; return rank(a)-rank(b); });
+  const filteredOnlineUsers = onlineUsersList.filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && u.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a,b) => { const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5;}; return rank(a)-rank(b); });
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
 
   const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
@@ -2049,8 +1898,8 @@ export default function App() {
         <div style={{ width: '100%', maxWidth: '380px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>Arabic.Chat</h2>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>شات عربي | دردشة وتعارف من جميع أنحاء العالم</p>
+            <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>منصة الدردشة العربية العصرية</p>
           </div>
 
           {errorMessage && <div style={{ color: '#ef4444', fontSize: '11px', background: 'rgba(239,68,68,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(239,68,68,0.3)' }}>{errorMessage}</div>}
@@ -2214,11 +2063,9 @@ export default function App() {
   const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
 
   return (
-    <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: APK_THEME.teal, overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box', fontFamily: chatFontFamily, fontSize: `${chatFontSize}px`, color: chatTextColor, ['--apk-font-family' as any]: chatFontFamily, ['--apk-font-size' as any]: `${chatFontSize}px`, ['--apk-text-color' as any]: chatTextColor }}>
+    <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#003d43', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       <style>{`
-        .video-theme, .video-theme * { font-family: var(--apk-font-family, Tahoma), Arial, sans-serif; }\n        /* ===== Arabic.Chat source-style replacement layer ===== */\n        .apk-source-overlay{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:600;display:flex;align-items:stretch;justify-content:center;direction:rtl}\n        .apk-source-panel{width:100%;height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 30px rgba(0,0,0,.3)}\n        .apk-source-header{height:56px;min-height:56px;background:#003f45;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:17px;border-bottom:1px solid rgba(255,255,255,.08)}\n        .apk-source-header strong{font-weight:500}\n        .apk-header-mark{font-size:23px;color:#fff}\n        .apk-close{background:transparent;border:0;color:#fff;font-size:31px;line-height:1;cursor:pointer;padding:0 6px}\n        .apk-wall-compose{background:#f4f4f4;padding:9px;border-bottom:1px solid #ddd}\n        .apk-wall-compose textarea{width:100%;height:74px;resize:none;border:1px solid #d9d9d9;background:#fff;border-radius:2px;padding:9px;box-sizing:border-box;font:14px Tahoma,Arial;outline:0}\n        .apk-wall-compose button{margin-top:7px;width:100%;height:38px;border:0;background:#08a9d0;color:#fff;font:14px Tahoma,Arial;cursor:pointer}\n        .apk-wall-feed{flex:1;overflow:auto;background:#f2f2f2;padding:7px}\n        .apk-wall-card{background:#fff;border:1px solid #ddd;margin-bottom:7px;padding:9px;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.05)}\n        .apk-wall-card-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;border-bottom:1px solid #eee;padding-bottom:6px}\n        .apk-wall-card-head b{color:#007fa8}\n        .apk-wall-card-head button{border:0;background:transparent;color:#d22;font-size:11px}\n        .apk-wall-text{font-size:13px;line-height:1.75;color:#333;padding:9px 2px;white-space:pre-wrap}\n        .apk-wall-actions{border-top:1px solid #eee;padding-top:6px;display:flex;gap:18px;font-size:11px;color:#68757b}\n        .apk-wall-actions button{border:0;background:transparent;color:#df3150;font-size:11px}\n        .apk-wall-comment{margin-top:5px;background:#f4f4f4;padding:5px 7px;font-size:10px;color:#555}\n        .apk-wall-comment-box{display:flex;gap:5px;margin-top:7px}\n        .apk-wall-comment-box input{flex:1;min-width:0;border:1px solid #ddd;padding:7px;font:11px Tahoma;outline:0}\n        .apk-wall-comment-box button{border:0;background:#003f45;color:#fff;padding:0 10px;font:11px Tahoma}\n        .apk-rank-header{background:#003f45}\n        .apk-rank-tabs{height:48px;display:flex;background:#fff;border-bottom:1px solid #ddd}\n        .apk-rank-tabs span{flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;color:#666;border-left:1px solid #ddd}\n        .apk-rank-tabs span.active{background:#003f45;color:#fff}\n        .apk-rank-list{flex:1;overflow:auto;background:#eee;padding:7px}\n        .apk-rank-row{height:55px;margin-bottom:5px;border-radius:6px;display:flex;align-items:center;padding:0 8px;color:#fff;box-sizing:border-box;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.12)}\n        .apk-rank-num{width:25px;text-align:center;font-size:13px;font-weight:bold;text-shadow:0 1px 2px #000}\n        .apk-rank-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#fff8;border:2px solid #fff;display:flex;align-items:center;justify-content:center;flex:none}\n        .apk-rank-avatar img{width:100%;height:100%;object-fit:cover}\n        .apk-rank-user{min-width:0;flex:1;padding:0 8px;display:flex;flex-direction:column;gap:2px}\n        .apk-rank-user b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5)}\n        .apk-rank-user small{font-size:9px;color:#fff;opacity:.9}\n        .apk-rank-points{font-size:9px;white-space:nowrap;background:#0005;padding:4px 6px;border-radius:8px}\n        .apk-empty{text-align:center;padding:35px 10px;color:#888;font-size:13px}\n        /* Exact proportions visible in the supplied mobile recording */\n        .video-topbar{height:58px!important;min-height:58px!important;background:#003f45!important}\n        .video-topbar .brand-logo{font-family:Tahoma,Arial,sans-serif!important;color:#16a6d4!important;font-weight:700!important}\n        .video-bottom-nav{height:58px!important;min-height:58px!important;background:#003f45!important}\n        .video-bottom-nav>div{font-family:Tahoma,Arial,sans-serif!important}\n        .video-chat-scroll{background:#fff!important}\n        .video-chat-scroll>div{min-height:48px!important;border-bottom:1px solid #dedede!important}\n        .video-chat-scroll>div:nth-child(even){background:#efefef!important}\n        .video-chat-scroll>div:nth-child(odd){background:#fff!important}\n        .video-chat-scroll>div>div:first-child{width:40px!important;height:40px!important}\n        .video-composer{background:#fff!important;height:66px!important;min-height:66px!important}\n        .video-composer input{background:#f5f5f5!important;border:1px solid #ddd!important}\n        .video-composer>button[type=submit]{background:#003f45!important}\n        .video-rooms-panel{background:#f1f1f1!important}\n        .video-rooms-panel>div:first-child{background:#003f45!important}\n        .video-rooms-panel>div:nth-child(2)>div:not(form){background:#fff!important;border:1px solid #ddd!important;border-radius:10px!important;box-shadow:0 2px 5px rgba(0,0,0,.08)!important}\n        @media(max-width:600px){.apk-source-panel{width:100%;max-width:none}.apk-source-header{height:54px;min-height:54px}.apk-wall-feed,.apk-rank-list{padding:5px}}\n
-        .video-theme { --apk-font-family: ${chatFontFamily}; --apk-font-size: ${chatFontSize}px; }
-        .video-chat-scroll { font-size: var(--apk-font-size) !important; color: var(--apk-text-color, #333) !important; }
+        .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
@@ -2436,8 +2283,6 @@ export default function App() {
                 </div>
               ) : (
                 messages.map((m, idx) => {
-                  if (isIgnoredUser(m)) return null;
-                  if (!showJoinMessages && m.isSystemSpecial) return null;
                   const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
                   const hasCustomBg = m.profileBgColor && m.profileBgColor !== '#ffffff';
 
@@ -2696,7 +2541,7 @@ export default function App() {
           <div onClick={e=>e.stopPropagation()} style={{width:'44%',minWidth:'300px',maxWidth:'420px',height:'100%',background:'#fff',boxShadow:'8px 0 24px rgba(0,0,0,.2)',overflowY:'auto'}}>
             <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
             {[
-              ['●','متصل',()=>setShowOnlineModal(true)],['◈','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['⌕','بحث',()=>setShowTopSearch(true)],['♛','كبار الشخصيات',()=>setShowVipModal(true)],['◆','الأثرياء',()=>setShowVipModal(true)],['⋮','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['▣','تطبيق الأندرويد',()=>{}],['↻','تحديث الصفحة',()=>window.location.reload()]
+              ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}]
             ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'54px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px',fontSize:'15px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'20px'}}>{icon as any}</span><span>{label as any}</span></button>)}
           </div>
         </div>
@@ -2806,32 +2651,12 @@ export default function App() {
 
 
       {showWallModal && user && (
-        <div className="apk-source-overlay" onClick={() => setShowWallModal(false)}>
-          <section className="apk-source-panel apk-wall-panel" onClick={e=>e.stopPropagation()}>
-            <header className="apk-source-header">
-              <button onClick={()=>setShowWallModal(false)} className="apk-close">×</button>
-              <strong>حائط اليوميات</strong>
-              <span className="apk-header-mark">✎</span>
-            </header>
-            <div className="apk-wall-compose">
-              <textarea value={wallInput} onChange={e=>setWallInput(e.target.value)} placeholder="اكتب يومياتك هنا..." />
-              <button onClick={addWallPost}>نشر</button>
-            </div>
-            <div className="apk-wall-feed">
-              {wallPosts.length===0 ? <div className="apk-empty">لا توجد يوميات منشورة حالياً</div> : wallPosts.map((p:any)=>(
-                <article key={p.id} className="apk-wall-card">
-                  <div className="apk-wall-card-head"><b>{p.userName}</b>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)}>حذف</button>}</div>
-                  <div className="apk-wall-text">{p.text}</div>
-                  <div className="apk-wall-actions">
-                    <button onClick={()=>toggleWallLike(p)}>♥ {(p.likes||[]).length}</button>
-                    <span>💬 {(p.comments||[]).length}</span>
-                  </div>
-                  {(p.comments||[]).map((c:any,i:number)=><div className="apk-wall-comment" key={i}><b>{c.name}</b> {c.text}</div>)}
-                  <div className="apk-wall-comment-box"><input value={wallCommentInputs[p.id]||''} onChange={e=>setWallCommentInputs(v=>({...v,[p.id]:e.target.value}))} placeholder="اكتب تعليقاً..."/><button onClick={()=>addWallComment(p)}>إرسال</button></div>
-                </article>
-              ))}
-            </div>
-          </section>
+        <div style={{position:'fixed',inset:0,zIndex:280,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'flex-start',direction:'rtl'}} onClick={()=>setShowWallModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'86%',maxWidth:'430px',height:'100%',background:'#fff',display:'flex',flexDirection:'column',boxShadow:'-8px 0 25px rgba(0,0,0,.2)'}}>
+            <div style={{height:'50px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 14px'}}><b style={{fontSize:'14px'}}>حائط الأصدقاء</b><button onClick={()=>setShowWallModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'28px'}}>×</button></div>
+            <div style={{padding:'10px',borderBottom:'1px solid #ddd'}}><textarea value={wallInput} onChange={e=>setWallInput(e.target.value)} placeholder='اكتب منشوراً على حائطك...' style={{width:'100%',minHeight:'70px',resize:'none',border:'1px solid #ddd',borderRadius:'9px',padding:'8px',fontSize:'12px',outline:'none',direction:'rtl'}}/><button onClick={addWallPost} style={{marginTop:'6px',background:'#16a34a',color:'#fff',border:0,borderRadius:'7px',padding:'7px 14px',fontSize:'11px'}}>نشر</button></div>
+            <div style={{flex:1,overflowY:'auto',padding:'8px'}}>{wallPosts.map(p=><div key={p.id} style={{border:'1px solid #e2e8f0',borderRadius:'9px',padding:'9px',marginBottom:'8px',background:'#fff'}}><div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',fontWeight:'bold'}}><span>{p.userName}</span>{(isOwner || p.userId===user.uid)&&<button onClick={()=>deleteWallPost(p.id)} style={{border:0,background:'none',color:'#dc2626',fontSize:'12px'}}>حذف</button>}</div><div style={{fontSize:'12px',margin:'7px 0',lineHeight:1.6}}>{p.text}</div><div style={{display:'flex',gap:'6px',alignItems:'center',borderTop:'1px solid #f1f5f9',paddingTop:'6px'}}><button onClick={()=>toggleWallLike(p)} style={{border:0,background:'none',fontSize:'11px',color:(p.likes||[]).includes(user.uid)?'#2563eb':'#64748b'}}>👍 {(p.likes||[]).length}</button><span style={{fontSize:'10px',color:'#64748b'}}>💬 {(p.comments||[]).length}</span></div>{(p.comments||[]).map((c:any,i:number)=><div key={i} style={{fontSize:'10px',background:'#f8fafc',padding:'5px',borderRadius:'5px',marginTop:'4px'}}><b>{c.name}:</b> {c.text}</div>)}<div style={{display:'flex',gap:'5px',marginTop:'6px'}}><input value={wallCommentInputs[p.id]||''} onChange={e=>setWallCommentInputs(v=>({...v,[p.id]:e.target.value}))} placeholder='اكتب تعليقاً...' style={{flex:1,border:'1px solid #ddd',borderRadius:'6px',padding:'5px',fontSize:'10px',outline:'none'}}/><button onClick={()=>addWallComment(p)} style={{border:0,background:'#0284c7',color:'#fff',borderRadius:'6px',padding:'4px 8px',fontSize:'10px'}}>تعليق</button></div></div>)}</div>
+          </div>
         </div>
       )}
 
@@ -2871,29 +2696,189 @@ export default function App() {
       )}
 
       {showVipModal && (
-        <div className="apk-source-overlay" onClick={()=>setShowVipModal(false)}>
-          <section className="apk-source-panel apk-rank-panel" onClick={e=>e.stopPropagation()}>
-            <header className="apk-source-header apk-rank-header">
-              <button onClick={()=>setShowVipModal(false)} className="apk-close">×</button>
-              <strong>كبار الشخصيات والأثرياء</strong>
-              <span className="apk-header-mark">♛</span>
-            </header>
-            <div className="apk-rank-tabs"><span className="active">الأثرياء</span><span>الكبار</span><span>الرتب</span></div>
-            <div className="apk-rank-list">
-              {rankedUsers.map((u:any,i:number)=>{
-                const n=i+1;
-                const gradients=['linear-gradient(90deg,#ef1e27,#ff8a00)','linear-gradient(90deg,#ff1493,#ff61d1)','linear-gradient(90deg,#b51dff,#ff2e8a)','linear-gradient(90deg,#ff8a00,#ffe45e)','linear-gradient(90deg,#d9d9d9,#ffffff)','linear-gradient(90deg,#7f8c8d,#cfd8dc)','linear-gradient(90deg,#101820,#353535)','linear-gradient(90deg,#ff1744,#ff9100)','linear-gradient(90deg,#263238,#607d8b)'];
-                const role=normalizeRole(u.role);
-                return <div key={u.id} className="apk-rank-row" style={{background:gradients[(n-1)%gradients.length]}} onClick={()=>{setShowVipModal(false);openUserProfile(u)}}>
-                  <span className="apk-rank-num">{n}</span>
-                  <div className="apk-rank-avatar">{u.avatarUrl?<img src={u.avatarUrl} alt=""/>:<span>👤</span>}</div>
-                  <div className="apk-rank-user"><b style={{color:u.nameColor||'#fff'}}>{u.displayName||u.name||'مستخدم'}</b><small>{role==='Owner'?'صاحب الموقع':role==='Admin'?'مشرف':role==='Super Admin'?'مشرف عام':'عضو'}</small></div>
-                  <span className="apk-rank-points">{Number(u.points||0).toLocaleString('ar-EG')} ✦</span>
-                </div>
-              })}
-              {rankedUsers.length===0 && <div className="apk-empty">لا توجد بيانات رتب حالياً</div>}
+        <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+          </div>
+        </div>
+      )}
+
+      {showRequestsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+            
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>طلبات الصداقة 👤⁺</span>
+              <button onClick={() => setShowRequestsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
-          </section>
+
+            <div style={{ padding: '12px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {pendingRequests.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
+                  لا توجد طلبات صداقة معلقة حالياً.
+                </div>
+              ) : (
+                pendingRequests.map((req) => (
+                  <div key={req.id} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>👤</div>
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>{req.fromName}</div>
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>يرغب بإضافتك كصديق</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => handleAcceptRequest(req)} style={{ backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>قبول</button>
+                      <button onClick={() => handleRejectRequest(req.id)} style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>رفض</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {showNotificationsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}>
+          <div style={{ width: '100%', maxWidth: '360px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+            
+            <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>التنبيهات والإشعارات 🔔</span>
+              <button onClick={() => setShowNotificationsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            <div style={{ padding: '12px', maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {hasMoreNotifications && <button type="button" onClick={loadMoreNotifications} disabled={loadingMoreNotifications} style={{margin:'6px auto',border:0,borderRadius:'8px',padding:'6px 12px',fontSize:'10px',background:'#e2e8f0'}}>{loadingMoreNotifications?'جاري التحميل...':'تحميل المزيد'}</button>}
+              {notificationsList.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
+                  لا توجد إشعارات أو تنبيهات جديدة.
+                </div>
+              ) : (
+                notificationsList.map((note) => (
+                  <div key={note.id} style={{ borderRight: '4px solid #eab308', backgroundColor: '#fefce8', borderRadius: '6px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '12px', color: '#854d0e' }}>{note.title}</span>
+                      <span style={{ fontSize: '9px', color: '#a16207' }}>{note.createdAt}</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#713f12' }}>{note.body}</div>
+                  </div>
+                ))
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {showFriendsModal && (
+        <div style={{ position: 'fixed', top: '48px', left: 0, right: 0, bottom: '50px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+          <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
+            
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
+              <button onClick={() => setShowFriendsModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}>✕</button>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '4px 10px' }}>
+                <span style={{ color: '#0284c7', marginLeft: '6px', fontSize: '13px' }}>🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="البحث عن أشخاص" 
+                  value={friendsSearchQuery}
+                  onChange={(e) => setFriendsSearchQuery(e.target.value)}
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '12px', textAlign: 'right', background: 'transparent' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', padding: '10px', color: '#475569', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>
+              إعلان ترويجي
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+              {filteredFriendsList.length === 0 ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#cbd5e1', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', marginBottom: '12px' }}>
+                    👤
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>
+                    قائمة أصدقائك فارغة
+                  </div>
+                </div>
+              ) : (
+                filteredFriendsList.map((friend) => (
+                  <div key={friend.id} style={{ padding: '5px 7px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
+                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>{friend.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button onClick={() => openPrivateChatWithUser(friend.friendUid, friend.name)} style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>خاص</button>
+                      <button onClick={() => handleRemoveFriend(friend.friendUid)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>حذف</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {showOnlineModal && (
+        <div style={{ position: 'fixed', top: '48px', left: 0, right: 0, bottom: '50px', backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', justifyContent: 'flex-start', direction: 'rtl' }}>
+          <div style={{ width: '78%', maxWidth: '360px', minWidth: '280px', backgroundColor: '#ffffff', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.2)', boxSizing: 'border-box', overflow: 'hidden' }}>
+            
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', background: '#ffffff' }}>
+              <button onClick={() => setShowOnlineModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}>✕</button>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '4px 10px' }}>
+                <span style={{ color: '#0284c7', marginLeft: '6px', fontSize: '13px' }}>🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="البحث في المتصلين" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '12px', textAlign: 'right', background: 'transparent' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
+              {filteredOnlineUsers.map((u) => {
+                const uStyleProps = getNameStyleProps(u.nameStyle || 'normal', u.nameColor || '#2563eb');
+                return (
+                  <div 
+                    key={u.id} 
+                    onClick={() => openUserProfile(u)}
+                    style={{ 
+                      padding: '8px 12px', 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      cursor: 'pointer', 
+                      backgroundColor: u.profileBgColor || '#ffffff', 
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      transition: 'background-color 0.3s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
+                        {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps }}>{u.name}</span>
+                        <span style={{ fontSize: '10px', color: '#64748b' }}>{u.role}</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '14px' }}>{u.flag}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
         </div>
       )}
 
@@ -2907,7 +2892,8 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', borderBottom: '1px solid #cbd5e1', backgroundColor: '#f8fafc' }}>
-              {(['info','friends','ignore','options','more'] as const).map(tab => <button key={tab} onClick={() => setSettingsTab(tab)} style={{ flex: 1, padding: '8px 3px', fontSize: '10px', fontWeight: 'bold', border: 'none', background: settingsTab === tab ? '#ffffff' : 'transparent', color: settingsTab === tab ? '#0284c7' : '#64748b', borderBottom: settingsTab === tab ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>{tab === 'info' ? 'معلوماتي' : tab === 'friends' ? 'أصدقائي' : tab === 'ignore' ? 'تجاهل' : tab === 'options' ? 'خيارات' : 'المزيد'}</button>)}
+              <button onClick={() => setSettingsTab('info')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'info' ? '#ffffff' : 'transparent', color: settingsTab === 'info' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'info' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>المعلومات</button>
+              <button onClick={() => setSettingsTab('options')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'options' ? '#ffffff' : 'transparent', color: settingsTab === 'options' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'options' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>الخيارات</button>
             </div>
 
             <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
@@ -3063,64 +3049,25 @@ export default function App() {
                 </div>
               )}
 
-              {settingsTab === 'friends' && (
-                <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-                  <input value={friendsSearchQuery} onChange={e=>setFriendsSearchQuery(e.target.value)} placeholder="البحث في الأصدقاء..." style={{padding:'10px',border:'1px solid #ddd',borderRadius:'8px',fontSize:'12px'}} />
-                  {filteredFriendsList.length === 0 ? <div style={{padding:'20px',textAlign:'center',color:'#777',fontSize:'12px'}}>لا توجد نتائج.</div> : filteredFriendsList.map((f:any)=><div key={f.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px',background:'#f7f7f7',borderBottom:'1px solid #ddd'}}><span style={{fontWeight:'bold',fontSize:'12px'}}>{f.name}</span><div style={{display:'flex',gap:'5px'}}><button onClick={()=>openPrivateChatWithUser(f.uid || f.userId || f.id,f.name)} style={{border:0,borderRadius:'6px',padding:'5px 8px',background:'#008dcc',color:'#fff',fontSize:'10px'}}>خاص</button><button onClick={()=>handleRemoveFriend(f.uid || f.userId || f.id)} style={{border:0,borderRadius:'6px',padding:'5px 8px',background:'#ef233c',color:'#fff',fontSize:'10px'}}>حذف</button></div></div>)}
-                  {hasMoreFriends && <button onClick={loadMoreFriends} disabled={loadingMoreFriends} style={{border:0,padding:'8px',borderRadius:'7px',background:'#eee'}}>{loadingMoreFriends?'جاري التحميل...':'تحميل المزيد'}</button>}
-                </div>
-              )}
-
-              {settingsTab === 'ignore' && (
-                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                  <div style={{fontSize:'11px',color:'#555',lineHeight:1.6}}>الأشخاص هنا لا تظهر رسائلهم العامة في واجهتك، ويمكنك إلغاء التجاهل في أي وقت.</div>
-                  {ignoredUserIds.length===0 ? <div style={{padding:'18px',textAlign:'center',color:'#777',fontSize:'12px'}}>قائمة التجاهل فارغة.</div> : ignoredUserIds.map(id=><div key={id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px',background:'#f3f3f3',borderBottom:'1px solid #ddd'}}><span style={{fontSize:'11px',direction:'ltr'}}>{id}</span><button onClick={()=>toggleIgnoredUser({userId:id})} style={{border:0,borderRadius:'6px',padding:'5px 9px',background:'#008dcc',color:'#fff',fontSize:'10px'}}>إلغاء التجاهل</button></div>)}
-                </div>
-              )}
-
               {settingsTab === 'options' && (
-                <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-                  <div style={{fontWeight:'900',fontSize:'12px',color:APK_THEME.teal}}>إعدادات الدردشة المستخرجة من شات عربي</div>
-                  <div style={{padding:'10px',background:'#f7f7f7',border:'1px solid #ddd',borderRadius:'8px',display:'flex',flexDirection:'column',gap:'9px'}}>
-                    <label style={{fontSize:'11px',fontWeight:'bold'}}>نوع الخط<select value={chatFontFamily} onChange={e=>{setChatFontFamily(e.target.value);saveChatFeature('chatFontFamily',e.target.value,'arabic_chat_font_family')}} style={{width:'100%',marginTop:'4px',padding:'7px',border:'1px solid #ccc',borderRadius:'6px'}}>{APK_FONT_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
-                    <label style={{fontSize:'11px',fontWeight:'bold'}}>حجم الخط<select value={chatFontSize} onChange={e=>{const v=Number(e.target.value);setChatFontSize(v);saveChatFeature('chatFontSize',v,'arabic_chat_font_size')}} style={{width:'100%',marginTop:'4px',padding:'7px',border:'1px solid #ccc',borderRadius:'6px'}}>{APK_FONT_SIZES.map(o=><option key={o.value} value={o.value}>{o.label} ({o.value}px)</option>)}</select></label>
-                    <label style={{fontSize:'11px',fontWeight:'bold'}}>لون النص<input type="color" value={chatTextColor} onChange={e=>{setChatTextColor(e.target.value);saveChatFeature('chatTextColor',e.target.value,'arabic_chat_text_color')}} style={{display:'block',width:'100%',height:'32px',marginTop:'4px'}} /></label>
-                    <label style={{fontSize:'11px',fontWeight:'bold'}}>خلفية الرسائل العامة<input type="color" value={chatMessageBg} onChange={e=>{setChatMessageBg(e.target.value);saveChatFeature('chatMessageBg',e.target.value,'arabic_chat_message_bg')}} style={{display:'block',width:'100%',height:'32px',marginTop:'4px'}} /></label>
-                    <label style={{fontSize:'11px',fontWeight:'bold'}}>خلفية الرسائل الخاصة<input type="color" value={privateMessageBg} onChange={e=>{setPrivateMessageBg(e.target.value);saveChatFeature('privateMessageBg',e.target.value,'arabic_private_message_bg')}} style={{display:'block',width:'100%',height:'32px',marginTop:'4px'}} /></label>
-                  </div>
-                  {[
-                    ['allowPrivateMessages',allowPrivateMessages,setAllowPrivateMessages,'السماح بالرسائل الخاصة','arabic_allow_private'],
-                    ['allowPrivateImages',allowPrivateImages,setAllowPrivateImages,'السماح بالصور في الخاص','arabic_allow_private_images'],
-                    ['showJoinMessages',showJoinMessages,setShowJoinMessages,'إظهار رسائل الانضمام والمغادرة','arabic_show_join_messages'],
-                    ['muteSpamMessages',muteSpamMessages,setMuteSpamMessages,'كتم رسائل السبام','arabic_mute_spam'],
-                    ['soundsEnabled',soundsEnabled,setSoundsEnabled,'أصوات الدردشة','arabic_sounds'],
-                    ['autoOpenUnreadPrivate',autoOpenUnreadPrivate,setAutoOpenUnreadPrivate,'فتح الخاص غير المقروء تلقائياً','arabic_auto_private']
-                  ].map(([field,val,setter,label,key])=><label key={String(field)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px',background:'#fff',border:'1px solid #ddd',borderRadius:'7px',fontSize:'11px'}}><span>{String(label)}</span><input type="checkbox" checked={Boolean(val)} onChange={e=>{(setter as any)(e.target.checked);saveChatFeature(String(field),e.target.checked,String(key))}} /></label>)}
-
-                  <button onClick={()=>setShowApkFeaturePanel(true)} style={{border:0,padding:'9px',borderRadius:'7px',background:APK_THEME.teal,color:'#fff',fontWeight:'bold'}}>عرض جميع ميزات APK المستخرجة</button>
-                  <button onClick={async()=>{stopProfileSong();await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload();}} style={{background:'#dc2626',color:'#fff',border:0,padding:'10px',borderRadius:'6px',fontWeight:'bold',fontSize:'13px'}}>تسجيل الخروج 🚪</button>
-                </div>
-              )}
-
-              {settingsTab === 'more' && (
-                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                  <div style={{padding:'10px',background:'#f7f7f7',border:'1px solid #ddd',borderRadius:'8px',fontSize:'11px',lineHeight:1.7}}>
-                    <b>المزايا الموجودة في المصدر:</b><br/>{APK_DERIVED_FEATURES.sourceNotes.map((x,i)=><div key={i}>• {x}</div>)}
-                  </div>
-                  <a href={APK_DERIVED_FEATURES.website} target="_blank" rel="noreferrer" style={{textAlign:'center',padding:'9px',borderRadius:'7px',background:'#008dcc',color:'#fff',textDecoration:'none',fontSize:'11px'}}>فتح الموقع المرجعي</a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button 
+                    onClick={async () => {
+                      stopProfileSong();
+                      await updateLastSeenOnExit();
+                      await signOut(auth);
+                      setShowSettingsModal(false);
+                      localStorage.clear();
+                      window.location.reload();
+                    }} 
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    تسجيل الخروج 🚪
+                  </button>
                 </div>
               )}
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {showApkFeaturePanel && (
-        <div onClick={()=>setShowApkFeaturePanel(false)} style={{position:'fixed',inset:0,zIndex:500,background:'rgba(0,0,0,.65)',display:'flex',alignItems:'center',justifyContent:'center',padding:'12px',direction:'rtl'}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'380px',maxHeight:'85dvh',overflowY:'auto',background:'#fff',borderRadius:'12px',boxShadow:'0 12px 30px rgba(0,0,0,.4)'}}>
-            <div style={{background:APK_THEME.teal,color:'#fff',padding:'12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}><b>مزايا 12-35.apk المستخرجة</b><button onClick={()=>setShowApkFeaturePanel(false)} style={{border:0,background:'transparent',color:'#fff',fontSize:'20px'}}>×</button></div>
-            <div style={{padding:'12px',fontSize:'11px',lineHeight:1.8}}>{APK_DERIVED_FEATURES.sourceNotes.map((x,i)=><div key={i} style={{borderBottom:'1px solid #eee',padding:'5px 0'}}>✓ {x}</div>)}<div style={{marginTop:'10px',padding:'8px',background:'#f3f3f3',borderRadius:'7px'}}>ملاحظة تقنية: الـAPK نفسه WebView ويحمّل واجهة <b>arabic.chat</b>؛ لذلك موارد الشات الفعلية ليست كلها ملفات Native داخل APK.</div></div>
           </div>
         </div>
       )}
