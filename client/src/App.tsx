@@ -36,6 +36,7 @@ import {
 } from 'firebase/firestore';
 
 import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -52,6 +53,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rdb = getDatabase(app);
+const storage = getStorage(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
@@ -1313,14 +1315,31 @@ export default function App() {
     e.target.value = '';
   };
 
+  const dataUrlToBlob = (dataUrl: string) => {
+    const parts = dataUrl.split(',');
+    const mimeMatch = parts[0]?.match(/data:([^;]+);base64/);
+    const mime = mimeMatch?.[1] || 'application/octet-stream';
+    const binary = atob(parts[1] || '');
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  };
+
   const sendChatMedia = async (mediaType: 'image'|'voice', mediaData: string, mediaName = 'media') => {
-    if (!selectedRoom || !user) return;
+    if (!selectedRoom || !user || !mediaData) return;
     const { senderName, roleText } = getSenderInfo();
     try {
+      const blob = dataUrlToBlob(mediaData);
+      const safeName = (mediaName || 'media').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
+      const fileRef = storageRef(storage, filePath);
+      await uploadBytes(fileRef, blob, { contentType: blob.type });
+      const mediaUrl = await getDownloadURL(fileRef);
+
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '',
-        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaData: mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
     } catch (e) { console.error(e); }
