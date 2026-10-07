@@ -1089,9 +1089,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRoom) return;
+    if (!selectedRoom || !user) return;
+
+    let cleanupTimer: number | null = null;
+
+    // على خطة Spark ننظف التسجيلات المنتهية من Firestore من جهاز المرسل.
+    // لا نحذف الصور أو الرسائل الأخرى.
+    const cleanupExpiredVoiceMessages = async () => {
+      try {
+        const expiredQuery = query(
+          collection(db, 'rooms', selectedRoom.id, 'messages'),
+          where('expiresAt', '<=', new Date()),
+          limit(20)
+        );
+        const expiredSnapshot = await getDocs(expiredQuery);
+        for (const docSnap of expiredSnapshot.docs) {
+          const data = docSnap.data();
+          if (data.mediaType === 'voice' && data.userId === user.uid) {
+            await deleteDoc(docSnap.ref).catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.warn('تعذر تنظيف التسجيلات الصوتية المنتهية', e);
+      }
+    };
+
+    cleanupExpiredVoiceMessages();
+    cleanupTimer = window.setInterval(cleanupExpiredVoiceMessages, 5 * 60 * 1000);
+
     const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(20));
-    return onSnapshot(msgQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(msgQuery, (snapshot) => {
       const now = Date.now();
       const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
@@ -1101,16 +1128,15 @@ export default function App() {
 
         if (data.isSystemSpecial && data.createdAt) {
           const msgTime = data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now();
-          if (now - msgTime > FIVE_MINUTES_MS) {
-            isExpired = true;
-          }
+          if (now - msgTime > FIVE_MINUTES_MS) isExpired = true;
         }
 
-        return {
-          id: docSnap.id,
-          isExpired,
-          ...data
-        };
+        if (data.mediaType === 'voice' && data.expiresAt) {
+          const expiry = data.expiresAt.toMillis ? data.expiresAt.toMillis() : new Date(data.expiresAt).getTime();
+          if (expiry && now >= expiry) isExpired = true;
+        }
+
+        return { id: docSnap.id, isExpired, ...data };
       }).filter(m => !m.isExpired);
 
       setMessages(msgs);
@@ -1118,7 +1144,12 @@ export default function App() {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     });
-  }, [selectedRoom]);
+
+    return () => {
+      unsubscribe();
+      if (cleanupTimer) window.clearInterval(cleanupTimer);
+    };
+  }, [selectedRoom, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1276,7 +1307,9 @@ export default function App() {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
-        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        mediaType, mediaData, mediaName, isSystemSpecial: false,
+        createdAt: serverTimestamp(),
+        ...(mediaType === 'voice' ? { expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000) } : {})
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
     } catch (e: any) {
