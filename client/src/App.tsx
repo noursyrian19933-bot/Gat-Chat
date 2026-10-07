@@ -189,6 +189,8 @@ export default function App() {
   const [loadingMoreRooms, setLoadingMoreRooms] = useState(false);
   
   const [messages, setMessages] = useState<any[]>([]);
+  // صور مرسلي رسائل الغرفة تُقرأ من ملف المستخدم، لا تُكرر داخل كل رسالة.
+  const [roomUserProfiles, setRoomUserProfiles] = useState<Record<string, any>>({});
   const roomOlderMessagesRef = useRef<Record<string, any[]>>({});
   const roomFirstDocRef = useRef<Record<string, any>>({});
   const [hasMoreRoomMessages, setHasMoreRoomMessages] = useState(false);
@@ -1144,6 +1146,32 @@ export default function App() {
     });
   }, [selectedRoom]);
 
+  // نتابع ملفات المستخدمين الموجودين في الرسائل الحالية فقط،
+  // حتى تتحدث الصورة القديمة والجديدة فور تغيير صورة الحساب.
+  useEffect(() => {
+    const ids = Array.from(new Set(
+      messages
+        .map((m: any) => m.userId)
+        .filter((id: any) => id && id !== 'system')
+    ));
+
+    if (!ids.length) {
+      setRoomUserProfiles({});
+      return;
+    }
+
+    const unsubscribers = ids.map((uid: string) =>
+      onSnapshot(doc(db, 'users', uid), (snap) => {
+        setRoomUserProfiles(prev => ({
+          ...prev,
+          [uid]: snap.exists() ? snap.data() : {}
+        }));
+      }, () => {})
+    );
+
+    return () => unsubscribers.forEach(unsubscribe => unsubscribe());
+  }, [messages]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -1291,7 +1319,7 @@ export default function App() {
     try {
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
-        color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
+        color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '',
         mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
@@ -1407,7 +1435,6 @@ export default function App() {
         color: nameColor,
         nameStyle: nameStyle,
         profileBgColor: hasRankForCustomization ? profileBgColor : '',
-        avatarUrl: profileAvatar || '',
         isSystemSpecial: false,
         createdAt: serverTimestamp()
       });
@@ -2320,6 +2347,8 @@ export default function App() {
                   }
 
                   const youtubeEmbedUrl = extractYouTubeEmbedUrl(m.text);
+                  const senderProfile = m.userId ? roomUserProfiles[m.userId] : null;
+                  const currentAvatarUrl = senderProfile?.avatarUrl || m.avatarUrl || '';
 
                   return (
                     <div 
@@ -2337,8 +2366,8 @@ export default function App() {
                     >
                       
                       <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        {m.avatarUrl ? (
-                          <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {currentAvatarUrl ? (
+                          <img src={currentAvatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           '👤'
                         )}
