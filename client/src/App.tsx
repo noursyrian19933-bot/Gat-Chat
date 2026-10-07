@@ -32,12 +32,10 @@ import {
   limit,
   limitToLast,
   startAfter,
-  endBefore,
-  Timestamp
+  endBefore
 } from 'firebase/firestore';
 
 import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -54,7 +52,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rdb = getDatabase(app);
-const storage = getStorage(app);
 
 const ADMIN_EMAIL = "nour.syrian.19933@gmail.com";
 
@@ -192,8 +189,6 @@ export default function App() {
   const [loadingMoreRooms, setLoadingMoreRooms] = useState(false);
   
   const [messages, setMessages] = useState<any[]>([]);
-  // صور مرسلي رسائل الغرفة تُقرأ من ملف المستخدم، لا تُكرر داخل كل رسالة.
-  const [roomUserProfiles, setRoomUserProfiles] = useState<Record<string, any>>({});
   const roomOlderMessagesRef = useRef<Record<string, any[]>>({});
   const roomFirstDocRef = useRef<Record<string, any>>({});
   const [hasMoreRoomMessages, setHasMoreRoomMessages] = useState(false);
@@ -1060,46 +1055,23 @@ export default function App() {
   }, [selectedRoom?.id]);
 
   useEffect(() => {
-    if (!showVipModal) return;
-
-    let cancelled = false;
-
-    const loadVipUsers = async () => {
-      try {
-        // لا نستمع إلى مجموعة users كاملة طوال فترة بقاء التطبيق مفتوحاً.
-        // نقرأ فقط المستخدمين أصحاب الرتب الإدارية عند فتح نافذة كبار الشخصيات.
-        const [roleSnap, ownerSnap] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('role', 'in', ['Owner', 'Super Admin', 'Admin']))),
-          getDocs(query(collection(db, 'users'), where('email', '==', ADMIN_EMAIL)))
-        ]);
-
-        if (cancelled) return;
-
-        const map = new Map<string, any>();
-        [...roleSnap.docs, ...ownerSnap.docs].forEach(d => {
-          map.set(d.id, { id: d.id, ...(d.data() as any) });
-        });
-
-        const list = Array.from(map.values());
-        const roleRank = (u:any) => {
-          const r = normalizeRole(u.role);
-          if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
-          if (r === 'Super Admin') return 2;
-          if (r === 'Admin') return 3;
-          return 5;
-        };
-
-        list.sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
-        setRankedUsers(list);
-      } catch (e) {
-        console.error('تعذر تحميل قائمة كبار الشخصيات', e);
-      }
-    };
-
-    loadVipUsers();
-
-    return () => { cancelled = true; };
-  }, [showVipModal]);
+    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(u.role) === 'Owner');
+      const roleRank = (u:any) => {
+        const r = normalizeRole(u.role);
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+        if (r === 'Super Admin') return 2;
+        if (r === 'Admin') return 3;
+        if (r === 'Member' || r === 'Premium') return 4;
+        return 5;
+      };
+      const sorted = [...list].sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
+      if (owner && !sorted.some(u => u.id === owner.id)) sorted.unshift(owner);
+      setRankedUsers(sorted);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!showWallModal || !user) return;
@@ -1118,9 +1090,41 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRoom) return;
+    if (!selectedRoom || !user) return;
+
+    let cleanupTimer: number | null = null;
+
+    // Spark-safe cleanup: expired voice messages are removed from Firestore
+    // by their sender while that sender has the room open. No Cloud Functions
+    // or Cloud Storage are required for this step.
+    const cleanupExpiredVoiceMessages = async () => {
+      try {
+        const expiredQuery = query(
+          collection(db, 'rooms', selectedRoom.id, 'messages'),
+          where('expiresAt', '<=', new Date()),
+          limit(20)
+        );
+        const expiredSnapshot = await getDocs(expiredQuery);
+
+        for (const docSnap of expiredSnapshot.docs) {
+          const data = docSnap.data();
+          if (data.mediaType !== 'voice' || data.userId !== user.uid) continue;
+          try {
+            await deleteDoc(docSnap.ref);
+          } catch (error) {
+            console.warn('تعذر حذف التسجيل الصوتي المنتهي', error);
+          }
+        }
+      } catch (error) {
+        console.warn('تعذر تنفيذ تنظيف التسجيلات الصوتية المنتهية', error);
+      }
+    };
+
+    cleanupExpiredVoiceMessages();
+    cleanupTimer = window.setInterval(cleanupExpiredVoiceMessages, 5 * 60 * 1000);
+
     const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(20));
-    return onSnapshot(msgQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(msgQuery, (snapshot) => {
       const now = Date.now();
       const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
@@ -1147,33 +1151,12 @@ export default function App() {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     });
-  }, [selectedRoom]);
 
-  // نتابع ملفات المستخدمين الموجودين في الرسائل الحالية فقط،
-  // حتى تتحدث الصورة القديمة والجديدة فور تغيير صورة الحساب.
-  useEffect(() => {
-    const ids = Array.from(new Set(
-      messages
-        .map((m: any) => m.userId)
-        .filter((id: any) => id && id !== 'system')
-    ));
-
-    if (!ids.length) {
-      setRoomUserProfiles({});
-      return;
-    }
-
-    const unsubscribers = ids.map((uid: string) =>
-      onSnapshot(doc(db, 'users', uid), (snap) => {
-        setRoomUserProfiles(prev => ({
-          ...prev,
-          [uid]: snap.exists() ? snap.data() : {}
-        }));
-      }, () => {})
-    );
-
-    return () => unsubscribers.forEach(unsubscribe => unsubscribe());
-  }, [messages]);
+    return () => {
+      unsubscribe();
+      if (cleanupTimer) window.clearInterval(cleanupTimer);
+    };
+  }, [selectedRoom, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1316,38 +1299,19 @@ export default function App() {
     e.target.value = '';
   };
 
-  const dataUrlToBlob = (dataUrl: string) => {
-    const parts = dataUrl.split(',');
-    const mimeMatch = parts[0]?.match(/data:([^;]+);base64/);
-    const mime = mimeMatch?.[1] || 'application/octet-stream';
-    const binary = atob(parts[1] || '');
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return new Blob([bytes], { type: mime });
-  };
-
   const sendChatMedia = async (mediaType: 'image'|'voice', mediaData: string, mediaName = 'media') => {
-    if (!selectedRoom || !user || !mediaData) return;
+    if (!selectedRoom || !user) return;
     const { senderName, roleText } = getSenderInfo();
     try {
-      const blob = dataUrlToBlob(mediaData);
-      const safeName = (mediaName || 'media').replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = `chat_media/${selectedRoom.id}/${user.uid}/${Date.now()}_${safeName}`;
-      const fileRef = storageRef(storage, filePath);
-      await uploadBytes(fileRef, blob, { contentType: blob.type });
-      const mediaUrl = await getDownloadURL(fileRef);
-
       const mediaMessage: any = {
         user: senderName, userId: user.uid, text: '', role: roleText,
-        color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '',
-        mediaType, mediaData: mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
+        color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
+        mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
       };
 
-      // Voice recordings expire after 2 hours. The server-side cleanup step
-      // will use these fields to permanently delete the Storage object and message.
       if (mediaType === 'voice') {
-        mediaMessage.storagePath = filePath;
-        mediaMessage.expiresAt = Timestamp.fromMillis(Date.now() + (2 * 60 * 60 * 1000));
+        // Keep voice data in Firestore on Spark and mark it for client-side cleanup.
+        mediaMessage.expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
       }
 
       await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), mediaMessage);
@@ -1464,6 +1428,7 @@ export default function App() {
         color: nameColor,
         nameStyle: nameStyle,
         profileBgColor: hasRankForCustomization ? profileBgColor : '',
+        avatarUrl: profileAvatar || '',
         isSystemSpecial: false,
         createdAt: serverTimestamp()
       });
@@ -2376,8 +2341,6 @@ export default function App() {
                   }
 
                   const youtubeEmbedUrl = extractYouTubeEmbedUrl(m.text);
-                  const senderProfile = m.userId ? roomUserProfiles[m.userId] : null;
-                  const currentAvatarUrl = senderProfile?.avatarUrl || m.avatarUrl || '';
 
                   return (
                     <div 
@@ -2395,8 +2358,8 @@ export default function App() {
                     >
                       
                       <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        {currentAvatarUrl ? (
-                          <img src={currentAvatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {m.avatarUrl ? (
+                          <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           '👤'
                         )}
