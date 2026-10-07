@@ -1055,23 +1055,46 @@ export default function App() {
   }, [selectedRoom?.id]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const list = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-      const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(u.role) === 'Owner');
-      const roleRank = (u:any) => {
-        const r = normalizeRole(u.role);
-        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
-        if (r === 'Super Admin') return 2;
-        if (r === 'Admin') return 3;
-        if (r === 'Member' || r === 'Premium') return 4;
-        return 5;
-      };
-      const sorted = [...list].sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
-      if (owner && !sorted.some(u => u.id === owner.id)) sorted.unshift(owner);
-      setRankedUsers(sorted);
-    });
-    return () => unsub();
-  }, []);
+    if (!showVipModal) return;
+
+    let cancelled = false;
+
+    const loadVipUsers = async () => {
+      try {
+        // لا نستمع إلى مجموعة users كاملة طوال فترة بقاء التطبيق مفتوحاً.
+        // نقرأ فقط المستخدمين أصحاب الرتب الإدارية عند فتح نافذة كبار الشخصيات.
+        const [roleSnap, ownerSnap] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('role', 'in', ['Owner', 'Super Admin', 'Admin']))),
+          getDocs(query(collection(db, 'users'), where('email', '==', ADMIN_EMAIL)))
+        ]);
+
+        if (cancelled) return;
+
+        const map = new Map<string, any>();
+        [...roleSnap.docs, ...ownerSnap.docs].forEach(d => {
+          map.set(d.id, { id: d.id, ...(d.data() as any) });
+        });
+
+        const list = Array.from(map.values());
+        const roleRank = (u:any) => {
+          const r = normalizeRole(u.role);
+          if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+          if (r === 'Super Admin') return 2;
+          if (r === 'Admin') return 3;
+          return 5;
+        };
+
+        list.sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
+        setRankedUsers(list);
+      } catch (e) {
+        console.error('تعذر تحميل قائمة كبار الشخصيات', e);
+      }
+    };
+
+    loadVipUsers();
+
+    return () => { cancelled = true; };
+  }, [showVipModal]);
 
   useEffect(() => {
     if (!showWallModal || !user) return;
