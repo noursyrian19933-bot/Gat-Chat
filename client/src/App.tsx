@@ -32,7 +32,8 @@ import {
   limit,
   limitToLast,
   startAfter,
-  endBefore
+  endBefore,
+  Timestamp
 } from 'firebase/firestore';
 
 import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
@@ -1336,11 +1337,20 @@ export default function App() {
       await uploadBytes(fileRef, blob, { contentType: blob.type });
       const mediaUrl = await getDownloadURL(fileRef);
 
-      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
+      const mediaMessage: any = {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '',
         mediaType, mediaData: mediaUrl, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
-      });
+      };
+
+      // Voice recordings expire after 2 hours. The server-side cleanup step
+      // will use these fields to permanently delete the Storage object and message.
+      if (mediaType === 'voice') {
+        mediaMessage.storagePath = filePath;
+        mediaMessage.expiresAt = Timestamp.fromMillis(Date.now() + (2 * 60 * 60 * 1000));
+      }
+
+      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), mediaMessage);
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
     } catch (e) { console.error(e); }
   };
