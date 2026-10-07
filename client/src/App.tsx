@@ -235,7 +235,7 @@ export default function App() {
   const recordingTimerRef = useRef<number | null>(null);
   const chatImageInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string; role?: string; nameColor?: string; nameStyle?: string; profileBgColor?: string; avatarUrl?: string } | null>(null);
+  const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
   const privateOlderMessagesRef = useRef<Record<string, any[]>>({});
   const privateFirstDocRef = useRef<Record<string, any>>({});
@@ -330,6 +330,13 @@ export default function App() {
     return 'Member';
   };
 
+  const getRoleLabel = (profile: any): string => {
+    const email = String(profile?.email || '').trim().toLowerCase();
+    if (email === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(profile?.role) === 'Owner') return 'Owner';
+    const role = normalizeRole(profile?.role);
+    return role === 'Guest' ? 'زائر' : role;
+  };
+
   const rolePermissions: Record<string, string[]> = {
     Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
     Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
@@ -338,25 +345,6 @@ export default function App() {
     Member: ['edit_avatar'],
     Guest: []
   };
-
-  // الرتبة ومظهر العضو مصدر واحد في كل أجزاء الواجهة.
-  // لا نغيّر الرتب هنا؛ نستخدم نفس القيم المحفوظة في Firebase فقط.
-  const getCanonicalRole = (u: any): string => {
-    const email = String(u?.email || '').trim().toLowerCase();
-    if (email && email === ADMIN_EMAIL.trim().toLowerCase()) return 'Owner';
-    return normalizeRole(u?.role);
-  };
-
-  const getRoleLabel = (u: any): string => getCanonicalRole(u);
-
-  const getUserVisuals = (u: any) => ({
-    nameColor: u?.nameColor || '#2563eb',
-    nameStyle: u?.nameStyle || 'normal',
-    profileBgColor: u?.profileBgColor || '#ffffff',
-    avatarUrl: u?.avatarUrl || '',
-    coverUrl: u?.coverUrl || '',
-    flag: u?.flag || getCountryFlag(u?.country || 'الأردن')
-  });
 
   const normalizedCurrentRole = normalizeRole(currentUserRole);
   const normalizedCurrentEmail = (user?.email || '').trim().toLowerCase();
@@ -388,12 +376,7 @@ export default function App() {
   const hasRankForCustomization = Boolean(
     user &&
     !user.isAnonymous &&
-    (
-      isOwner ||
-      isAdmin ||
-      normalizedCurrentRole === 'Premium' ||
-      ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole)
-    )
+    ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(isOwner ? 'Owner' : normalizedCurrentRole)
   );
 
   const hasCurrentPermission = (permission: string) =>
@@ -1586,11 +1569,6 @@ export default function App() {
       await addDoc(collection(db, 'private_messages', chatId, 'messages'), {
         senderId: user.uid,
         senderName: senderName,
-        senderRole: user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole)),
-        senderNameColor: nameColor || '#2563eb',
-        senderNameStyle: nameStyle || 'normal',
-        senderProfileBgColor: profileBgColor || '#ffffff',
-        senderAvatarUrl: profileAvatar || '',
         text: textMsg,
         createdAt: serverTimestamp()
       });
@@ -1598,11 +1576,6 @@ export default function App() {
       await setDoc(doc(db, 'users', user.uid, 'private_chats', activePrivateChat.peerId), {
         peerId: activePrivateChat.peerId,
         peerName: activePrivateChat.peerName,
-        peerRole: activePrivateChat.role || getCanonicalRole(targetData),
-        peerNameColor: activePrivateChat.nameColor || targetData.nameColor || '#2563eb',
-        peerNameStyle: activePrivateChat.nameStyle || targetData.nameStyle || 'normal',
-        peerProfileBgColor: activePrivateChat.profileBgColor || targetData.profileBgColor || '#ffffff',
-        peerAvatarUrl: activePrivateChat.avatarUrl || targetData.avatarUrl || '',
         lastMessage: textMsg,
         lastMessageTime: serverTimestamp(),
         unreadCount: 0
@@ -1618,11 +1591,6 @@ export default function App() {
       await setDoc(receiverPeerRef, {
         peerId: user.uid,
         peerName: senderName,
-        peerRole: user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole)),
-        peerNameColor: nameColor || '#2563eb',
-        peerNameStyle: nameStyle || 'normal',
-        peerProfileBgColor: profileBgColor || '#ffffff',
-        peerAvatarUrl: profileAvatar || '',
         lastMessage: textMsg,
         lastMessageTime: serverTimestamp(),
         unreadCount: currentUnread + 1
@@ -1641,13 +1609,6 @@ export default function App() {
     try {
       const targetSnap = await getDoc(doc(db, 'users', peerId));
       const target = targetSnap.exists() ? targetSnap.data() as any : {};
-      let canonicalTarget = { ...target, role: getCanonicalRole(target) };
-      try {
-        if (target.email) {
-          const roleSnap = await getDoc(doc(db, 'roles_by_email', String(target.email).trim().toLowerCase()));
-          if (roleSnap.exists() && roleSnap.data().role) canonicalTarget = { ...canonicalTarget, role: getCanonicalRole({ email: target.email, role: roleSnap.data().role }) };
-        }
-      } catch (roleErr) { console.warn(roleErr); }
       const privacy = target.privateChatPrivacy || 'friends';
       const allowed = privacy === 'everyone' || (privacy === 'friends' && isFriendUser(peerId));
       if (privacy === 'off' || !allowed) {
@@ -1660,15 +1621,7 @@ export default function App() {
       }
       stopProfileSong();
       setShowProfileActions(false);
-      setActivePrivateChat({
-        peerId,
-        peerName: target.displayName || peerName,
-        role: canonicalTarget.role,
-        nameColor: target.nameColor || '#2563eb',
-        nameStyle: target.nameStyle || 'normal',
-        profileBgColor: target.profileBgColor || '#ffffff',
-        avatarUrl: target.avatarUrl || ''
-      });
+      setActivePrivateChat({ peerId, peerName });
       setSelectedProfileUser(null);
       setShowFriendsModal(false);
       setShowOnlineModal(false);
@@ -1995,7 +1948,7 @@ export default function App() {
     let fetchedData: any = {
       userId: targetId,
       name: uData.name || uData.user || uData.userName || 'زائر',
-      role: normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
+      role: (String(uData.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(uData.role) === 'Owner') ? 'Owner' : normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
       gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
       age: uData.age || 'عدم إظهار',
       relationship: uData.relationship || 'عدم إظهار',
@@ -2025,7 +1978,7 @@ export default function App() {
           fetchedData = {
             ...fetchedData,
             name: data.displayName || fetchedData.name,
-            role: normalizeRole(data.role || fetchedData.role),
+            role: (String(data.email || fetchedData.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(data.role) === 'Owner') ? 'Owner' : normalizeRole(data.role || fetchedData.role),
             gender: data.gender || fetchedData.gender,
             age: data.age || fetchedData.age,
             relationship: data.relationship || fetchedData.relationship,
@@ -2071,29 +2024,17 @@ export default function App() {
           }
         } catch (e) { console.warn(e); }
 
-        // اجلب الرتبة من المصدر نفسه حتى تظهر الرتبة الصحيحة في الملف والقوائم والبحث.
-        try {
-          let roleData: any = null;
-          if (fetchedData.email) {
-            const roleSnapByEmail = await getDoc(doc(db, 'roles_by_email', String(fetchedData.email).trim().toLowerCase()));
-            if (roleSnapByEmail.exists()) roleData = roleSnapByEmail.data();
-          }
-          if (!roleData) {
-            const roleQuery = query(collection(db, 'roles_by_email'), where('uid', '==', targetId), limit(1));
+        if (!fetchedData.email) {
+          try {
+            const roleQuery = query(collection(db, 'roles_by_email'), where('uid', '==', targetId));
             const roleSnap = await getDocs(roleQuery);
-            if (!roleSnap.empty) roleData = roleSnap.docs[0].data();
-          }
-          if (roleData) {
-            if (roleData.email && !fetchedData.email) fetchedData.email = roleData.email;
-            if (roleData.role) fetchedData.role = getCanonicalRole({ email: roleData.email || fetchedData.email, role: roleData.role });
-          }
-        } catch (e) { console.warn(e); }
+            if (!roleSnap.empty) fetchedData.email = roleSnap.docs[0].data().email || fetchedData.email;
+          } catch (e) { console.warn(e); }
+        }
       } catch (err) {
         console.error(err);
       }
     }
-    fetchedData.role = getCanonicalRole(fetchedData);
-    fetchedData.profileVisuals = getUserVisuals(fetchedData);
     fetchedData.profileUrl = `${window.location.origin}/#id${targetId}`;
     setEditingUserName(fetchedData.name);
     setIsEditingNameActive(false);
@@ -2133,12 +2074,7 @@ export default function App() {
 
   const isIgnoredUser = (targetUid: string) => ignoredUsers.some((x: any) => (x.userId || x.uid || x.id) === targetUid);
 
-  const filteredOnlineUsers = onlineUsersList
-    .filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && !isIgnoredUser(u.userId || u.id) && String(u.name || u.user || '').toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a,b) => {
-      const rank=(u:any)=>{const r=getCanonicalRole(u); if(r==='Owner') return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5;};
-      return rank(a)-rank(b) || String(a.name || '').localeCompare(String(b.name || ''));
-    });
+  const filteredOnlineUsers = onlineUsersList.filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && !isIgnoredUser(u.userId || u.id) && u.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a,b) => { const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5;}; return rank(a)-rank(b); });
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
 
   const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
@@ -2646,7 +2582,7 @@ export default function App() {
                       }}
                     >
                       
-                      <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                      <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
                         {m.avatarUrl ? (
                           <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -2655,21 +2591,22 @@ export default function App() {
                       </div>
 
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
-                                                <span 
-                          style={{ 
+                        <span
+                          style={{
                             backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
                             padding: hasCustomBg ? '3px 8px' : '0',
                             borderRadius: hasCustomBg ? '6px' : '0',
                             border: hasCustomBg ? '1px solid rgba(0,0,0,0.1)' : 'none',
                             display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: '1px'
                           }}
                         >
+                          <span style={{fontSize:'9px',fontWeight:'700',color:'#64748b',lineHeight:1.1}}>{getRoleLabel(m)}</span>
                           <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
                             {m.user}:
                           </span>
-                          <span style={{fontSize:'9px',fontWeight:'700',color:'#64748b',whiteSpace:'nowrap'}}>({getRoleLabel(m)})</span>
                         </span>
 
                         {m.mediaType === 'image' ? (
@@ -2771,7 +2708,7 @@ export default function App() {
         <div style={{ position: 'fixed', top: '50%', bottom: '60px', left: 0, right: 0, backgroundColor: '#ffffff', zIndex: 130, display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 25px rgba(0,0,0,0.3)', borderTop: '2px solid #0b141a', overflow: 'hidden', direction: 'rtl' }}>
           
           <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <span style={{ fontWeight: 'bold', fontSize: '14px', display:'flex',alignItems:'center',gap:'6px', ...getNameStyleProps(activePrivateChat.nameStyle || 'normal', activePrivateChat.nameColor || '#fff') }}>{activePrivateChat.peerName} <small style={{fontSize:'9px',color:'#cbd5e1',textShadow:'none'}}>({activePrivateChat.role || 'Member'})</small></span>
+            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{activePrivateChat.peerName}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '16px', cursor: 'pointer' }}>⚙</span>
               <button onClick={() => setActivePrivateChat(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
@@ -2790,7 +2727,7 @@ export default function App() {
                 return (
                   <div key={msg.id || idx} style={{ display: 'flex', justifyContent: isMe ? 'flex-start' : 'flex-end' }}>
                     <div style={{ maxWidth: '75%', backgroundColor: isMe ? '#dcfce7' : '#ffffff', color: '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '10px', color: msg.senderNameColor || '#64748b', marginBottom: '2px', fontWeight: 'bold', display:'flex',alignItems:'center',gap:'5px', ...getNameStyleProps(msg.senderNameStyle || 'normal', msg.senderNameColor || '#64748b'), textShadow:'none' }}>{msg.senderName}<span style={{fontSize:'8px',color:'#64748b',textShadow:'none'}}>({msg.senderRole || 'Member'})</span></div>
+                      <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', fontWeight: 'bold' }}>{msg.senderName}</div>
                       <div>{msg.text}</div>
                     </div>
                   </div>
@@ -2843,7 +2780,7 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px' }}>👤</div>
                       <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '13px', display:'flex',alignItems:'center',gap:'5px', ...getNameStyleProps(conv.peerNameStyle || 'normal', conv.peerNameColor || '#1e293b') }}>{conv.peerName}<span style={{fontSize:'8px',color:'#64748b',textShadow:'none'}}>({conv.peerRole || 'Member'})</span></div>
+                        <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>{conv.peerName}</div>
                         <div style={{ fontSize: '11px', color: '#64748b', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{conv.lastMessage}</div>
                       </div>
                     </div>
@@ -2888,7 +2825,7 @@ export default function App() {
             <div style={{flex:1,fontSize:'21px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>البحث عن أشخاص <span style={{color:'#16a6d4',fontSize:'32px'}}>⌕</span></div><button type="button" onClick={()=>{setShowTopSearch(false);setShowVipModal(true)}} title="كبار الشخصيات" style={{border:0,background:'transparent',fontSize:'24px',cursor:'pointer'}}>⭐</button>
           </div>
           <div style={{textAlign:'center',fontSize:'18px',padding:'24px'}}>إعلان ترويجي</div>
-          <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=><div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px',cursor:'pointer'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><span style={{fontSize:'20px',fontWeight:'700',color:'#333'}}>{u.name}</span></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'3px solid #17a7d2',background:'#eee'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}>👤</span>}</div></div>)}</div>
+          <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=>{const topSearchStyle=getNameStyleProps(u.nameStyle||'normal',u.nameColor||'#2563eb');return <div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{minHeight:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 20px',cursor:'pointer',background:u.profileBgColor||'#fff'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}><span style={{fontSize:'11px',fontWeight:'700',color:'#64748b'}}>{getRoleLabel(u)}</span><span style={{fontSize:'20px',fontWeight:'700',...topSearchStyle}}>{u.name}</span></div></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'2px solid #94a3b8',background:'#e2e8f0',color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:'30px'}}>👤</span>}</div></div>})}</div>
         </div>
       )}
 
@@ -3033,7 +2970,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'10px',fontWeight:'700',color:'#64748b'}}>{getRoleLabel(u)}</div><div style={{fontSize:'12px',fontWeight:'bold',...getNameStyleProps(u.nameStyle||'normal',u.nameColor||'#2563eb')}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
           </div>
         </div>
       )}
@@ -3198,12 +3135,12 @@ export default function App() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden', border:'1px solid #cbd5e1' }}>
                         {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight:'700' }}>{getRoleLabel(u)}</span>
                         <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps }}>{u.name}</span>
-                        <span style={{ fontSize: '10px', color: '#64748b' }}>{getRoleLabel(u)}</span>
                       </div>
                     </div>
                     <span style={{ fontSize: '14px' }}>{u.flag}</span>
@@ -3222,11 +3159,7 @@ export default function App() {
             <div style={{ height:'130px', minHeight:'130px', background:'#003d43', color:'#fff', position:'relative', display:'flex', alignItems:'flex-end', justifyContent:'center', paddingBottom:'11px' }}>
               <button onClick={() => setShowSettingsModal(false)} style={{ position:'absolute', top:'10px', left:'15px', border:0, background:'transparent', color:'#fff', fontSize:'30px', lineHeight:1, cursor:'pointer', zIndex:4 }}>×</button>
               <div style={{ position:'absolute', top:'15px', right:'15px', width:'100px', height:'100px', borderRadius:'6px', overflow:'hidden', background:'#334155', border:'1px solid rgba(255,255,255,.35)' }}>
-                {profileAvatar ? <img src={profileAvatar} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px' }}>👤</div>}
-                {canEditAvatar && <div style={{ position:'absolute', left:0, right:0, bottom:0, height:'26px', background:'rgba(0,0,0,.58)', display:'flex', alignItems:'center', justifyContent:'space-around' }}>
-                  <button onClick={()=>{ setProfileAvatar(''); saveSettingToFirebase('avatarUrl',''); }} style={{ border:0, background:'transparent', color:'#fff', fontSize:'19px', lineHeight:1, cursor:'pointer' }}>×</button>
-                  <button onClick={()=>avatarInputRef.current?.click()} style={{ border:0, background:'transparent', color:'#fff', fontSize:'18px', lineHeight:1, cursor:'pointer' }}>📷</button>
-                </div>}
+                {profileAvatar ? <img src={profileAvatar} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', color:'#64748b', background:'#e2e8f0' }}>👤</div>}
               </div>
               <div style={{ fontSize:'16px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px', zIndex:2 }}>
                 {user?.displayName || user?.email?.split('@')[0] || guestName || 'عضو'}
@@ -3251,6 +3184,7 @@ export default function App() {
                   <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:4, fontSize:'12px' }}>العلاقة</label><select value={profileRelationship} onChange={e=>{setProfileRelationship(e.target.value);saveSettingToFirebase('relationship',e.target.value)}} style={{width:'100%',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',background:'#f5f5f5'}}><option>عدم إظهار</option><option>أعزب</option><option>عزباء</option><option>مرتبط</option><option>مرتبطة</option><option>متزوج</option><option>متزوجة</option><option>منفصل</option></select></div>
                   <div style={{gridColumn:'1 / -1'}}><label style={{fontSize:'12px',color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4}}>نبذة شخصية</label><textarea value={profileBio} onChange={e=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{width:'100%',boxSizing:'border-box',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',minHeight:'70px'}}/></div>
                   <div style={{gridColumn:'1 / -1'}}><label style={{fontSize:'12px',color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4}}>لون الاسم في المحادثة</label><input type="color" value={nameColor} onChange={e=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{width:'100%',height:'28px',border:'1px solid #ddd',borderRadius:'4px'}}/></div>
+                  {canEditAvatar && <div style={{gridColumn:'1 / -1',padding:'8px',background:'#f8fafc',border:'1px solid #dbe3ea',borderRadius:'6px'}}><div style={{fontWeight:'bold',color:'#334155',marginBottom:6,fontSize:'12px'}}>🖼️ الصورة الشخصية</div><div style={{display:'flex',gap:'6px'}}><button onClick={()=>avatarInputRef.current?.click()} style={{flex:1,background:'#0f766e',color:'#fff',border:0,padding:'8px',borderRadius:'5px',cursor:'pointer',fontSize:'12px'}}>إضافة / تغيير الصورة</button>{profileAvatar&&<button onClick={()=>{setProfileAvatar('');saveSettingToFirebase('avatarUrl','')}} style={{background:'#fff',color:'#dc2626',border:'1px solid #fecaca',padding:'8px 10px',borderRadius:'5px',cursor:'pointer',fontSize:'12px'}}>إزالة</button>}</div></div>}
                   {canEditCover && <div style={{gridColumn:'1 / -1',display:'flex',gap:'6px'}}><button onClick={()=>coverInputRef.current?.click()} style={{flex:1,background:'#f5f5f5',border:'1px solid #ddd',padding:'7px',borderRadius:'5px',cursor:'pointer',fontSize:'12px'}}>📷 تغيير الغلاف</button><button onClick={()=>{setProfileCover('');saveSettingToFirebase('coverUrl','')}} style={{background:'#f5f5f5',border:'1px solid #ddd',padding:'7px 10px',borderRadius:'5px',cursor:'pointer',fontSize:'12px'}}>× إزالة</button></div>}
                   {hasRankForCustomization && <div style={{gridColumn:'1 / -1',padding:'8px',background:'#fdf4ff',border:'1px solid #f0abfc',borderRadius:'6px'}}><div style={{fontWeight:'bold',color:'#86198f',marginBottom:6,fontSize:'12px'}}>✨ إعدادات أصحاب الرتب</div><select value={nameStyle} onChange={e=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{width:'100%',padding:'7px',marginBottom:7,fontSize:'12px'}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select><div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:4}}>{PROFILE_BG_COLORS.map(item=><button key={item.value} onClick={()=>{setProfileBgColor(item.value);saveSettingToFirebase('profileBgColor',item.value)}} style={{background:item.value,border:profileBgColor===item.value?'2px solid #86198f':'1px solid #cbd5e1',borderRadius:4,padding:'6px 2px',cursor:'pointer',fontSize:9}}>{item.name}</button>)}</div></div>}
                   {canAddSong && <div style={{gridColumn:'1 / -1',padding:'8px',background:'#f5f3ff',border:'1px solid #c4b5fd',borderRadius:6}}><div style={{color:'#6d28d9',fontWeight:'bold',marginBottom:6,fontSize:'12px'}}>🎵 أغنية الملف الشخصي</div><button onClick={()=>songInputRef.current?.click()} style={{background:'#7c3aed',color:'#fff',border:0,padding:'7px 10px',borderRadius:5,cursor:'pointer',fontSize:'11px'}}>{profileSong?'تغيير الأغنية':'إضافة أغنية'}</button>{profileSong&&<button onClick={handleDeleteSong} style={{marginRight:6,background:'#dc2626',color:'#fff',border:0,padding:'7px 10px',borderRadius:5,cursor:'pointer',fontSize:'11px'}}>حذف</button>}</div>}
@@ -3300,17 +3234,18 @@ export default function App() {
       {selectedProfileUser && (
         <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setShowProfileActions(false); setSelectedProfileUser(null); }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.68)', zIndex:120, display:'flex', justifyContent:'center', alignItems:'center', direction:'rtl', padding:'8px' }}>
           <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:'390px', height:'640px', maxHeight:'86dvh', background:'#fff', borderRadius:'14px', overflow:'hidden', boxShadow:'0 12px 35px rgba(0,0,0,.45)', display:'flex', flexDirection:'column' }}>
-            <div style={{ height:'205px', minHeight:'205px', background:selectedProfileUser.coverUrl ? `linear-gradient(rgba(0,61,67,.48),rgba(0,61,67,.78)), url(${selectedProfileUser.coverUrl}) center/cover` : (selectedProfileUser.profileBgColor || '#003d43'), color:'#fff', position:'relative', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', paddingBottom:'13px' }}>
+            <div style={{ height:'205px', minHeight:'205px', background:selectedProfileUser.profileBgColor || '#003d43', backgroundImage:selectedProfileUser.coverUrl ? `url(${selectedProfileUser.coverUrl})` : 'none', backgroundSize:'cover', backgroundPosition:'center', color:'#fff', position:'relative', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', paddingBottom:'13px' }}>
+              <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,.28)',zIndex:0}} />
               <button onClick={()=>{stopProfileSong();setShowProfileActions(false);setSelectedProfileUser(null)}} style={{position:'absolute',top:10,left:18,border:0,background:'transparent',color:'#fff',fontSize:30,lineHeight:1,cursor:'pointer',zIndex:3}}>×</button>
               {!isSelfProfile && <button onClick={()=>setShowProfileActions(v=>!v)} style={{position:'absolute',top:11,left:55,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>☰</button>}
               {!isSelfProfile && <button onClick={()=>setSuccessMessage('🚩 تم تسجيل البلاغ عن المستخدم.')} style={{position:'absolute',top:11,left:91,border:0,background:'transparent',color:'#fff',fontSize:18,lineHeight:1,cursor:'pointer',zIndex:3}}>{getCountryFlag(selectedProfileUser.country || 'الأردن')}</button>}
               {!isSelfProfile && <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:11,right:17,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>✉</button>}
-              <div style={{position:'relative',width:'90px',height:'90px',borderRadius:'50%',background:'#0b141a',border:'4px solid rgba(255,255,255,.22)',overflow:'hidden',marginBottom:'7px'}}>
-                {selectedProfileUser.avatarUrl ? <img src={selectedProfileUser.avatarUrl} alt="" onClick={()=>setPreviewImage(selectedProfileUser.avatarUrl)} style={{width:'100%',height:'100%',objectFit:'cover',cursor:'pointer'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'42px'}}>👤</div>}
+              <div style={{position:'relative',width:'90px',height:'90px',borderRadius:'50%',background:'#e2e8f0',border:'4px solid #94a3b8',overflow:'hidden',marginBottom:'7px',zIndex:1}>
+                {selectedProfileUser.avatarUrl ? <img src={selectedProfileUser.avatarUrl} alt="" onClick={()=>setPreviewImage(selectedProfileUser.avatarUrl)} style={{width:'100%',height:'100%',objectFit:'cover',cursor:'pointer'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'42px',color:'#64748b'}}>👤</div>}
                 <span style={{position:'absolute',bottom:-1,right:-1,width:'18px',height:'18px',borderRadius:'50%',background:selectedProfileUser.online?'#84cc16':'#94a3b8',border:'2px solid #fff'}} />
               </div>
-              <div style={{fontSize:'11px',fontWeight:'bold',marginBottom:'2px'}}>عضو نشيط <span style={{color:'#84cc16'}}>●</span> <span style={{opacity:.95}}>• {getRoleLabel(selectedProfileUser)}</span></div>
-              <div style={{fontSize:'16px',fontWeight:'bold',display:'flex',alignItems:'center',gap:4,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff'),background:selectedProfileUser.profileBgColor && selectedProfileUser.profileBgColor !== '#ffffff' ? selectedProfileUser.profileBgColor : 'transparent',padding:'2px 8px',borderRadius:'6px'}}>{selectedProfileUser.name}</div>
+              <div style={{fontSize:'11px',fontWeight:'700',marginBottom:'2px',color:'#fff',zIndex:1}}>{getRoleLabel(selectedProfileUser)}</div>
+              <div style={{fontSize:'16px',fontWeight:'bold',display:'flex',alignItems:'center',gap:4,zIndex:1,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#2563eb')}}>{selectedProfileUser.name}</div>
             </div>
 
             <div style={{flex:1,overflowY:'auto',background:'#fff',padding:'0 12px 8px'}}>
@@ -3340,11 +3275,11 @@ export default function App() {
 
       {showProfileActions && selectedProfileUser && !isSelfProfile && (
         <div onClick={()=>setShowProfileActions(false)} style={{position:'fixed',inset:0,zIndex:140,background:'rgba(0,0,0,.48)',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:'98px',direction:'rtl'}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'calc(100% - 16px)',maxWidth:'380px',minHeight:'232px',background:'#fff',borderRadius:'16px',padding:'12px 14px 16px',boxShadow:'0 10px 30px rgba(0,0,0,.4)'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:'45px',marginBottom:8}}><button onClick={()=>setShowProfileActions(false)} style={{border:0,background:'transparent',fontSize:30,cursor:'pointer'}}>×</button><div style={{display:'flex',alignItems:'center',gap:7,fontSize:16,fontWeight:'bold',...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#1e293b')}}>{selectedProfileUser.avatarUrl&&<img src={selectedProfileUser.avatarUrl} alt="" style={{width:34,height:34,borderRadius:'50%',objectFit:'cover'}}/>}{selectedProfileUser.name}<span style={{fontSize:'9px',fontWeight:'700',color:'#64748b'}}>{getRoleLabel(selectedProfileUser)}</span></div></div>
-            <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:55,border:0,borderRadius:9,background:'#e9e9e9',fontSize:15,cursor:'pointer',marginBottom:7,textAlign:'right',padding:'0 13px'}}>💬 محادثة خاصة</button>
-            <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:55,border:0,borderRadius:9,background:'#e9e9e9',fontSize:15,cursor:'pointer',marginBottom:7,textAlign:'right',padding:'0 13px'}}>👤⁺ إضافة صديق</button>
-            <button onClick={()=>handleIgnoreUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:55,border:0,borderRadius:9,background:'#e9e9e9',fontSize:15,cursor:'pointer',textAlign:'right',padding:'0 13px'}}>🚫 تجاهل</button>
+          <div onClick={e=>e.stopPropagation()} style={{width:'calc(100% - 16px)',maxWidth:'380px',background:'#fff',borderRadius:'16px',padding:'10px 14px 14px',boxShadow:'0 10px 30px rgba(0,0,0,.4)'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:7}}><button onClick={()=>setShowProfileActions(false)} style={{border:0,background:'transparent',fontSize:30,cursor:'pointer'}}>×</button><div style={{display:'flex',alignItems:'center',gap:7,fontSize:16,fontWeight:'bold'}}>{selectedProfileUser.avatarUrl&&<img src={selectedProfileUser.avatarUrl} alt="" style={{width:34,height:34,borderRadius:'50%',objectFit:'cover'}}/>}{selectedProfileUser.name}</div></div>
+            <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:43,border:0,borderRadius:7,background:'#e9e9e9',fontSize:15,cursor:'pointer',marginBottom:6,textAlign:'right',padding:'0 13px'}}>💬 محادثة خاصة</button>
+            <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:43,border:0,borderRadius:7,background:'#e9e9e9',fontSize:15,cursor:'pointer',marginBottom:6,textAlign:'right',padding:'0 13px'}}>👤⁺ إضافة صديق</button>
+            <button onClick={()=>handleIgnoreUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:43,border:0,borderRadius:7,background:'#e9e9e9',fontSize:15,cursor:'pointer',textAlign:'right',padding:'0 13px'}}>🚫 تجاهل</button>
           </div>
         </div>
       )}
