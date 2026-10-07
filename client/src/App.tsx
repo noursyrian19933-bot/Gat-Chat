@@ -2099,6 +2099,49 @@ export default function App() {
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
+        /* ===== VIDEO MATCH OVERRIDE ===== */
+        .video-theme{background:#00383e!important;color:#222!important;}
+        .video-theme .video-topbar{height:42px!important;min-height:42px!important;background:#00383e!important;padding:0 7px!important;border-bottom:1px solid #0b5358!important;}
+        .video-theme .video-topbar .brand-logo{font-size:17px!important;line-height:1!important;color:#12a6c7!important;font-weight:900!important;}
+        .video-theme .video-topbar .brand-logo span{color:#ff416d!important;}
+        .video-theme .video-chat-scroll{background:#fff!important;padding:0!important;}
+        .video-theme .video-chat-scroll>div{min-height:35px!important;padding:2px 5px!important;gap:5px!important;border-bottom:1px solid #dedede!important;border-radius:0!important;box-shadow:none!important;}
+        .video-theme .video-chat-scroll>div:nth-child(even){background:#ededed!important;}
+        .video-theme .video-chat-scroll>div:nth-child(odd){background:#fff!important;}
+        .video-theme .video-chat-scroll>div>div:first-child{width:28px!important;height:28px!important;min-width:28px!important;border-radius:50%!important;font-size:12px!important;}
+        .video-theme .video-chat-scroll>div>div:nth-child(2){font-size:10px!important;line-height:1.25!important;gap:2px!important;}
+        .video-theme .video-chat-scroll>div>div:nth-child(2) span{font-size:10px!important;}
+        .video-theme .video-chat-scroll img{border-radius:50%!important;}
+        .video-adbar{height:26px;background:#fff;color:#888;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;}
+        .video-radio-bar{height:32px;min-height:32px;background:#00383e;color:#fff;display:flex;align-items:center;gap:5px;padding:0 5px;direction:ltr;flex-shrink:0;border-top:1px solid #0b5358;}
+        .video-radio-play{width:25px;height:25px;border-radius:50%;border:0;background:#fff;color:#00383e;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+        .video-radio-name{font-size:8px;line-height:1.05;text-align:center;min-width:38px;}
+        .video-radio-actions{margin-left:auto;display:flex;align-items:center;gap:9px;}
+        .video-radio-actions button{background:none;border:0;color:#fff;padding:0;font-size:15px;line-height:1;}
+        .video-theme .video-bottom-nav{height:34px!important;min-height:34px!important;background:#00383e!important;border-top:1px solid #0b5358!important;padding:0!important;}
+        .video-theme .video-bottom-nav>div{height:34px!important;padding:1px 2px!important;}
+        .video-theme .video-bottom-nav>div div:first-child{font-size:15px!important;height:16px!important;}
+        .video-theme .video-bottom-nav>div div:last-child{font-size:7px!important;line-height:10px!important;}
+        .video-room-list{background:#efefef!important;padding:8px 6px 12px!important;}
+        .video-room-card{border-radius:9px!important;padding:7px 8px!important;margin-bottom:7px!important;border:1px solid #ddd!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important;}
+        .video-room-card button{background:#00383e!important;border-radius:18px!important;padding:6px 9px!important;font-size:8px!important;min-width:100px!important;box-shadow:none!important;}
+        .video-drawer-overlay>div{width:76%!important;min-width:250px!important;max-width:330px!important;}
+        .video-drawer-overlay button{height:43px!important;font-size:11px!important;padding:0 11px!important;}
+        .video-drawer-overlay button span:first-child{font-size:16px!important;}
+        .video-theme .video-composer{min-height:40px!important;height:40px!important;padding:4px 5px!important;background:#fff!important;gap:4px!important;}
+        .video-theme .video-composer>div{height:32px!important;border-radius:16px!important;background:#f3f3f3!important;border:1px solid #ddd!important;}
+        .video-theme .video-composer input{font-size:9px!important;}
+        .video-theme .video-composer>button[type=submit]{width:32px!important;height:32px!important;background:#00383e!important;font-size:14px!important;}
+        .video-panel{position:fixed!important;top:42px!important;bottom:66px!important;left:0!important;right:0!important;background:#fff!important;z-index:300!important;direction:rtl!important;}
+        .video-panel-header{height:39px!important;min-height:39px!important;background:#00383e!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:space-between!important;padding:0 8px!important;font-size:12px!important;}
+        .video-list-row{min-height:38px!important;height:38px!important;padding:3px 6px!important;border-bottom:1px solid #e4e4e4!important;background:#fff!important;display:flex!important;align-items:center!important;gap:5px!important;}
+        .video-list-row:nth-child(even){background:#f0f0f0!important;}
+        .video-list-avatar{width:28px!important;height:28px!important;border-radius:50%!important;overflow:hidden!important;flex-shrink:0!important;}
+        .video-list-name{font-size:10px!important;color:#333!important;flex:1!important;}
+        .video-search-box{height:34px!important;border-bottom:1px solid #ddd!important;display:flex!important;align-items:center!important;padding:3px 6px!important;gap:5px!important;background:#fff!important;}
+        .video-search-box input{height:27px!important;border:1px solid #ddd!important;background:#f6f6f6!important;border-radius:3px!important;font-size:9px!important;padding:0 8px!important;flex:1!important;outline:none!important;}
+        .video-theme .video-profile-backdrop>div{border-radius:7px!important;max-width:370px!important;}
+
         .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
@@ -2158,6 +2201,8 @@ export default function App() {
           )}
         </header>
       )}
+
+      {currentView === 'chat' && <div className="video-adbar">إعلان ترويجي</div>}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#ffffff', minHeight: 0, position: 'relative' }}>
         
@@ -2530,12 +2575,23 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'50px',minHeight:'50px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
-          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
-          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
-          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
-          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={20}/></div><div>خيارات</div></div>
-        </nav>
+        <>
+          <div className="video-radio-bar">
+            <button className="video-radio-play" type="button">▶</button>
+            <div className="video-radio-name">Radio<br/>9090</div>
+            <div className="video-radio-actions">
+              <button type="button" onClick={()=>setShowMainMenu(true)}>☰</button>
+              <button type="button" onClick={()=>setShowOnlineModal(true)}>♟</button>
+              <button type="button" onClick={()=>setShowSettingsModal(true)}>⚙</button>
+            </div>
+          </div>
+          <nav className="video-bottom-nav" style={{height:'34px',minHeight:'34px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0',zIndex:10}}>
+            <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={16}/></div><div>الغرف</div></div>
+            <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={16}/></div><div>المتصلين</div></div>
+            <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={16}/></div><div>الأصدقاء</div></div>
+            <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={16}/></div><div>خيارات</div></div>
+          </nav>
+        </>
       )}
 
       {showMainMenu && (
@@ -2543,7 +2599,7 @@ export default function App() {
           <div onClick={e=>e.stopPropagation()} style={{width:'44%',minWidth:'300px',maxWidth:'420px',height:'100%',background:'#fff',boxShadow:'8px 0 24px rgba(0,0,0,.2)',overflowY:'auto'}}>
             <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
             {[
-              ['🟢','متصل',()=>setShowOnlineModal(true)],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['✉','إتصل بنا',()=>setShowMessagesModal(true)],['🔍','بحث',()=>setShowTopSearch(true)],['💎','كبار الشخصيات',()=>setShowVipModal(true)],['➕','المزيد',()=>{}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}]
+              ['🏠','الغرف',()=>setShowRoomsModal(true)],['🟢','المتصلين',()=>setShowOnlineModal(true)],['👥','الأصدقاء',()=>setShowFriendsModal(true)],['✉','الرسائل الخاصة',()=>setShowMessagesModal(true)],['👤⁺','طلبات الصداقة',()=>setShowRequestsModal(true)],['🔔','الإشعارات',()=>handleOpenNotifications()],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['🔍','البحث عن أشخاص',()=>setShowTopSearch(true)],['💎','كبار الشخصيات والرتب',()=>setShowVipModal(true)],['⚙','الإعدادات',()=>{setShowSettingsModal(true);setSettingsTab('info')}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}]
             ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'54px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px',fontSize:'15px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'20px'}}>{icon as any}</span><span>{label as any}</span></button>)}
           </div>
         </div>
@@ -2701,7 +2757,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
           </div>
         </div>
       )}
