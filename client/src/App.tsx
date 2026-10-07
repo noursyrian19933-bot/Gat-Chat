@@ -157,12 +157,14 @@ const VideoIcon = ({ type, size = 20, stroke = 2.2 }: { type: string; size?: num
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<'menu' | 'register' | 'login' | 'guest' | 'forgot'>('login');
+  const [authMode, setAuthMode] = useState<'menu' | 'register' | 'login' | 'guest' | 'forgot'>('menu');
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('الأردن');
+  const [registerGender, setRegisterGender] = useState('ذكر');
+  const [registerAge, setRegisterAge] = useState('18');
   const [guestName, setGuestName] = useState(() => localStorage.getItem('gat_guest_name') || '');
   
   const [errorMessage, setErrorMessage] = useState('');
@@ -203,6 +205,8 @@ export default function App() {
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [showRoomsModal, setShowRoomsModal] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
+  const [videoMenuSection, setVideoMenuSection] = useState<'main'|'people'|'social'|'content'|'account'|'more'>('main');
+  const [vipTab, setVipTab] = useState<'leaders'|'ranks'|'gifts'>('leaders');
   const [showTopSearch, setShowTopSearch] = useState(false);
   const [showWallModal, setShowWallModal] = useState(false);
   const [showNewsModal, setShowNewsModal] = useState(false);
@@ -1153,6 +1157,8 @@ export default function App() {
         displayName: displayName,
         country: selectedCountry,
         flag: getCountryFlag(selectedCountry),
+        gender: registerGender,
+        age: registerAge,
         joinedDate: new Date().toISOString().split('T')[0]
       }, { merge: true });
 
@@ -1894,13 +1900,12 @@ export default function App() {
 
   if (!user && !loading) {
     return (
-      <div className="video-auth-screen" style={{ backgroundColor: '#071c22', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', height: '100dvh', padding: '0 8px 24px', direction: 'rtl', boxSizing: 'border-box', overflowY: 'auto' }}>
-        <div className="video-auth-wrap" style={{ width: '100%', maxWidth: '430px', padding: '0', display: 'flex', flexDirection: 'column', gap: '0', position: 'relative', zIndex: 2 }}>
+      <div style={{ backgroundColor: '#0b141a', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh', padding: '16px', direction: 'rtl', boxSizing: 'border-box' }}>
+        <div style={{ width: '100%', maxWidth: '380px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          <div className="video-auth-hero">
-            <div className="video-auth-logo">Arabic<span>chat</span></div>
-            <div className="video-auth-title">شات تعارف عربي</div>
-            <div className="video-auth-subtitle">تعارف، دردشة، أصدقاء وصداقات عربية</div>
+          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#ffffff', margin: '0 0 6px 0' }}>GAT CHAT 💬</h2>
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>منصة الدردشة العربية العصرية</p>
           </div>
 
           {errorMessage && <div style={{ color: '#ef4444', fontSize: '11px', background: 'rgba(239,68,68,0.15)', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(239,68,68,0.3)' }}>{errorMessage}</div>}
@@ -1957,6 +1962,30 @@ export default function App() {
               </div>
 
               <div>
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>الجنس</label>
+                <select
+                  value={registerGender}
+                  onChange={(e) => setRegisterGender(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }}
+                >
+                  <option value="ذكر">ذكر</option>
+                  <option value="أنثى">أنثى</option>
+                  <option value="آخر">آخر</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>العمر</label>
+                <select
+                  value={registerAge}
+                  onChange={(e) => setRegisterAge(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }}
+                >
+                  {Array.from({ length: 63 }, (_, i) => 18 + i).map(age => <option key={age} value={String(age)}>{age}</option>)}
+                </select>
+              </div>
+
+              <div>
                 <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
@@ -1988,7 +2017,6 @@ export default function App() {
               </div>
 
               <button type="submit" style={{ background: '#1e293b', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', marginTop: '4px' }}>تسجيل الدخول</button>
-              <button type="button" onClick={() => { setAuthMode('register'); setErrorMessage(''); setSuccessMessage(''); }} className="video-register-button">إنشاء حساب جديد 👤</button>
               <button type="button" onClick={() => setAuthMode('menu')} style={{ background: 'transparent', color: '#94a3b8', border: 'none', padding: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← رجوع للقائمة الرئيسية</button>
             </form>
           )}
@@ -2099,50 +2127,46 @@ export default function App() {
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
-        /* ===== VIDEO MATCH OVERRIDE ===== */
-        .video-theme{background:#00383e!important;color:#222!important;}
-        .video-theme .video-topbar{height:42px!important;min-height:42px!important;background:#00383e!important;padding:0 7px!important;border-bottom:1px solid #0b5358!important;}
-        .video-theme .video-topbar .brand-logo{font-size:17px!important;line-height:1!important;color:#12a6c7!important;font-weight:900!important;}
-        .video-theme .video-topbar .brand-logo span{color:#ff416d!important;}
-        .video-theme .video-chat-scroll{background:#fff!important;padding:0!important;}
-        .video-theme .video-chat-scroll>div{min-height:35px!important;padding:2px 5px!important;gap:5px!important;border-bottom:1px solid #dedede!important;border-radius:0!important;box-shadow:none!important;}
-        .video-theme .video-chat-scroll>div:nth-child(even){background:#ededed!important;}
-        .video-theme .video-chat-scroll>div:nth-child(odd){background:#fff!important;}
-        .video-theme .video-chat-scroll>div>div:first-child{width:28px!important;height:28px!important;min-width:28px!important;border-radius:50%!important;font-size:12px!important;}
-        .video-theme .video-chat-scroll>div>div:nth-child(2){font-size:10px!important;line-height:1.25!important;gap:2px!important;}
-        .video-theme .video-chat-scroll>div>div:nth-child(2) span{font-size:10px!important;}
-        .video-theme .video-chat-scroll img{border-radius:50%!important;}
-        .video-adbar{height:26px;background:#fff;color:#888;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;}
-        .video-radio-bar{height:32px;min-height:32px;background:#00383e;color:#fff;display:flex;align-items:center;gap:5px;padding:0 5px;direction:ltr;flex-shrink:0;border-top:1px solid #0b5358;}
-        .video-radio-play{width:25px;height:25px;border-radius:50%;border:0;background:#fff;color:#00383e;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;}
-        .video-radio-name{font-size:8px;line-height:1.05;text-align:center;min-width:38px;}
-        .video-radio-actions{margin-left:auto;display:flex;align-items:center;gap:9px;}
-        .video-radio-actions button{background:none;border:0;color:#fff;padding:0;font-size:15px;line-height:1;}
-        .video-theme .video-bottom-nav{height:34px!important;min-height:34px!important;background:#00383e!important;border-top:1px solid #0b5358!important;padding:0!important;}
-        .video-theme .video-bottom-nav>div{height:34px!important;padding:1px 2px!important;}
-        .video-theme .video-bottom-nav>div div:first-child{font-size:15px!important;height:16px!important;}
-        .video-theme .video-bottom-nav>div div:last-child{font-size:7px!important;line-height:10px!important;}
-        .video-room-list{background:#efefef!important;padding:8px 6px 12px!important;}
-        .video-room-card{border-radius:9px!important;padding:7px 8px!important;margin-bottom:7px!important;border:1px solid #ddd!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important;}
-        .video-room-card button{background:#00383e!important;border-radius:18px!important;padding:6px 9px!important;font-size:8px!important;min-width:100px!important;box-shadow:none!important;}
-        .video-drawer-overlay>div{width:76%!important;min-width:250px!important;max-width:330px!important;}
-        .video-drawer-overlay button{height:43px!important;font-size:11px!important;padding:0 11px!important;}
-        .video-drawer-overlay button span:first-child{font-size:16px!important;}
-        .video-theme .video-composer{min-height:40px!important;height:40px!important;padding:4px 5px!important;background:#fff!important;gap:4px!important;}
-        .video-theme .video-composer>div{height:32px!important;border-radius:16px!important;background:#f3f3f3!important;border:1px solid #ddd!important;}
-        .video-theme .video-composer input{font-size:9px!important;}
-        .video-theme .video-composer>button[type=submit]{width:32px!important;height:32px!important;background:#00383e!important;font-size:14px!important;}
-        .video-panel{position:fixed!important;top:42px!important;bottom:66px!important;left:0!important;right:0!important;background:#fff!important;z-index:300!important;direction:rtl!important;}
-        .video-panel-header{height:39px!important;min-height:39px!important;background:#00383e!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:space-between!important;padding:0 8px!important;font-size:12px!important;}
-        .video-list-row{min-height:38px!important;height:38px!important;padding:3px 6px!important;border-bottom:1px solid #e4e4e4!important;background:#fff!important;display:flex!important;align-items:center!important;gap:5px!important;}
-        .video-list-row:nth-child(even){background:#f0f0f0!important;}
-        .video-list-avatar{width:28px!important;height:28px!important;border-radius:50%!important;overflow:hidden!important;flex-shrink:0!important;}
-        .video-list-name{font-size:10px!important;color:#333!important;flex:1!important;}
-        .video-search-box{height:34px!important;border-bottom:1px solid #ddd!important;display:flex!important;align-items:center!important;padding:3px 6px!important;gap:5px!important;background:#fff!important;}
-        .video-search-box input{height:27px!important;border:1px solid #ddd!important;background:#f6f6f6!important;border-radius:3px!important;font-size:9px!important;padding:0 8px!important;flex:1!important;outline:none!important;}
-        .video-theme .video-profile-backdrop>div{border-radius:7px!important;max-width:370px!important;}
-
         .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
+
+        /* ===== COMPLETE VIDEO MENU / LIST PARITY ===== */
+        .video-parity-overlay{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:9000;display:flex;direction:rtl}
+        .video-parity-drawer{width:min(92vw,390px);height:100%;background:#fff;display:flex;flex-direction:column;box-shadow:-10px 0 35px rgba(0,0,0,.35);overflow:hidden}
+        .video-parity-head{height:54px;min-height:54px;background:#00383e;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #0b5358}
+        .video-parity-head b{font-size:14px}.video-parity-close{background:none;border:0;color:#fff;font-size:27px;width:38px;height:38px;cursor:pointer}
+        .video-parity-tabs{display:grid;grid-template-columns:repeat(3,1fr);background:#f2f2f2;border-bottom:1px solid #ddd}
+        .video-parity-tabs button{border:0;background:#f2f2f2;color:#555;height:39px;font-size:10px;cursor:pointer;border-left:1px solid #ddd}
+        .video-parity-tabs button.active{background:#fff;color:#008fa3;font-weight:800;border-bottom:2px solid #00a8bf}
+        .video-parity-list{flex:1;overflow:auto;background:#fff}
+        .video-parity-row{width:100%;height:49px;border:0;border-bottom:1px solid #e7e7e7;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;cursor:pointer;color:#333;text-align:right}
+        .video-parity-row:active{background:#eaf7f8}
+        .video-parity-row .vp-icon{width:31px;height:31px;border-radius:50%;background:#edf7f8;color:#008fa3;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+        .video-parity-row .vp-text{flex:1;padding:0 10px;font-size:11px}.video-parity-row .vp-arrow{font-size:15px;color:#aaa}
+        .video-parity-section{padding:9px 11px 5px;background:#f3f3f3;color:#888;font-size:9px;font-weight:700}
+        .video-parity-badge{background:#ef233c;color:#fff;border-radius:9px;min-width:17px;padding:2px 5px;font-size:8px;text-align:center;margin-left:5px}
+        .video-parity-modal{position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:8px;direction:rtl}
+        .video-parity-card{width:min(96vw,390px);max-height:92dvh;background:#fff;border-radius:5px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 35px rgba(0,0,0,.35)}
+        .video-parity-card-head{height:45px;background:#00383e;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 10px;flex:none}
+        .video-parity-card-head b{font-size:12px}.video-parity-card-head button{border:0;background:none;color:#fff;font-size:22px;cursor:pointer}
+        .video-parity-body{flex:1;overflow:auto;background:#fff}
+        .video-vip-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #ddd}
+        .video-vip-tabs button{height:37px;border:0;background:#f4f4f4;font-size:10px;color:#666}
+        .video-vip-tabs button.active{background:#fff;color:#008fa3;border-bottom:2px solid #008fa3;font-weight:800}
+        .video-rank-row{height:50px;display:flex;align-items:center;border-bottom:1px solid #e7e7e7;padding:0 8px;background:#fff}
+        .video-rank-row:nth-child(even){background:#f3f3f3}
+        .video-rank-avatar{width:35px;height:35px;border-radius:50%;overflow:hidden;background:#ddd;flex:none;margin:0 7px}
+        .video-rank-avatar img{width:100%;height:100%;object-fit:cover}.video-rank-name{flex:1;font-size:10px}.video-rank-num{width:25px;text-align:center;font-size:10px;color:#777}
+        .video-gift-row{margin:5px 7px;height:52px;border-radius:7px;display:flex;align-items:center;padding:0 8px;color:#fff;font-size:10px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+        .video-gift-row:nth-child(4n+1){background:linear-gradient(90deg,#f00,#ff8a8a,#f00)}
+        .video-gift-row:nth-child(4n+2){background:linear-gradient(90deg,#b100ff,#ff39d0,#7b00ff)}
+        .video-gift-row:nth-child(4n+3){background:linear-gradient(90deg,#f26a00,#ffd000,#8f2600)}
+        .video-gift-row:nth-child(4n+4){background:linear-gradient(90deg,#111,#444,#111)}
+        .video-settings-tabs{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid #ddd;background:#f5f5f5}
+        .video-settings-tabs button{height:36px;border:0;background:transparent;font-size:9px;color:#666}
+        .video-settings-tabs button.active{background:#fff;color:#008fa3;border-bottom:2px solid #008fa3;font-weight:800}
+        .video-setting-row{display:flex;align-items:center;justify-content:space-between;min-height:43px;padding:7px 10px;border-bottom:1px solid #eee;font-size:10px}
+        .video-setting-row input,.video-setting-row select{font-size:10px;border:1px solid #ddd;background:#f7f7f7;border-radius:3px;padding:6px;max-width:55%}
+
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
           .video-topbar .brand-logo { font-size:18px !important; }
@@ -2201,8 +2225,6 @@ export default function App() {
           )}
         </header>
       )}
-
-      {currentView === 'chat' && <div className="video-adbar">إعلان ترويجي</div>}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#ffffff', minHeight: 0, position: 'relative' }}>
         
@@ -2575,32 +2597,72 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <>
-          <div className="video-radio-bar">
-            <button className="video-radio-play" type="button">▶</button>
-            <div className="video-radio-name">Radio<br/>9090</div>
-            <div className="video-radio-actions">
-              <button type="button" onClick={()=>setShowMainMenu(true)}>☰</button>
-              <button type="button" onClick={()=>setShowOnlineModal(true)}>♟</button>
-              <button type="button" onClick={()=>setShowSettingsModal(true)}>⚙</button>
-            </div>
-          </div>
-          <nav className="video-bottom-nav" style={{height:'34px',minHeight:'34px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0',zIndex:10}}>
-            <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={16}/></div><div>الغرف</div></div>
-            <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={16}/></div><div>المتصلين</div></div>
-            <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={16}/></div><div>الأصدقاء</div></div>
-            <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'8px',flex:1,minWidth:0}}><div style={{fontSize:'16px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={16}/></div><div>خيارات</div></div>
-          </nav>
-        </>
+        <nav className="video-bottom-nav" style={{height:'50px',minHeight:'50px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
+          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
+          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
+          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
+          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={20}/></div><div>خيارات</div></div>
+        </nav>
       )}
 
       {showMainMenu && (
-        <div className="video-drawer-overlay" onClick={()=>setShowMainMenu(false)} style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.38)',zIndex:260,direction:'rtl'}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'44%',minWidth:'300px',maxWidth:'420px',height:'100%',background:'#fff',boxShadow:'8px 0 24px rgba(0,0,0,.2)',overflowY:'auto'}}>
-            <button onClick={()=>setShowMainMenu(false)} style={{width:'100%',height:'52px',background:'#fff',border:0,borderBottom:'1px solid #ddd',fontSize:'30px',textAlign:'left',padding:'0 18px',cursor:'pointer'}}>×</button>
-            {[
-              ['🏠','الغرف',()=>setShowRoomsModal(true)],['🟢','المتصلين',()=>setShowOnlineModal(true)],['👥','الأصدقاء',()=>setShowFriendsModal(true)],['✉','الرسائل الخاصة',()=>setShowMessagesModal(true)],['👤⁺','طلبات الصداقة',()=>setShowRequestsModal(true)],['🔔','الإشعارات',()=>handleOpenNotifications()],['📡','حائط الأصدقاء',()=>setShowWallModal(true)],['📰','الأخبار',()=>setShowNewsModal(true)],['🔍','البحث عن أشخاص',()=>setShowTopSearch(true)],['💎','كبار الشخصيات والرتب',()=>setShowVipModal(true)],['⚙','الإعدادات',()=>{setShowSettingsModal(true);setSettingsTab('info')}],['f','تابعنا على فيسبوك',()=>{}],['▶','قناتنا على يوتيوب',()=>{}],['🤖','تطبيق الأندرويد',()=>{}]
-            ].map(([icon,label,fn],i)=><button key={i} onClick={()=>{(fn as any)();setShowMainMenu(false)}} style={{width:'100%',height:'54px',background:'#fff',border:0,borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 18px',fontSize:'15px',color:'#444',cursor:'pointer'}}><span style={{fontSize:'20px'}}>{icon as any}</span><span>{label as any}</span></button>)}
+        <div className="video-parity-overlay" onClick={()=>setShowMainMenu(false)}>
+          <div className="video-parity-drawer" onClick={e=>e.stopPropagation()}>
+            <div className="video-parity-head">
+              <b>{videoMenuSection==='main'?'القائمة الرئيسية':videoMenuSection==='people'?'الأشخاص':videoMenuSection==='social'?'التواصل':videoMenuSection==='content'?'المحتوى':videoMenuSection==='account'?'الحساب':'المزيد'}</b>
+              <button className="video-parity-close" onClick={()=>setShowMainMenu(false)}>×</button>
+            </div>
+            <div className="video-parity-tabs">
+              {([['main','الرئيسية'],['people','الأشخاص'],['social','التواصل'],['content','المحتوى'],['account','الحساب'],['more','المزيد']] as const).map(([id,label])=>
+                <button key={id} className={videoMenuSection===id?'active':''} onClick={()=>setVideoMenuSection(id)}>{label}</button>
+              )}
+            </div>
+            <div className="video-parity-list">
+              {videoMenuSection==='main' && <>
+                <div className="video-parity-section">الغرف والدخول</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowRoomsModal(true)}}><span className="vp-icon">🏠</span><span className="vp-text">قائمة الغرف</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setCurrentView('rooms');setSelectedRoom(null)}}><span className="vp-icon">▦</span><span className="vp-text">صفحة الغرف الرئيسية</span><span className="vp-arrow">‹</span></button>
+                <div className="video-parity-section">الدردشة</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowOnlineModal(true)}}><span className="vp-icon">🟢</span><span className="vp-text">المتصلون الآن</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowMessagesModal(true)}}><span className="vp-icon">✉</span><span className="vp-text">الرسائل الخاصة</span>{totalUnreadMessages>0&&<span className="video-parity-badge">{totalUnreadMessages}</span>}<span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowTopSearch(true)}}><span className="vp-icon">⌕</span><span className="vp-text">البحث عن مستخدم</span><span className="vp-arrow">‹</span></button>
+              </>}
+              {videoMenuSection==='people' && <>
+                <div className="video-parity-section">قوائم المستخدمين</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowOnlineModal(true)}}><span className="vp-icon">🟢</span><span className="vp-text">المتصلون في الغرفة</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowFriendsModal(true)}}><span className="vp-icon">👥</span><span className="vp-text">الأصدقاء</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowRequestsModal(true)}}><span className="vp-icon">➕</span><span className="vp-text">طلبات الصداقة</span>{pendingRequests.length>0&&<span className="video-parity-badge">{pendingRequests.length}</span>}<span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('leaders')}}><span className="vp-icon">🏆</span><span className="vp-text">كبار الشخصيات والترتيب</span><span className="vp-arrow">‹</span></button>
+              </>}
+              {videoMenuSection==='social' && <>
+                <div className="video-parity-section">التواصل والتنبيهات</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);handleOpenNotifications()}}><span className="vp-icon">🔔</span><span className="vp-text">الإشعارات</span>{unreadNotificationsCount>0&&<span className="video-parity-badge">{unreadNotificationsCount}</span>}<span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowMessagesModal(true)}}><span className="vp-icon">✉</span><span className="vp-text">صندوق الرسائل</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowWallModal(true)}}><span className="vp-icon">📝</span><span className="vp-text">حائط الأصدقاء</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowTopSearch(true)}}><span className="vp-icon">🔎</span><span className="vp-text">البحث والتصفية</span><span className="vp-arrow">‹</span></button>
+              </>}
+              {videoMenuSection==='content' && <>
+                <div className="video-parity-section">المحتوى</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowNewsModal(true)}}><span className="vp-icon">📰</span><span className="vp-text">الأخبار والمنشورات</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('ranks')}}><span className="vp-icon">💎</span><span className="vp-text">الرتب والمستويات</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('gifts')}}><span className="vp-icon">🎁</span><span className="vp-text">الهدايا</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('leaders')}}><span className="vp-icon">👑</span><span className="vp-text">كبار الشخصيات</span><span className="vp-arrow">‹</span></button>
+              </>}
+              {videoMenuSection==='account' && <>
+                <div className="video-parity-section">الحساب والملف</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('info')}}><span className="vp-icon">👤</span><span className="vp-text">ملفي الشخصي</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('options')}}><span className="vp-icon">⚙</span><span className="vp-text">إعدادات الحساب</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('friends')}}><span className="vp-icon">👥</span><span className="vp-text">إعدادات الأصدقاء</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('ignore')}}><span className="vp-icon">🚫</span><span className="vp-text">قائمة التجاهل</span><span className="vp-arrow">‹</span></button>
+              </>}
+              {videoMenuSection==='more' && <>
+                <div className="video-parity-section">خيارات إضافية</div>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('more')}}><span className="vp-icon">☰</span><span className="vp-text">المزيد من الخيارات</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowNewsModal(true)}}><span className="vp-icon">📢</span><span className="vp-text">الإعلانات والأخبار</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('options')}}><span className="vp-icon">⚙</span><span className="vp-text">الخيارات العامة</span><span className="vp-arrow">‹</span></button>
+                <button className="video-parity-row" onClick={()=>setShowMainMenu(false)}><span className="vp-icon">ℹ</span><span className="vp-text">معلومات الموقع</span><span className="vp-arrow">‹</span></button>
+              </>}
+            </div>
           </div>
         </div>
       )}
@@ -2754,10 +2816,43 @@ export default function App() {
       )}
 
       {showVipModal && (
-        <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
-            <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+        <div className="video-parity-modal" onClick={()=>setShowVipModal(false)}>
+          <div className="video-parity-card" onClick={e=>e.stopPropagation()}>
+            <div className="video-parity-card-head"><b>كبار الشخصيات والرتب</b><button onClick={()=>setShowVipModal(false)}>×</button></div>
+            <div className="video-vip-tabs">
+              <button className={vipTab==='leaders'?'active':''} onClick={()=>setVipTab('leaders')}>كبار الشخصيات</button>
+              <button className={vipTab==='ranks'?'active':''} onClick={()=>setVipTab('ranks')}>الرتب</button>
+              <button className={vipTab==='gifts'?'active':''} onClick={()=>setVipTab('gifts')}>الهدايا</button>
+            </div>
+            <div className="video-parity-body">
+              {vipTab==='leaders' && <div>
+                {rankedUsers.length===0
+                  ? <div style={{padding:'30px',textAlign:'center',fontSize:'11px',color:'#888'}}>لا توجد بيانات ترتيب متاحة حالياً.</div>
+                  : rankedUsers.map((u:any,i:number)=>
+                    <div className="video-rank-row" key={u.id||i} onClick={()=>{setShowVipModal(false);openUserProfile(u)}}>
+                      <div className="video-rank-num">{i+1}</div>
+                      <div className="video-rank-avatar">{u.avatarUrl?<img src={u.avatarUrl} alt=""/>:'👤'}</div>
+                      <div className="video-rank-name"><b style={{color:u.nameColor||'#008fa3'}}>{u.displayName||u.name||'مستخدم'}</b><div style={{fontSize:'8px',color:'#999'}}>{u.country||''} {u.flag||''} · {normalizeRole(u.role)}</div></div>
+                      <span style={{fontSize:'13px'}}>›</span>
+                    </div>
+                  )
+                }
+              </div>}
+              {vipTab==='ranks' && <div>
+                {['عضو جديد','عضو نشيط','عضو مميز','VIP','Super VIP','مراقب','مشرف','Super Admin','صاحب الموقع'].map((r,i)=>
+                  <div className="video-rank-row" key={r}>
+                    <div className="video-rank-num">{i+1}</div>
+                    <div className="video-rank-avatar" style={{display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>{['👤','⭐','💠','💎','👑','🛡️','🔰','🏆','👑'][i]}</div>
+                    <div className="video-rank-name"><b>{r}</b><div style={{fontSize:'8px',color:'#999'}}>رتبة ومزايا الحساب</div></div>
+                  </div>
+                )}
+              </div>}
+              {vipTab==='gifts' && <div style={{padding:'4px 0'}}>
+                {['🎁 هدية ترحيب','💎 ألماسة','👑 تاج ملكي','🌹 وردة','❤️ قلب','🔥 نار','🎉 حفلة','🏆 كأس','🚀 صاروخ','💰 ذهب'].map((g,i)=>
+                  <div className="video-gift-row" key={g}><span style={{fontSize:'20px',marginLeft:'8px'}}>{g.split(' ')[0]}</span><span>{g.substring(g.indexOf(' ')+1)}</span><span style={{marginRight:'auto',fontSize:'8px'}}>#{i+1}</span></div>
+                )}
+              </div>}
+            </div>
           </div>
         </div>
       )}
@@ -2949,9 +3044,10 @@ export default function App() {
               <button onClick={() => setShowSettingsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
 
-            <div style={{ display: 'flex', borderBottom: '1px solid #cbd5e1', backgroundColor: '#f8fafc' }}>
-              <button onClick={() => setSettingsTab('info')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'info' ? '#ffffff' : 'transparent', color: settingsTab === 'info' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'info' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>المعلومات</button>
-              <button onClick={() => setSettingsTab('options')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'options' ? '#ffffff' : 'transparent', color: settingsTab === 'options' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'options' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>الخيارات</button>
+            <div className="video-settings-tabs">
+              {([['info','المعلومات'],['friends','الأصدقاء'],['ignore','التجاهل'],['options','الخيارات'],['more','المزيد']] as const).map(([id,label])=>
+                <button key={id} className={settingsTab===id?'active':''} onClick={()=>setSettingsTab(id)}>{label}</button>
+              )}
             </div>
 
             <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
@@ -3107,6 +3203,20 @@ export default function App() {
                 </div>
               )}
 
+              {settingsTab === 'friends' && (
+                <div>
+                  <div className="video-setting-row"><span>عرض قائمة الأصدقاء</span><select defaultValue="all"><option value="all">الجميع</option><option value="online">المتصلون فقط</option></select></div>
+                  <div className="video-setting-row"><span>السماح بطلبات الصداقة</span><input type="checkbox" defaultChecked /></div>
+                  <div className="video-setting-row"><span>إظهار حالة الاتصال</span><input type="checkbox" defaultChecked /></div>
+                </div>
+              )}
+              {settingsTab === 'ignore' && (
+                <div>
+                  <div className="video-setting-row"><span>قائمة المستخدمين المتجاهلين</span><span style={{color:'#999'}}>0</span></div>
+                  <div className="video-setting-row"><span>إخفاء رسائل المتجاهلين</span><input type="checkbox" defaultChecked /></div>
+                  <div style={{padding:'12px',fontSize:'9px',color:'#888'}}>لا توجد أسماء متجاهلة حالياً.</div>
+                </div>
+              )}
               {settingsTab === 'options' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <button 
@@ -3122,6 +3232,15 @@ export default function App() {
                   >
                     تسجيل الخروج 🚪
                   </button>
+                </div>
+              )}
+              {settingsTab === 'more' && (
+                <div>
+                  <div className="video-setting-row"><span>صوت الإشعارات</span><input type="checkbox" defaultChecked /></div>
+                  <div className="video-setting-row"><span>تشغيل الراديو تلقائياً</span><input type="checkbox" /></div>
+                  <div className="video-setting-row"><span>إظهار الرسائل الجديدة</span><input type="checkbox" defaultChecked /></div>
+                  <div className="video-setting-row"><span>الوضع الليلي</span><input type="checkbox" /></div>
+                  <div className="video-setting-row"><span>حجم الخط</span><select defaultValue="normal"><option value="small">صغير</option><option value="normal">متوسط</option><option value="large">كبير</option></select></div>
                 </div>
               )}
             </div>
