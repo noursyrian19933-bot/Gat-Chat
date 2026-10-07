@@ -3241,7 +3241,18 @@ export default function App() {
               {!isSelfProfile && <button onClick={()=>setSuccessMessage('🚩 تم تسجيل البلاغ عن المستخدم.')} style={{position:'absolute',top:11,left:91,border:0,background:'transparent',color:'#fff',fontSize:18,lineHeight:1,cursor:'pointer',zIndex:3}}>{getCountryFlag(selectedProfileUser.country || 'الأردن')}</button>}
               {!isSelfProfile && <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:11,right:17,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>✉</button>}
               <div style={{position:'relative',width:'90px',height:'90px',borderRadius:'50%',background:'#e2e8f0',border:'4px solid #94a3b8',overflow:'hidden',marginBottom:'7px',zIndex:1}>
-                {selectedProfileUser.avatarUrl ? <img src={selectedProfileUser.avatarUrl} alt="" onClick={()=>setPreviewImage(selectedProfileUser.avatarUrl)} style={{width:'100%',height:'100%',objectFit:'cover',cursor:'pointer'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'42px',color:'#64748b'}}>👤</div>}
+                {selectedProfileUser.avatarUrl ? (
+                  <img
+                    src={selectedProfileUser.avatarUrl}
+                    alt=""
+                    onClick={() => setPreviewImage(selectedProfileUser.avatarUrl)}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px', color: '#64748b' }}>
+                    👤
+                  </div>
+                )}
                 <span style={{position:'absolute',bottom:-1,right:-1,width:'18px',height:'18px',borderRadius:'50%',background:selectedProfileUser.online?'#84cc16':'#94a3b8',border:'2px solid #fff'}} />
               </div>
               <div style={{fontSize:'11px',fontWeight:'700',marginBottom:'2px',color:'#fff',zIndex:1}}>{getRoleLabel(selectedProfileUser)}</div>
