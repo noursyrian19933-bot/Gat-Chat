@@ -2093,6 +2093,22 @@ export default function App() {
     }
   };
 
+  const editOwnDisplayName = async () => {
+    if (!user || user.isAnonymous) return;
+    const currentName = user.displayName || user.email?.split('@')[0] || guestName || 'عضو';
+    const nextName = window.prompt('تعديل الاسم:', currentName);
+    if (!nextName || !nextName.trim() || nextName.trim() === currentName) return;
+    const cleanName = nextName.trim();
+    try {
+      await updateProfile(user, { displayName: cleanName });
+      await updateDoc(doc(db, 'users', user.uid), { displayName: cleanName });
+      await setDoc(doc(db, 'room_presence', user.uid), { userName: cleanName }, { merge: true });
+      setSuccessMessage('✅ تم تحديث الاسم.');
+    } catch (e: any) {
+      setErrorMessage(`❌ تعذر تحديث الاسم: ${e?.message || e}`);
+    }
+  };
+
   const renderBadgeText = (text: string) => {
     const badgeRegex = /\(#\s*([^#]+)\s*#\)/g;
     const parts: (string | React.ReactNode)[] = [];
@@ -2346,7 +2362,7 @@ export default function App() {
         .video-rooms-panel form input { font-size:12px !important; }
         .video-rooms-panel form button { border-radius:10px !important; }
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
-        .video-profile-backdrop > div { border-radius:18px !important; max-width:664px !important; }
+        .video-profile-backdrop > div { border-radius:14px !important; max-width:390px !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
         .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
@@ -3134,61 +3150,60 @@ export default function App() {
       )}
 
       {showSettingsModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.62)', zIndex: 110, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '14px' }}>
-          <div style={{ width: '100%', maxWidth: '664px', height: 'min(700px, 86dvh)', background: '#fff', borderRadius: '7px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 30px rgba(0,0,0,.35)' }}>
-            <div style={{ height: '218px', minHeight: '218px', background: '#003d43', color: '#fff', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '20px' }}>
-              <button onClick={() => setShowSettingsModal(false)} style={{ position: 'absolute', top: '20px', left: '20px', border: 0, background: 'transparent', color: '#fff', fontSize: '36px', lineHeight: 1, cursor: 'pointer' }}>×</button>
-              <div style={{ position: 'absolute', top: '26px', right: '25px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ position:'relative', width: '168px', height: '168px', borderRadius: '8px', overflow: 'hidden', background: '#334155', border: '1px solid rgba(255,255,255,.35)' }}>
-                  {profileAvatar ? <img src={profileAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '60px' }}>👤</div>}
-                  {canEditAvatar && <div style={{position:'absolute',left:0,right:0,bottom:0,height:42,background:'rgba(0,0,0,.58)',display:'flex',alignItems:'center',justifyContent:'space-around'}}>
-                    <button onClick={()=>{setProfileAvatar('');saveSettingToFirebase('avatarUrl','')}} style={{border:0,background:'transparent',color:'#fff',fontSize:24,cursor:'pointer'}}>×</button>
-                    <button onClick={()=>avatarInputRef.current?.click()} style={{border:0,background:'transparent',color:'#fff',fontSize:23,cursor:'pointer'}}>📷</button>
-                  </div>}
-                </div>
+        <div style={{ position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,.62)', zIndex:110, display:'flex', justifyContent:'center', alignItems:'center', direction:'rtl', padding:'8px' }}>
+          <div style={{ width:'100%', maxWidth:'390px', height:'410px', maxHeight:'86dvh', background:'#fff', borderRadius:'7px', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 12px 30px rgba(0,0,0,.35)' }}>
+            <div style={{ height:'130px', minHeight:'130px', background:'#003d43', color:'#fff', position:'relative', display:'flex', alignItems:'flex-end', justifyContent:'center', paddingBottom:'11px' }}>
+              <button onClick={() => setShowSettingsModal(false)} style={{ position:'absolute', top:'10px', left:'15px', border:0, background:'transparent', color:'#fff', fontSize:'30px', lineHeight:1, cursor:'pointer', zIndex:4 }}>×</button>
+              <div style={{ position:'absolute', top:'15px', right:'15px', width:'100px', height:'100px', borderRadius:'6px', overflow:'hidden', background:'#334155', border:'1px solid rgba(255,255,255,.35)' }}>
+                {profileAvatar ? <img src={profileAvatar} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px' }}>👤</div>}
+                {canEditAvatar && <div style={{ position:'absolute', left:0, right:0, bottom:0, height:'26px', background:'rgba(0,0,0,.58)', display:'flex', alignItems:'center', justifyContent:'space-around' }}>
+                  <button onClick={()=>{ setProfileAvatar(''); saveSettingToFirebase('avatarUrl',''); }} style={{ border:0, background:'transparent', color:'#fff', fontSize:'19px', lineHeight:1, cursor:'pointer' }}>×</button>
+                  <button onClick={()=>avatarInputRef.current?.click()} style={{ border:0, background:'transparent', color:'#fff', fontSize:'18px', lineHeight:1, cursor:'pointer' }}>📷</button>
+                </div>}
               </div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                {user?.displayName || user?.email?.split('@')[0] || guestName || 'عضو'} <span style={{ fontSize: '24px' }}>✎</span>
+              <div style={{ fontSize:'16px', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px', zIndex:2 }}>
+                {user?.displayName || user?.email?.split('@')[0] || guestName || 'عضو'}
+                <button onClick={editOwnDisplayName} style={{ border:0, background:'transparent', color:'#fff', padding:0, fontSize:'17px', lineHeight:1, cursor:'pointer' }}>✎</button>
               </div>
-              {canEditCover && <button onClick={()=>coverInputRef.current?.click()} style={{position:'absolute',bottom:10,left:20,border:0,borderRadius:18,background:'rgba(0,0,0,.55)',color:'#fff',padding:'7px 12px',cursor:'pointer'}}>📷 تغيير الغلاف</button>}
             </div>
 
-            <div style={{ display: 'flex', height: '62px', minHeight: '62px', background: '#f5f5f5', borderBottom: '1px solid #ddd', overflowX: 'auto' }}>
+            <div style={{ display:'flex', height:'37px', minHeight:'37px', background:'#f5f5f5', borderBottom:'1px solid #ddd', overflowX:'hidden' }}>
               {([
                 ['info','معلوماتي'],['friends','الأصدقاء'],['ignore','تجاهل'],['options','خيارات'],['more','المزيد']
               ] as const).map(([key,label]) => (
-                <button key={key} onClick={() => setSettingsTab(key)} style={{ minWidth: '112px', flex: 1, border: 0, borderBottom: settingsTab === key ? '3px solid #003d43' : '3px solid transparent', background: settingsTab === key ? '#003d43' : '#f5f5f5', color: settingsTab === key ? '#fff' : '#555', fontSize: '16px', cursor: 'pointer' }}>{label}</button>
+                <button key={key} onClick={() => setSettingsTab(key)} style={{ minWidth:0, flex:1, border:0, borderBottom: settingsTab===key ? '2px solid #003d43' : '2px solid transparent', background: settingsTab===key ? '#003d43' : '#f5f5f5', color: settingsTab===key ? '#fff' : '#555', fontSize:'13px', cursor:'pointer', padding:0 }}>{label}</button>
               ))}
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', background: '#fff', padding: '18px 40px', color: '#555' }}>
+            <div style={{ flex:1, overflowY:'auto', background:'#fff', padding:'10px 24px', color:'#555' }}>
               {settingsTab === 'info' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px 12px' }}>
-                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:7 }}>تحديد العمر</label><select value={profileAge} onChange={e=>{setProfileAge(e.target.value);saveSettingToFirebase('age',e.target.value)}} style={{width:'100%',padding:'13px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'16px',background:'#f5f5f5'}}>{['عدم إظهار', ...Array.from({length:83},(_,i)=>`${i+18} سنة`)].map(x=><option key={x}>{x}</option>)}</select></div>
-                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:7 }}>تحديد الجنس</label><select value={profileGender} onChange={e=>{setProfileGender(e.target.value);saveSettingToFirebase('gender',e.target.value)}} style={{width:'100%',padding:'13px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'16px',background:'#f5f5f5'}}><option>ذكر</option><option>أنثى</option></select></div>
-                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:7 }}>البلد</label><select value={profileCountry} onChange={e=>{setProfileCountry(e.target.value);saveSettingToFirebase('country',e.target.value)}} style={{width:'100%',padding:'13px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'16px',background:'#f5f5f5'}}>{COUNTRIES_LIST.map(c=><option key={c}>{c}</option>)}</select></div>
-                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:7 }}>العلاقة</label><select value={profileRelationship} onChange={e=>{setProfileRelationship(e.target.value);saveSettingToFirebase('relationship',e.target.value)}} style={{width:'100%',padding:'13px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'16px',background:'#f5f5f5'}}><option>عدم إظهار</option><option>أعزب</option><option>عزباء</option><option>مرتبط</option><option>مرتبطة</option><option>متزوج</option><option>متزوجة</option><option>منفصل</option></select></div>
-                  <div style={{gridColumn:'1 / -1'}}><label style={{fontSize:'13px',color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:7}}>نبذة شخصية</label><textarea value={profileBio} onChange={e=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{width:'100%',boxSizing:'border-box',padding:'10px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'14px'}}/></div>
-                  <div style={{gridColumn:'1 / -1'}}><label style={{fontSize:'13px',color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:7}}>لون الاسم في المحادثة</label><input type="color" value={nameColor} onChange={e=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{width:'100%',height:'42px',border:'1px solid #ddd',borderRadius:'4px'}}/></div>
-                  {hasRankForCustomization && <div style={{gridColumn:'1 / -1',padding:'12px',background:'#fdf4ff',border:'1px solid #f0abfc',borderRadius:'7px'}}><div style={{fontWeight:'bold',color:'#86198f',marginBottom:10}}>✨ إعدادات أصحاب الرتب</div><select value={nameStyle} onChange={e=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{width:'100%',padding:'10px',marginBottom:10}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select><div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6}}>{PROFILE_BG_COLORS.map(item=><button key={item.value} onClick={()=>{setProfileBgColor(item.value);saveSettingToFirebase('profileBgColor',item.value)}} style={{background:item.value,border:profileBgColor===item.value?'2px solid #86198f':'1px solid #cbd5e1',borderRadius:5,padding:'9px 3px',cursor:'pointer',fontSize:10}}>{item.name}</button>)}</div></div>}
-                  {canAddSong && <div style={{gridColumn:'1 / -1',padding:'12px',background:'#f5f3ff',border:'1px solid #c4b5fd',borderRadius:7}}><div style={{color:'#6d28d9',fontWeight:'bold',marginBottom:8}}>🎵 أغنية الملف الشخصي</div><button onClick={()=>songInputRef.current?.click()} style={{background:'#7c3aed',color:'#fff',border:0,padding:'10px 14px',borderRadius:6,cursor:'pointer'}}>{profileSong?'تغيير الأغنية':'إضافة أغنية'}</button>{profileSong&&<button onClick={handleDeleteSong} style={{marginRight:8,background:'#dc2626',color:'#fff',border:0,padding:'10px 14px',borderRadius:6,cursor:'pointer'}}>حذف</button>}</div>}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px 7px' }}>
+                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:4, fontSize:'12px' }}>تحديد العمر</label><select value={profileAge} onChange={e=>{setProfileAge(e.target.value);saveSettingToFirebase('age',e.target.value)}} style={{width:'100%',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',background:'#f5f5f5'}}>{['عدم إظهار', ...Array.from({length:83},(_,i)=>`${i+18} سنة`)].map(x=><option key={x}>{x}</option>)}</select></div>
+                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:4, fontSize:'12px' }}>تحديد الجنس</label><select value={profileGender} onChange={e=>{setProfileGender(e.target.value);saveSettingToFirebase('gender',e.target.value)}} style={{width:'100%',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',background:'#f5f5f5'}}><option>ذكر</option><option>أنثى</option></select></div>
+                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:4, fontSize:'12px' }}>البلد</label><select value={profileCountry} onChange={e=>{setProfileCountry(e.target.value);saveSettingToFirebase('country',e.target.value)}} style={{width:'100%',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',background:'#f5f5f5'}}>{COUNTRIES_LIST.map(c=><option key={c}>{c}</option>)}</select></div>
+                  <div><label style={{ color:'#16a6d4', fontWeight:'bold', display:'block', marginBottom:4, fontSize:'12px' }}>العلاقة</label><select value={profileRelationship} onChange={e=>{setProfileRelationship(e.target.value);saveSettingToFirebase('relationship',e.target.value)}} style={{width:'100%',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',background:'#f5f5f5'}}><option>عدم إظهار</option><option>أعزب</option><option>عزباء</option><option>مرتبط</option><option>مرتبطة</option><option>متزوج</option><option>متزوجة</option><option>منفصل</option></select></div>
+                  <div style={{gridColumn:'1 / -1'}}><label style={{fontSize:'12px',color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4}}>نبذة شخصية</label><textarea value={profileBio} onChange={e=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{width:'100%',boxSizing:'border-box',padding:'7px',border:'1px solid #ddd',borderRadius:'4px',fontSize:'13px',minHeight:'70px'}}/></div>
+                  <div style={{gridColumn:'1 / -1'}}><label style={{fontSize:'12px',color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4}}>لون الاسم في المحادثة</label><input type="color" value={nameColor} onChange={e=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{width:'100%',height:'28px',border:'1px solid #ddd',borderRadius:'4px'}}/></div>
+                  {canEditCover && <div style={{gridColumn:'1 / -1',display:'flex',gap:'6px'}}><button onClick={()=>coverInputRef.current?.click()} style={{flex:1,background:'#f5f5f5',border:'1px solid #ddd',padding:'7px',borderRadius:'5px',cursor:'pointer',fontSize:'12px'}}>📷 تغيير الغلاف</button><button onClick={()=>{setProfileCover('');saveSettingToFirebase('coverUrl','')}} style={{background:'#f5f5f5',border:'1px solid #ddd',padding:'7px 10px',borderRadius:'5px',cursor:'pointer',fontSize:'12px'}}>× إزالة</button></div>}
+                  {hasRankForCustomization && <div style={{gridColumn:'1 / -1',padding:'8px',background:'#fdf4ff',border:'1px solid #f0abfc',borderRadius:'6px'}}><div style={{fontWeight:'bold',color:'#86198f',marginBottom:6,fontSize:'12px'}}>✨ إعدادات أصحاب الرتب</div><select value={nameStyle} onChange={e=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{width:'100%',padding:'7px',marginBottom:7,fontSize:'12px'}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select><div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:4}}>{PROFILE_BG_COLORS.map(item=><button key={item.value} onClick={()=>{setProfileBgColor(item.value);saveSettingToFirebase('profileBgColor',item.value)}} style={{background:item.value,border:profileBgColor===item.value?'2px solid #86198f':'1px solid #cbd5e1',borderRadius:4,padding:'6px 2px',cursor:'pointer',fontSize:9}}>{item.name}</button>)}</div></div>}
+                  {canAddSong && <div style={{gridColumn:'1 / -1',padding:'8px',background:'#f5f3ff',border:'1px solid #c4b5fd',borderRadius:6}}><div style={{color:'#6d28d9',fontWeight:'bold',marginBottom:6,fontSize:'12px'}}>🎵 أغنية الملف الشخصي</div><button onClick={()=>songInputRef.current?.click()} style={{background:'#7c3aed',color:'#fff',border:0,padding:'7px 10px',borderRadius:5,cursor:'pointer',fontSize:'11px'}}>{profileSong?'تغيير الأغنية':'إضافة أغنية'}</button>{profileSong&&<button onClick={handleDeleteSong} style={{marginRight:6,background:'#dc2626',color:'#fff',border:0,padding:'7px 10px',borderRadius:5,cursor:'pointer',fontSize:'11px'}}>حذف</button>}</div>}
                 </div>
               )}
 
               {settingsTab === 'friends' && (
-                <div><div style={{fontSize:18,fontWeight:'bold',color:'#333',marginBottom:15}}>الأصدقاء</div>{friendsList.length===0?<div style={{textAlign:'center',padding:35,color:'#999'}}>لا توجد أصدقاء حالياً</div>:friendsList.map((friend:any)=><div key={friend.friendUid||friend.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 4px',borderBottom:'1px solid #eee'}}><span style={{fontSize:15}}>{friend.name}</span><div style={{display:'flex',gap:6}}><button onClick={()=>openPrivateChatWithUser(friend.friendUid,friend.name)} style={{background:'#2563eb',color:'#fff',border:0,padding:'7px 12px',borderRadius:5,cursor:'pointer'}}>خاص</button><button onClick={()=>handleRemoveFriend(friend.friendUid)} style={{background:'#ef4444',color:'#fff',border:0,padding:'7px 12px',borderRadius:5,cursor:'pointer'}}>حذف</button></div></div>)}{hasMoreFriends&&<button onClick={loadMoreFriends} style={{marginTop:12,width:'100%',padding:9,border:0,borderRadius:5}}>تحميل المزيد</button>}</div>
+                <div><div style={{fontSize:15,fontWeight:'bold',color:'#333',marginBottom:9}}>الأصدقاء</div>{friendsList.length===0?<div style={{textAlign:'center',padding:22,color:'#999',fontSize:12}}>لا توجد أصدقاء حالياً</div>:friendsList.map((friend:any)=><div key={friend.friendUid||friend.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 3px',borderBottom:'1px solid #eee'}}><span style={{fontSize:13}}>{friend.name}</span><div style={{display:'flex',gap:5}}><button onClick={()=>openPrivateChatWithUser(friend.friendUid,friend.name)} style={{background:'#2563eb',color:'#fff',border:0,padding:'5px 9px',borderRadius:4,cursor:'pointer',fontSize:11}}>خاص</button><button onClick={()=>handleRemoveFriend(friend.friendUid)} style={{background:'#ef4444',color:'#fff',border:0,padding:'5px 9px',borderRadius:4,cursor:'pointer',fontSize:11}}>حذف</button></div></div>)}{hasMoreFriends&&<button onClick={loadMoreFriends} style={{marginTop:8,width:'100%',padding:7,border:0,borderRadius:4,fontSize:11}}>تحميل المزيد</button>}</div>
               )}
 
               {settingsTab === 'ignore' && (
-                <div><div style={{fontSize:18,fontWeight:'bold',color:'#333',marginBottom:15}}>قائمة التجاهل</div>{ignoredUsers.length===0?<div style={{textAlign:'center',padding:35,color:'#999'}}>قائمة التجاهل فارغة</div>:ignoredUsers.map((item:any)=><div key={item.userId||item.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 4px',borderBottom:'1px solid #eee'}}><span style={{fontSize:15}}>{item.name}</span><button onClick={()=>handleUnignoreUser(item.userId||item.id)} style={{background:'#16a34a',color:'#fff',border:0,padding:'7px 12px',borderRadius:5,cursor:'pointer'}}>إلغاء التجاهل</button></div>)}</div>
+                <div><div style={{fontSize:15,fontWeight:'bold',color:'#333',marginBottom:9}}>قائمة التجاهل</div>{ignoredUsers.length===0?<div style={{textAlign:'center',padding:22,color:'#999',fontSize:12}}>قائمة التجاهل فارغة</div>:ignoredUsers.map((item:any)=><div key={item.userId||item.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 3px',borderBottom:'1px solid #eee'}}><span style={{fontSize:13}}>{item.name}</span><button onClick={()=>handleUnignoreUser(item.userId||item.id)} style={{background:'#16a34a',color:'#fff',border:0,padding:'5px 9px',borderRadius:4,cursor:'pointer',fontSize:11}}>إلغاء التجاهل</button></div>)}</div>
               )}
 
               {settingsTab === 'options' && (
-                <div style={{display:'flex',flexDirection:'column',gap:14}}>
-                  <div><label style={{color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:6}}>لغة الدردشة</label><select value={profileLanguage} onChange={e=>savePrivacySetting('language',e.target.value,setProfileLanguage)} style={{width:'100%',padding:12,fontSize:16,background:'#f5f5f5',border:'1px solid #ddd'}}><option value="Arabic">Arabic</option><option value="English">English</option><option value="Russian">Russian</option></select></div>
-                  <div><label style={{color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:6}}>منطقة التوقيت الزمني</label><select value={profileTimezone} onChange={e=>savePrivacySetting('timezone',e.target.value,setProfileTimezone)} style={{width:'100%',padding:12,fontSize:16,background:'#f5f5f5',border:'1px solid #ddd'}}><option>Asia/Amman</option><option>Asia/Damascus</option><option>Asia/Riyadh</option><option>Europe/Paris</option><option>UTC</option></select></div>
+                <div style={{display:'flex',flexDirection:'column',gap:9}}>
+                  <div><label style={{color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4,fontSize:'12px'}}>لغة الدردشة</label><select value={profileLanguage} onChange={e=>savePrivacySetting('language',e.target.value,setProfileLanguage)} style={{width:'100%',padding:7,fontSize:12,background:'#f5f5f5',border:'1px solid #ddd'}}><option value="Arabic">Arabic</option><option value="English">English</option><option value="Russian">Russian</option></select></div>
+                  <div><label style={{color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4,fontSize:'12px'}}>منطقة التوقيت الزمني</label><select value={profileTimezone} onChange={e=>savePrivacySetting('timezone',e.target.value,setProfileTimezone)} style={{width:'100%',padding:7,fontSize:12,background:'#f5f5f5',border:'1px solid #ddd'}}><option>Asia/Amman</option><option>Asia/Damascus</option><option>Asia/Riyadh</option><option>Europe/Paris</option><option>UTC</option></select></div>
                   {[
-                    ['الدردشة الخاصة','privateChatPrivacy',privacyPrivateChat,setPrivacyPrivateChat,[['friends','الأصدقاء فقط'],['everyone','الجميع'],['off','إيقاف']]],
+                    ['دردشة خاصة','privateChatPrivacy',privacyPrivateChat,setPrivacyPrivateChat,[['friends','الأصدقاء فقط'],['everyone','الجميع'],['off','إيقاف']]],
                     ['الذين يمكنهم إرسال صور خاصة','privateImagesPrivacy',privacyPrivateImages,setPrivacyPrivateImages,[['everyone','الجميع'],['friends','الأصدقاء فقط'],['off','إيقاف']]],
                     ['طلبات الصداقة','friendRequestsPrivacy',privacyFriendRequests,setPrivacyFriendRequests,[['on','تشغيل'],['off','إيقاف']]],
                     ['طلبات التحدث','talkRequestsPrivacy',privacyTalkRequests,setPrivacyTalkRequests,[['on','تشغيل'],['off','إيقاف']]],
@@ -3198,16 +3213,16 @@ export default function App() {
                     ['الأصوات','sounds',privacySounds,setPrivacySounds,[['muted','صامت'],['on','تشغيل']]],
                     ['الثيم','theme',privacyTheme,setPrivacyTheme,[['default','الثيم الافتراضي'],['light','فاتح'],['dark','داكن']]],
                     ['فتح الخاص تلقائياً للرسائل غير المقروءة','autoOpenUnread',privacyAutoOpenUnread,setPrivacyAutoOpenUnread,[['off','إيقاف'],['on','تشغيل']]]
-                  ].map(([label,field,value,setter,options]:any)=><div key={field}><label style={{color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:6}}>{label}</label><select value={value} onChange={e=>savePrivacySetting(field,e.target.value,setter)} style={{width:'100%',padding:12,fontSize:16,background:'#f5f5f5',border:'1px solid #ddd'}}>{options.map((o:any)=><option key={o[0]} value={o[0]}>{o[1]}</option>)}</select></div>)}
+                  ].map(([label,field,value,setter,options]:any)=><div key={field}><label style={{color:'#16a6d4',fontWeight:'bold',display:'block',marginBottom:4,fontSize:'12px'}}>{label}</label><select value={value} onChange={e=>savePrivacySetting(field,e.target.value,setter)} style={{width:'100%',padding:7,fontSize:12,background:'#f5f5f5',border:'1px solid #ddd'}}>{options.map((o:any)=><option key={o[0]} value={o[0]}>{o[1]}</option>)}</select></div>)}
                 </div>
               )}
 
               {settingsTab === 'more' && (
                 <div style={{display:'flex',flexDirection:'column',gap:0}}>
-                  <button onClick={async()=>{const next=window.prompt('اكتب البريد الإلكتروني الجديد:',user?.email||'');if(!next||!user)return;try{await updateEmail(user,next.trim());await updateDoc(doc(db,'users',user.uid),{email:next.trim()});setSuccessMessage('✅ تم تحديث البريد الإلكتروني.')}catch(e:any){setErrorMessage(`❌ تعذر تغيير البريد: ${e?.message||e}`)}}} style={{width:'100%',padding:'18px 8px',background:'#fff',border:0,borderBottom:'1px solid #ddd',textAlign:'right',fontSize:17,cursor:'pointer'}}>✉️ تعديل البريد الإلكتروني</button>
-                  <button onClick={async()=>{if(!user?.email)return;try{await sendPasswordResetEmail(auth,user.email);setSuccessMessage('✅ تم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني.')}catch(e:any){setErrorMessage(`❌ تعذر إرسال الرابط: ${e?.message||e}`)}}} style={{width:'100%',padding:'18px 8px',background:'#fff',border:0,borderBottom:'1px solid #ddd',textAlign:'right',fontSize:17,cursor:'pointer'}}>🔑 تغيير الباسورد</button>
-                  <button onClick={async()=>{if(!user)return;if(!window.confirm('هل أنت متأكد من حذف العضوية؟ هذا الإجراء لا يمكن التراجع عنه.'))return;try{await deleteDoc(doc(db,'users',user.uid));await deleteUser(user);setShowSettingsModal(false);}catch(e:any){setErrorMessage(`❌ تعذر حذف العضوية: ${e?.message||e}`)}}} style={{width:'100%',padding:'18px 8px',background:'#fff',border:0,borderBottom:'1px solid #ddd',textAlign:'right',fontSize:17,color:'#dc2626',cursor:'pointer'}}>🗑️ حذف عضوية</button>
-                  <button onClick={async()=>{stopProfileSong();await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload();}} style={{marginTop:20,width:'100%',padding:13,background:'#dc2626',color:'#fff',border:0,borderRadius:6,fontWeight:'bold',cursor:'pointer'}}>تسجيل الخروج 🚪</button>
+                  <button onClick={async()=>{const next=window.prompt('اكتب البريد الإلكتروني الجديد:',user?.email||'');if(!next||!user)return;try{await updateEmail(user,next.trim());await updateDoc(doc(db,'users',user.uid),{email:next.trim()});setSuccessMessage('✅ تم تحديث البريد الإلكتروني.')}catch(e:any){setErrorMessage(`❌ تعذر تغيير البريد: ${e?.message||e}`)}}} style={{width:'100%',padding:'11px 6px',background:'#fff',border:0,borderBottom:'1px solid #ddd',textAlign:'right',fontSize:13,cursor:'pointer'}}>✉️ تعديل البريد الإلكتروني</button>
+                  <button onClick={async()=>{if(!user?.email)return;try{await sendPasswordResetEmail(auth,user.email);setSuccessMessage('✅ تم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني.')}catch(e:any){setErrorMessage(`❌ تعذر إرسال الرابط: ${e?.message||e}`)}}} style={{width:'100%',padding:'11px 6px',background:'#fff',border:0,borderBottom:'1px solid #ddd',textAlign:'right',fontSize:13,cursor:'pointer'}}>🔑 تغيير الباسورد</button>
+                  <button onClick={async()=>{if(!user)return;if(!window.confirm('هل أنت متأكد من حذف العضوية؟ هذا الإجراء لا يمكن التراجع عنه.'))return;try{await deleteDoc(doc(db,'users',user.uid));await deleteUser(user);setShowSettingsModal(false);}catch(e:any){setErrorMessage(`❌ تعذر حذف العضوية: ${e?.message||e}`)}}} style={{width:'100%',padding:'11px 6px',background:'#fff',border:0,borderBottom:'1px solid #ddd',textAlign:'right',fontSize:13,color:'#dc2626',cursor:'pointer'}}>🗑️ حذف عضوية</button>
+                  <button onClick={async()=>{stopProfileSong();await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload();}} style={{marginTop:12,width:'100%',padding:9,background:'#dc2626',color:'#fff',border:0,borderRadius:5,fontWeight:'bold',cursor:'pointer',fontSize:12}}>تسجيل الخروج 🚪</button>
                 </div>
               )}
             </div>
@@ -3216,26 +3231,22 @@ export default function App() {
       )}
 
       {selectedProfileUser && (
-        <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setShowProfileActions(false); setSelectedProfileUser(null); }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.68)', zIndex:120, display:'flex', justifyContent:'center', alignItems:'center', direction:'rtl', padding:'14px' }}>
-          <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:'664px', maxHeight:'86dvh', background:selectedProfileUser.profileBgColor||'#fff', borderRadius:'22px', overflow:'hidden', boxShadow:'0 12px 35px rgba(0,0,0,.45)', display:'flex', flexDirection:'column' }}>
-            <div onClick={()=>{if(selectedProfileUser.coverUrl&&!isEditingNameActive)setPreviewImage(selectedProfileUser.coverUrl)}} style={{height:'345px',minHeight:'345px',background:selectedProfileUser.coverUrl?`center/cover no-repeat url(${selectedProfileUser.coverUrl})`:'#003d43',color:'#fff',position:'relative',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',paddingBottom:28}}>
-              <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.18),rgba(0,61,67,.86))',pointerEvents:'none'}} />
-              <button onClick={()=>{stopProfileSong();setShowProfileActions(false);setSelectedProfileUser(null)}} style={{position:'absolute',top:20,left:22,border:0,background:'transparent',color:'#fff',fontSize:42,lineHeight:1,cursor:'pointer',zIndex:3}}>×</button>
-              {!isSelfProfile && <button onClick={()=>setShowProfileActions(v=>!v)} style={{position:'absolute',top:22,left:85,border:0,background:'transparent',color:'#fff',fontSize:31,lineHeight:1,cursor:'pointer',zIndex:3}}>☰</button>}
-              {!isSelfProfile && <button onClick={()=>setSuccessMessage('🚩 تم تسجيل البلاغ عن المستخدم.')} style={{position:'absolute',top:24,left:142,border:0,background:'transparent',color:'#fff',fontSize:28,cursor:'pointer',zIndex:3}}>⚑</button>}
-              {!isSelfProfile && <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:22,right:22,border:0,background:'transparent',color:'#fff',fontSize:31,cursor:'pointer',zIndex:3}}>✉</button>}
-              <div style={{position:'relative',width:154,height:154,borderRadius:'50%',background:'#0b141a',border:'7px solid rgba(255,255,255,.22)',overflow:'hidden',marginBottom:12}}>
-                <img src={selectedProfileUser.avatarUrl||''} alt="" onClick={(e)=>{e.stopPropagation();if(canEditAvatar)avatarInputRef.current?.click();else if(selectedProfileUser.avatarUrl)setPreviewImage(selectedProfileUser.avatarUrl)}} style={{width:'100%',height:'100%',objectFit:'cover',cursor:selectedProfileUser.avatarUrl?'pointer':'default'}} />
-                {!selectedProfileUser.avatarUrl && <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:65}}>👤</div>}
-                <span style={{position:'absolute',bottom:0,right:0,width:28,height:28,borderRadius:'50%',background:'#84cc16',border:'3px solid #fff'}} />
+        <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setShowProfileActions(false); setSelectedProfileUser(null); }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.68)', zIndex:120, display:'flex', justifyContent:'center', alignItems:'center', direction:'rtl', padding:'8px' }}>
+          <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:'390px', height:'640px', maxHeight:'86dvh', background:'#fff', borderRadius:'14px', overflow:'hidden', boxShadow:'0 12px 35px rgba(0,0,0,.45)', display:'flex', flexDirection:'column' }}>
+            <div style={{ height:'205px', minHeight:'205px', background:'#003d43', color:'#fff', position:'relative', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', paddingBottom:'13px' }}>
+              <button onClick={()=>{stopProfileSong();setShowProfileActions(false);setSelectedProfileUser(null)}} style={{position:'absolute',top:10,left:18,border:0,background:'transparent',color:'#fff',fontSize:30,lineHeight:1,cursor:'pointer',zIndex:3}}>×</button>
+              {!isSelfProfile && <button onClick={()=>setShowProfileActions(v=>!v)} style={{position:'absolute',top:11,left:55,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>☰</button>}
+              {!isSelfProfile && <button onClick={()=>setSuccessMessage('🚩 تم تسجيل البلاغ عن المستخدم.')} style={{position:'absolute',top:11,left:91,border:0,background:'transparent',color:'#fff',fontSize:18,lineHeight:1,cursor:'pointer',zIndex:3}}>{getCountryFlag(selectedProfileUser.country || 'الأردن')}</button>}
+              {!isSelfProfile && <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:11,right:17,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>✉</button>}
+              <div style={{position:'relative',width:'90px',height:'90px',borderRadius:'50%',background:'#0b141a',border:'4px solid rgba(255,255,255,.22)',overflow:'hidden',marginBottom:'7px'}}>
+                {selectedProfileUser.avatarUrl ? <img src={selectedProfileUser.avatarUrl} alt="" onClick={()=>setPreviewImage(selectedProfileUser.avatarUrl)} style={{width:'100%',height:'100%',objectFit:'cover',cursor:'pointer'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'42px'}}>👤</div>}
+                <span style={{position:'absolute',bottom:-1,right:-1,width:'18px',height:'18px',borderRadius:'50%',background:selectedProfileUser.online?'#84cc16':'#94a3b8',border:'2px solid #fff'}} />
               </div>
-              <div style={{fontSize:17,fontWeight:'bold',marginBottom:5}}>عضو نشيط <span style={{color:'#84cc16'}}>●</span></div>
-              {isSelfProfile&&canAddSong&&<div style={{display:'flex',gap:6,zIndex:3,marginBottom:5}}>{selectedProfileUser.profileSongUrl&&<button onClick={()=>stopProfileSong()} style={{border:0,borderRadius:15,padding:'5px 10px',cursor:'pointer'}}>⏹ إيقاف</button>}<button onClick={()=>songInputRef.current?.click()} style={{border:0,borderRadius:15,padding:'5px 10px',cursor:'pointer'}}>🎵 {selectedProfileUser.profileSongUrl?'تغيير':'إضافة'}</button>{selectedProfileUser.profileSongUrl&&<button onClick={handleDeleteSong} style={{border:0,borderRadius:15,padding:'5px 10px',cursor:'pointer'}}>🗑</button>}</div>}
-              <div style={{fontSize:27,fontWeight:'bold',display:'flex',alignItems:'center',gap:7,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff')}}>{selectedProfileUser.name}{canModifyTargetName&&<button onClick={()=>setIsEditingNameActive(v=>!v)} style={{border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer'}}>✎</button>}</div>
-              {isEditingNameActive&&canModifyTargetName&&<div style={{position:'absolute',bottom:8,display:'flex',gap:5,zIndex:4}}><input value={editingUserName} onChange={e=>setEditingUserName(e.target.value)} style={{padding:'6px 8px',borderRadius:5,border:0}}/><button onClick={handleUpdateUserName} style={{padding:'6px 10px',border:0,borderRadius:5,cursor:'pointer'}}>حفظ</button></div>}
+              <div style={{fontSize:'11px',fontWeight:'bold',marginBottom:'2px'}}>عضو نشيط <span style={{color:'#84cc16'}}>●</span></div>
+              <div style={{fontSize:'16px',fontWeight:'bold',display:'flex',alignItems:'center',gap:4,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff')}}>{selectedProfileUser.name}</div>
             </div>
 
-            <div style={{flex:1,overflowY:'auto',background:selectedProfileUser.profileBgColor||'#fff',padding:'0 20px 18px'}}>
+            <div style={{flex:1,overflowY:'auto',background:'#fff',padding:'0 12px 8px'}}>
               {[
                 ['🎂','تحديد العمر',selectedProfileUser.age || 'عدم إظهار'],
                 ['⚧','تحديد الجنس',selectedProfileUser.gender || 'عدم إظهار'],
@@ -3244,20 +3255,17 @@ export default function App() {
                 ['👤','تاريخ الإنضمام',selectedProfileUser.joinedDate || ''],
                 ['⌂','الغرفة الحالية',selectedProfileUser.online ? (selectedProfileUser.roomName || 'غير معروف') : 'غير متصل'],
                 ['◉','آخر تواجد',selectedProfileUser.lastSeen || 'غير متوفر']
-              ].map(([icon,label,value])=><div key={label} style={{minHeight:64,display:'grid',gridTemplateColumns:'45% 55%',alignItems:'center',borderBottom:'1px solid rgba(0,0,0,.18)',fontSize:18}}><div style={{fontWeight:'bold',display:'flex',alignItems:'center',gap:7}}><span>{icon}</span>{label}</div><div style={{textAlign:'center'}}>{value}</div></div>)}
+              ].map(([icon,label,value])=><div key={label} style={{minHeight:'42px',display:'grid',gridTemplateColumns:'52% 48%',alignItems:'center',borderBottom:'1px solid rgba(0,0,0,.18)',fontSize:'14px'}}><div style={{fontWeight:'bold',display:'flex',alignItems:'center',gap:5}}><span>{icon}</span>{label}</div><div style={{textAlign:'center'}}>{value}</div></div>)}
 
-              <div style={{minHeight:132,display:'grid',gridTemplateColumns:'45% 55%',alignItems:'center',borderBottom:'1px solid rgba(0,0,0,.18)',fontSize:18}}>
-                <div style={{fontWeight:'bold',display:'flex',alignItems:'center',gap:7}}><span>🪙</span>النقاط</div>
-                <div style={{textAlign:'center'}}>0<br/><span style={{display:'inline-block',marginTop:8}}>النقاط المطلوبة للمستوى التالي<br/><b style={{fontSize:22}}>2000</b></span></div>
+              <div style={{minHeight:'78px',display:'grid',gridTemplateColumns:'52% 48%',alignItems:'center',borderBottom:'1px solid rgba(0,0,0,.18)',fontSize:'14px'}}>
+                <div style={{fontWeight:'bold',display:'flex',alignItems:'center',gap:5}}><span>🪙</span>النقاط</div>
+                <div style={{textAlign:'center'}}>0<br/><span style={{display:'inline-block',marginTop:4}}>النقاط المطلوبة للمستوى التالي<br/><b style={{fontSize:'16px'}}>2000</b></span></div>
               </div>
 
-              <div style={{padding:'18px 0 4px',fontSize:17}}>
-                <div style={{fontWeight:'bold',display:'flex',alignItems:'center',gap:8,marginBottom:8}}>🔗 رابط الملف الشخصي</div>
-                <button onClick={copyProfileLink} style={{border:0,background:'transparent',color:'#e5a91a',fontSize:17,cursor:'pointer',wordBreak:'break-all',textAlign:'right',width:'100%'}}>{selectedProfileUser.profileUrl}</button>
+              <div style={{padding:'11px 0 2px',fontSize:'13px'}}>
+                <div style={{fontWeight:'bold',display:'flex',alignItems:'center',gap:5,marginBottom:4}}>🔗 رابط الملف الشخصي</div>
+                <button onClick={copyProfileLink} style={{border:0,background:'transparent',color:'#e5a91a',fontSize:'13px',cursor:'pointer',wordBreak:'break-all',textAlign:'right',width:'100%',padding:0}}>{selectedProfileUser.profileUrl}</button>
               </div>
-
-              {isAdmin && !isSelfProfile && !['Owner','Admin','Super Admin'].includes(normalizeRole(selectedProfileUser?.role)) && <div style={{marginTop:12,background:'#fee2e2',padding:12,borderRadius:8}}><div style={{fontWeight:'bold',color:'#991b1b',marginBottom:8}}>🚫 لوحة الطرد</div><div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:5}}>{[[1,'دقيقة 1'],[5,'5 دقائق'],[30,'30 دقيقة'],[60,'ساعة'],[120,'ساعتين'],[180,'3 ساعات']].map(([m,t]:any)=><button key={m} onClick={()=>handleKickUser(selectedProfileUser.userId,m)} style={{background:'#dc2626',color:'#fff',border:0,padding:8,borderRadius:5,cursor:'pointer',fontSize:11}}>{t}</button>)}</div></div>}
-              {isOwner && !isSelfProfile && <div style={{marginTop:12,padding:12,border:'1px solid #cbd5e1',borderRadius:8}}><div style={{fontWeight:'bold',marginBottom:8}}>لوحة التحكم بالرتب</div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>{[['Admin','Set Admin 👑'],['Super Admin','Set Super Admin ⚡'],['Premium','Set Premium 💎'],['Member','Demote Member 👤']].map(([r,t])=><button key={r} onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,r)} style={{background:'#2563eb',color:'#fff',border:0,padding:8,borderRadius:5,cursor:'pointer',fontSize:11}}>{t}</button>)}</div></div>}
             </div>
           </div>
         </div>
@@ -3265,11 +3273,11 @@ export default function App() {
 
       {showProfileActions && selectedProfileUser && !isSelfProfile && (
         <div onClick={()=>setShowProfileActions(false)} style={{position:'fixed',inset:0,zIndex:140,background:'rgba(0,0,0,.48)',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:'98px',direction:'rtl'}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'calc(100% - 28px)',maxWidth:'636px',background:'#fff',borderRadius:'24px',padding:'18px 24px 24px',boxShadow:'0 10px 30px rgba(0,0,0,.4)'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}><button onClick={()=>setShowProfileActions(false)} style={{border:0,background:'transparent',fontSize:36,cursor:'pointer'}}>×</button><div style={{display:'flex',alignItems:'center',gap:10,fontSize:21,fontWeight:'bold'}}>{selectedProfileUser.avatarUrl&&<img src={selectedProfileUser.avatarUrl} alt="" style={{width:48,height:48,borderRadius:'50%',objectFit:'cover'}}/>}{selectedProfileUser.name}</div></div>
-            <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:58,border:0,borderRadius:10,background:'#e9e9e9',fontSize:18,cursor:'pointer',marginBottom:8,textAlign:'right',padding:'0 18px'}}>💬 محادثة خاصة</button>
-            <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:58,border:0,borderRadius:10,background:'#e9e9e9',fontSize:18,cursor:'pointer',marginBottom:8,textAlign:'right',padding:'0 18px'}}>👤⁺ إضافة صديق</button>
-            <button onClick={()=>handleIgnoreUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:58,border:0,borderRadius:10,background:'#e9e9e9',fontSize:18,cursor:'pointer',textAlign:'right',padding:'0 18px'}}>🚫 تجاهل</button>
+          <div onClick={e=>e.stopPropagation()} style={{width:'calc(100% - 16px)',maxWidth:'380px',background:'#fff',borderRadius:'16px',padding:'10px 14px 14px',boxShadow:'0 10px 30px rgba(0,0,0,.4)'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:7}}><button onClick={()=>setShowProfileActions(false)} style={{border:0,background:'transparent',fontSize:30,cursor:'pointer'}}>×</button><div style={{display:'flex',alignItems:'center',gap:7,fontSize:16,fontWeight:'bold'}}>{selectedProfileUser.avatarUrl&&<img src={selectedProfileUser.avatarUrl} alt="" style={{width:34,height:34,borderRadius:'50%',objectFit:'cover'}}/>}{selectedProfileUser.name}</div></div>
+            <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:43,border:0,borderRadius:7,background:'#e9e9e9',fontSize:15,cursor:'pointer',marginBottom:6,textAlign:'right',padding:'0 13px'}}>💬 محادثة خاصة</button>
+            <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:43,border:0,borderRadius:7,background:'#e9e9e9',fontSize:15,cursor:'pointer',marginBottom:6,textAlign:'right',padding:'0 13px'}}>👤⁺ إضافة صديق</button>
+            <button onClick={()=>handleIgnoreUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',height:43,border:0,borderRadius:7,background:'#e9e9e9',fontSize:15,cursor:'pointer',textAlign:'right',padding:'0 13px'}}>🚫 تجاهل</button>
           </div>
         </div>
       )}
