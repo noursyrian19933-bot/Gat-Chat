@@ -154,6 +154,8 @@ const VideoIcon = ({ type, size = 20, stroke = 2.2 }: { type: string; size?: num
   return null;
 };
 
+const VIDEO_PROFILE_AVATAR = 'data:image/jpeg;base64,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';
+
 export default function App() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [loading, setLoading] = useState(true);
@@ -163,8 +165,6 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('الأردن');
-  const [registerGender, setRegisterGender] = useState('ذكر');
-  const [registerAge, setRegisterAge] = useState('18');
   const [guestName, setGuestName] = useState(() => localStorage.getItem('gat_guest_name') || '');
   
   const [errorMessage, setErrorMessage] = useState('');
@@ -205,8 +205,10 @@ export default function App() {
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [showRoomsModal, setShowRoomsModal] = useState(false);
   const [showMainMenu, setShowMainMenu] = useState(false);
-  const [videoMenuSection, setVideoMenuSection] = useState<'main'|'people'|'social'|'content'|'account'|'more'>('main');
-  const [vipTab, setVipTab] = useState<'leaders'|'ranks'|'gifts'>('leaders');
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [profileTab, setProfileTab] = useState<'complete'|'info'|'ignore'|'options'|'more'>('info');
+  const [showGiftRankPanel, setShowGiftRankPanel] = useState(false);
+  const [giftRankTab, setGiftRankTab] = useState<'leaders'|'gifts'|'ranks'>('leaders');
   const [showTopSearch, setShowTopSearch] = useState(false);
   const [showWallModal, setShowWallModal] = useState(false);
   const [showNewsModal, setShowNewsModal] = useState(false);
@@ -1157,8 +1159,6 @@ export default function App() {
         displayName: displayName,
         country: selectedCountry,
         flag: getCountryFlag(selectedCountry),
-        gender: registerGender,
-        age: registerAge,
         joinedDate: new Date().toISOString().split('T')[0]
       }, { merge: true });
 
@@ -1673,8 +1673,8 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
+      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
       if (selectedRoom) {
-        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
@@ -1760,6 +1760,10 @@ export default function App() {
       name: uData.name || uData.user || uData.userName || 'زائر',
       role: normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
       gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
+      age: uData.age || '',
+      country: uData.country || (targetId === user?.uid ? profileCountry : ''),
+      relationship: uData.relationship || 'عدم إظهار',
+      bio: uData.bio || '',
       joinedDate: uData.joinedDate || userJoinedDate || new Date().toISOString().split('T')[0],
       roomName: uData.roomName || 'القائمة الرئيسية',
       lastSeen: uData.lastSeen || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1783,6 +1787,10 @@ export default function App() {
             name: data.displayName || fetchedData.name,
             role: normalizeRole(data.role || fetchedData.role),
             gender: data.gender || fetchedData.gender,
+            age: data.age || fetchedData.age,
+            country: data.country || fetchedData.country,
+            relationship: data.relationship || fetchedData.relationship,
+            bio: data.bio || fetchedData.bio,
             joinedDate: data.joinedDate || fetchedData.joinedDate,
             points: data.points ?? fetchedData.points,
             email: data.email || fetchedData.email || '',
@@ -1962,30 +1970,6 @@ export default function App() {
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>الجنس</label>
-                <select
-                  value={registerGender}
-                  onChange={(e) => setRegisterGender(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }}
-                >
-                  <option value="ذكر">ذكر</option>
-                  <option value="أنثى">أنثى</option>
-                  <option value="آخر">آخر</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>العمر</label>
-                <select
-                  value={registerAge}
-                  onChange={(e) => setRegisterAge(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }}
-                >
-                  {Array.from({ length: 63 }, (_, i) => 18 + i).map(age => <option key={age} value={String(age)}>{age}</option>)}
-                </select>
-              </div>
-
-              <div>
                 <label style={{ fontSize: '11px', color: '#cbd5e1', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>البريد الإلكتروني</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', boxSizing: 'border-box', background: '#111b21', color: '#fff' }} />
               </div>
@@ -2129,43 +2113,38 @@ export default function App() {
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
         .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
 
-        /* ===== COMPLETE VIDEO MENU / LIST PARITY ===== */
-        .video-parity-overlay{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:9000;display:flex;direction:rtl}
-        .video-parity-drawer{width:min(92vw,390px);height:100%;background:#fff;display:flex;flex-direction:column;box-shadow:-10px 0 35px rgba(0,0,0,.35);overflow:hidden}
-        .video-parity-head{height:54px;min-height:54px;background:#00383e;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #0b5358}
-        .video-parity-head b{font-size:14px}.video-parity-close{background:none;border:0;color:#fff;font-size:27px;width:38px;height:38px;cursor:pointer}
-        .video-parity-tabs{display:grid;grid-template-columns:repeat(3,1fr);background:#f2f2f2;border-bottom:1px solid #ddd}
-        .video-parity-tabs button{border:0;background:#f2f2f2;color:#555;height:39px;font-size:10px;cursor:pointer;border-left:1px solid #ddd}
-        .video-parity-tabs button.active{background:#fff;color:#008fa3;font-weight:800;border-bottom:2px solid #00a8bf}
-        .video-parity-list{flex:1;overflow:auto;background:#fff}
-        .video-parity-row{width:100%;height:49px;border:0;border-bottom:1px solid #e7e7e7;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;cursor:pointer;color:#333;text-align:right}
-        .video-parity-row:active{background:#eaf7f8}
-        .video-parity-row .vp-icon{width:31px;height:31px;border-radius:50%;background:#edf7f8;color:#008fa3;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
-        .video-parity-row .vp-text{flex:1;padding:0 10px;font-size:11px}.video-parity-row .vp-arrow{font-size:15px;color:#aaa}
-        .video-parity-section{padding:9px 11px 5px;background:#f3f3f3;color:#888;font-size:9px;font-weight:700}
-        .video-parity-badge{background:#ef233c;color:#fff;border-radius:9px;min-width:17px;padding:2px 5px;font-size:8px;text-align:center;margin-left:5px}
-        .video-parity-modal{position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:8px;direction:rtl}
-        .video-parity-card{width:min(96vw,390px);max-height:92dvh;background:#fff;border-radius:5px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 35px rgba(0,0,0,.35)}
-        .video-parity-card-head{height:45px;background:#00383e;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 10px;flex:none}
-        .video-parity-card-head b{font-size:12px}.video-parity-card-head button{border:0;background:none;color:#fff;font-size:22px;cursor:pointer}
-        .video-parity-body{flex:1;overflow:auto;background:#fff}
-        .video-vip-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #ddd}
-        .video-vip-tabs button{height:37px;border:0;background:#f4f4f4;font-size:10px;color:#666}
-        .video-vip-tabs button.active{background:#fff;color:#008fa3;border-bottom:2px solid #008fa3;font-weight:800}
-        .video-rank-row{height:50px;display:flex;align-items:center;border-bottom:1px solid #e7e7e7;padding:0 8px;background:#fff}
-        .video-rank-row:nth-child(even){background:#f3f3f3}
-        .video-rank-avatar{width:35px;height:35px;border-radius:50%;overflow:hidden;background:#ddd;flex:none;margin:0 7px}
-        .video-rank-avatar img{width:100%;height:100%;object-fit:cover}.video-rank-name{flex:1;font-size:10px}.video-rank-num{width:25px;text-align:center;font-size:10px;color:#777}
-        .video-gift-row{margin:5px 7px;height:52px;border-radius:7px;display:flex;align-items:center;padding:0 8px;color:#fff;font-size:10px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
-        .video-gift-row:nth-child(4n+1){background:linear-gradient(90deg,#f00,#ff8a8a,#f00)}
-        .video-gift-row:nth-child(4n+2){background:linear-gradient(90deg,#b100ff,#ff39d0,#7b00ff)}
-        .video-gift-row:nth-child(4n+3){background:linear-gradient(90deg,#f26a00,#ffd000,#8f2600)}
-        .video-gift-row:nth-child(4n+4){background:linear-gradient(90deg,#111,#444,#111)}
-        .video-settings-tabs{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid #ddd;background:#f5f5f5}
-        .video-settings-tabs button{height:36px;border:0;background:transparent;font-size:9px;color:#666}
-        .video-settings-tabs button.active{background:#fff;color:#008fa3;border-bottom:2px solid #008fa3;font-weight:800}
-        .video-setting-row{display:flex;align-items:center;justify-content:space-between;min-height:43px;padding:7px 10px;border-bottom:1px solid #eee;font-size:10px}
-        .video-setting-row input,.video-setting-row select{font-size:10px;border:1px solid #ddd;background:#f7f7f7;border-radius:3px;padding:6px;max-width:55%}
+        /* ===== VIDEO REFERENCE UI ===== */
+        .vr-top{height:80px;min-height:80px;background:#003840;color:#fff;display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px 8px;box-sizing:border-box;direction:rtl}
+        .vr-top-group{display:flex;align-items:flex-end;gap:18px}.vr-top-btn{position:relative;color:#fff;background:none;border:0;padding:0;cursor:pointer;text-align:center;min-width:45px}
+        .vr-top-btn .vr-i{font-size:27px;line-height:28px;display:block}.vr-top-btn .vr-t{font-size:10px;display:block;margin-top:2px}
+        .vr-badge{position:absolute;top:-4px;right:1px;background:#e51b23;color:#fff;font-size:12px;font-weight:800;padding:2px 7px;border-radius:3px}
+        .vr-count{position:absolute;top:-6px;right:0;background:#e51b23;color:#fff;font-weight:800;font-size:14px;padding:4px 7px;border-radius:3px}
+        .vr-account-menu{position:absolute;top:80px;right:12px;width:280px;background:#fff;color:#444;z-index:500;border:1px solid #ddd;box-shadow:0 3px 10px rgba(0,0,0,.25);direction:rtl}
+        .vr-account-menu button{width:100%;height:60px;border:0;border-bottom:1px solid #e4e4e4;background:#fff;font-size:16px;color:#555;display:flex;align-items:center;justify-content:space-between;padding:0 20px;cursor:pointer}
+        .vr-account-menu button span:first-child{color:#19a7ce;font-size:22px}
+        .vr-chat-row{min-height:58px;background:#f0f0f0;border-bottom:2px solid #fff;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;direction:rtl}
+        .vr-chat-row:nth-child(even){background:#fafafa}.vr-chat-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;flex:none;border:2px solid #16a9c9;background:#ddd;margin-left:8px}
+        .vr-chat-avatar img{width:100%;height:100%;object-fit:cover}.vr-chat-name{font-size:15px;font-weight:800;margin-left:4px}.vr-chat-text{font-size:14px;color:#111}.vr-chat-flag{font-size:13px;color:#aaa;margin-right:auto}
+        .vr-input{height:58px;background:#fff;border:1px solid #ddd;border-radius:30px;display:flex;align-items:center;padding:0 14px;font-size:18px;color:#777}
+        .vr-send{width:60px;height:60px;border-radius:50%;border:0;background:#003840;color:#fff;font-size:30px}
+        .vr-bottom{height:76px;min-height:76px;background:#003840;color:#fff;display:flex;align-items:center;justify-content:space-around;direction:rtl}
+        .vr-bottom-item{border:0;background:none;color:#fff;cursor:pointer;text-align:center;font-size:10px;min-width:72px}.vr-bottom-item .bi{font-size:31px;line-height:32px;display:block}.vr-radio{display:flex;align-items:center;gap:10px;direction:ltr}.vr-radio-play{width:58px;height:58px;border-radius:50%;background:#fff;color:#003840;border:0;font-size:28px}
+        .vr-radio-title{font-size:13px;color:#12a8d0}.vr-radio-title b{display:block;color:#fff;font-size:17px}
+        .vr-drawer{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.4);direction:rtl}.vr-drawer-inner{width:78%;max-width:430px;height:100%;background:#fff;overflow:auto;box-shadow:-5px 0 20px rgba(0,0,0,.25)}
+        .vr-menu-item{height:54px;border:0;border-bottom:1px solid #e4e4e4;background:#fff;width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:14px;color:#444;cursor:pointer}.vr-menu-item .mi{color:#18a7ce;font-size:22px}
+        .vr-menu-title{height:58px;background:#003840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:15px}
+        .vr-profile-overlay{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.58);display:flex;align-items:flex-start;justify-content:center;padding:0;direction:rtl}
+        .vr-profile{width:96%;max-width:1080px;max-height:96dvh;margin-top:2%;background:#fff;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+        .vr-profile-head{height:260px;min-height:260px;background:#003840;color:#fff;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:20px}
+        .vr-profile-head .close{position:absolute;left:22px;top:22px;border:0;background:none;color:#fff;font-size:44px;cursor:pointer}.vr-profile-avatar{position:absolute;right:16%;bottom:25px;width:180px;height:180px;object-fit:contain}
+        .vr-profile-name{font-size:28px;font-weight:700;margin-right:120px}.vr-profile-tabs{height:74px;display:grid;grid-template-columns:repeat(5,1fr);background:#f4f4f4}
+        .vr-profile-tabs button{border:0;border-left:1px solid #ddd;background:#f4f4f4;font-size:18px;color:#555;cursor:pointer}.vr-profile-tabs button.active{background:#003840;color:#fff}
+        .vr-profile-body{flex:1;overflow:auto;padding:25px;background:#fff}.vr-field-label{color:#10a7c9;text-align:center;font-weight:800;font-size:18px;margin:18px 0 7px}.vr-select{height:55px;border:1px solid #ddd;border-radius:5px;background:#f5f5f5;width:100%;font-size:17px;padding:0 12px;text-align:center;color:#555}
+        .vr-grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.vr-save{background:#10abd0;color:#fff;border:0;border-radius:8px;padding:14px 40px;font-size:18px;font-weight:800;cursor:pointer}
+        .vr-info-row{height:45px;border-bottom:1px solid #e6e6e6;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#555}.vr-info-row b{color:#222}
+        .vr-rank-overlay{position:fixed;inset:0;z-index:710;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding-top:70px;direction:rtl}
+        .vr-rank-box{width:96%;max-width:780px;max-height:80dvh;background:#111;overflow:hidden;border:1px solid #555}.vr-rank-head{height:55px;background:#003840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px}.vr-rank-tabs{display:grid;grid-template-columns:repeat(3,1fr)}.vr-rank-tabs button{height:45px;border:0;background:#eee;color:#555;font-size:13px}.vr-rank-tabs button.active{background:#003840;color:#fff}
+        .vr-gift-list{padding:12px;background:#111;overflow:auto;max-height:65dvh}.vr-gift{height:88px;margin-bottom:10px;border-radius:20px;border:2px solid #ddd;display:flex;align-items:center;padding:0 18px;color:#fff;font-size:20px;font-weight:800;box-sizing:border-box}.vr-gift:nth-child(1){background:linear-gradient(#c40000,#ff3131)}.vr-gift:nth-child(2){background:linear-gradient(90deg,#ff00e8,#bdefff)}.vr-gift:nth-child(3){background:linear-gradient(#b90000,#ff2d2d)}.vr-gift:nth-child(4){background:linear-gradient(#ff8a16,#25206e)}.vr-gift:nth-child(5){background:linear-gradient(#ff5b5b,#eee,#333)}.vr-gift:nth-child(6){background:linear-gradient(#7b0000,#280000)}.vr-gift:nth-child(7){background:linear-gradient(#77d5ff,#84909b)}.vr-gift:nth-child(8){background:linear-gradient(#9f7a20,#eadfc7)}.vr-gift span:last-child{margin-right:auto;font-size:20px}
 
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
@@ -2202,26 +2181,22 @@ export default function App() {
       <input type="file" ref={chatImageInputRef} accept="image/*" style={{display:'none'}} onChange={handleChatImageSelect} />
 
       {(currentView === 'chat' || currentView === 'rooms') && (
-        <header className="video-topbar" style={{height:'48px',minHeight:'48px',flexShrink:0,background:'#003f45',color:'#fff',padding:'0 10px',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',boxSizing:'border-box',zIndex:50}}>
-          {currentView === 'rooms' ? (
-            <>
-              <div className="brand-logo" style={{fontSize:'22px'}}>Arabic<span style={{color:'#ff4d76'}}>chat</span></div>
-              <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{width:'54px',height:'54px',borderRadius:'50%',overflow:'hidden',border:'2px solid rgba(255,255,255,.5)',background:'#334155',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{profileAvatar?<img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:'25px'}}>👤</span>}</div>
-            </>
-          ) : (
-            <>
-              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                <button onClick={()=>setShowMainMenu(true)} aria-label="القائمة" style={{background:'transparent',border:0,color:'#fff',cursor:'pointer',padding:0,display:'flex',alignItems:'center'}}><VideoIcon type="menu" size={23}/></button>
-                <button onClick={()=>setShowTopSearch(true)} aria-label="البحث" style={{background:'transparent',border:0,color:'#fff',fontSize:'31px',lineHeight:1,cursor:'pointer',padding:0}}>⌕</button>
-                <div style={{display:'flex',alignItems:'center',gap:'13px'}}><VideoIcon type="diamond" size={20}/></div>
-              </div>
-              <div style={{display:'flex',alignItems:'center',gap:'11px'}}>
-                <div onClick={()=>setShowMessagesModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="mail" size={20}/></span><span>رسالة</span>{totalUnreadMessages>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{totalUnreadMessages}</b>}</div>
-                <div onClick={()=>setShowRequestsModal(true)} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="request" size={20}/></span><span>طلب</span>{pendingRequests.length>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{pendingRequests.length}</b>}</div>
-                <div onClick={handleOpenNotifications} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff',position:'relative'}}><span style={{display:'flex'}}><VideoIcon type="bell" size={20}/></span><span>إشعار</span>{unreadNotificationsCount>0&&<b style={{position:'absolute',top:'-6px',right:'-8px',background:'#ef233c',borderRadius:'4px',padding:'1px 5px',fontSize:'10px'}}>{unreadNotificationsCount}</b>}</div>
-                <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('info')}} style={{cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',fontSize:'9px',color:'#fff'}}><span style={{display:'flex'}}><VideoIcon type="settings" size={20}/></span><span>اعدادات</span></div>
-              </div>
-            </>
+        <header className="vr-top">
+          <div className="vr-top-group">
+            <button className="vr-top-btn" onClick={()=>{setShowGiftRankPanel(true);setGiftRankTab('leaders')}}><span className="vr-i">♛</span><span className="vr-t">الأثرياء</span></button>
+            <button className="vr-top-btn" onClick={()=>{setShowGiftRankPanel(true);setGiftRankTab('ranks')}}><span className="vr-i">♕</span><span className="vr-t">الكبار</span><span className="vr-count">363</span></button>
+          </div>
+          <div className="vr-top-group">
+            <button className="vr-top-btn" onClick={()=>setShowMessagesModal(true)}><span className="vr-i">✉</span><span className="vr-t">رسالة</span>{totalUnreadMessages>0&&<span className="vr-badge">{totalUnreadMessages}</span>}</button>
+            <button className="vr-top-btn" onClick={handleOpenNotifications}><span className="vr-i">♟</span><span className="vr-t">إشعار</span>{unreadNotificationsCount>0&&<span className="vr-badge">{unreadNotificationsCount}</span>}</button>
+            <button className="vr-top-btn" onClick={()=>setShowAccountMenu(v=>!v)}><span className="vr-i">●</span><span className="vr-t">اعدادات</span></button>
+          </div>
+          {showAccountMenu && (
+            <div className="vr-account-menu">
+              <button onClick={async()=>{setShowAccountMenu(false);if(user) await openUserProfile({uid:user.uid,name:displayName||user.email||'المستخدم'});}}><span>●</span><span>ملفي الشخصي</span></button>
+              <button onClick={()=>{setShowAccountMenu(false);setShowRoomsModal(true)}}><span>⌂</span><span>قائمة الغرف</span></button>
+              <button onClick={()=>{setShowAccountMenu(false);signOut(auth)}}><span>↪</span><span>خروج</span></button>
+            </div>
           )}
         </header>
       )}
@@ -2229,7 +2204,7 @@ export default function App() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#ffffff', minHeight: 0, position: 'relative' }}>
         
         {currentView === 'rooms' && (
-          <div className="video-room-list" style={{padding:'20px 20px 0',overflowY:'auto',flex:1,direction:'rtl',background:'#eeeeee'}}>
+          <div className="video-room-list" style={{padding:'10px 8px 0',overflowY:'auto',flex:1,direction:'rtl',background:'#eeeeee'}}>
             {isOwner && (
               <form onSubmit={handleCreateRoom} style={{background:'#fff',borderRadius:'24px',padding:'14px 16px',marginBottom:'12px',border:'1px solid #ddd',boxShadow:'0 1px 4px rgba(0,0,0,.08)'}}>
                 <div style={{fontSize:'16px',fontWeight:'700',color:'#333',textAlign:'center',marginBottom:'10px'}}>إدارة الغرف — صاحب الموقع فقط</div>
@@ -2241,9 +2216,9 @@ export default function App() {
               </form>
             )}
             {rooms.map(room=>{const count=roomCounts[room.id]||0;return (
-              <div key={room.id} className="video-room-card" style={{background:'#fff',borderRadius:'28px',padding:'18px 28px 14px',marginBottom:'14px',border:'1px solid #ddd',boxShadow:'0 1px 5px rgba(0,0,0,.08)',textAlign:'center'}}>
-                <div style={{fontSize:'27px',fontWeight:'700',color:'#333',lineHeight:1.3}}><span style={{color:'#20a8d1',fontWeight:'800'}}>{count}</span> <span style={{color:'#62b70c'}}>♣</span> <span style={{color:'#aaa'}}>│</span> {room.name} <span style={{color:'#aaa'}}>│</span> {room.flag||'🌐'}</div>
-                <button onClick={()=>enterRoom(room)} style={{marginTop:'12px',width:'100%',height:'58px',border:0,borderRadius:'30px',background:'#003f45',color:'#fff',fontSize:'20px',fontWeight:'700',cursor:'pointer'}}><span style={{background:'#69be00',borderRadius:'10px',padding:'3px 8px',marginLeft:'8px'}}>↪</span> دخول الغرفة</button>
+              <div key={room.id} className="video-room-card" style={{background:'#fff',borderRadius:'18px',padding:'10px 10px 9px',marginBottom:'8px',border:'1px solid #ddd',boxShadow:'0 1px 5px rgba(0,0,0,.08)',textAlign:'center'}}>
+                <div style={{fontSize:'15px',fontWeight:'700',color:'#333',lineHeight:1.3}}><span style={{color:'#20a8d1',fontWeight:'800'}}>{count}</span> <span style={{color:'#62b70c'}}>♣</span> <span style={{color:'#aaa'}}>│</span> {room.name} <span style={{color:'#aaa'}}>│</span> {room.flag||'🌐'}</div>
+                <button onClick={()=>enterRoom(room)} style={{marginTop:'12px',width:'100%',height:'40px',border:0,borderRadius:'30px',background:'#003f45',color:'#fff',fontSize:'13px',fontWeight:'700',cursor:'pointer'}}><span style={{background:'#69be00',borderRadius:'10px',padding:'3px 8px',marginLeft:'8px'}}>↪</span> دخول الغرفة</button>
                 {isOwner && <button onClick={()=>handleDeleteRoom(room.id)} style={{marginTop:'8px',background:'#fff0f0',color:'#d22',border:'1px solid #f2b3b3',borderRadius:'10px',padding:'6px 14px',fontSize:'12px',fontWeight:'700'}}>حذف الغرفة</button>}
               </div>
             )})}
@@ -2597,84 +2572,62 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'50px',minHeight:'50px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
-          <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
-          <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
-          <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
-          <div onClick={()=>{setShowSettingsModal(true);setSettingsTab('options')}} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="settings" size={20}/></div><div>خيارات</div></div>
+        <nav className="vr-bottom">
+          <button className="vr-bottom-item" onClick={()=>setShowMainMenu(true)}><span className="bi">⚙</span>خيارات</button>
+          <div className="vr-radio"><button className="vr-radio-play" type="button">▶</button><div className="vr-radio-title">Radio<b>9090</b></div></div>
+          <button className="vr-bottom-item" onClick={()=>setShowRoomsModal(true)}><span className="bi">⌂</span>الغرف</button>
+          <button className="vr-bottom-item" onClick={()=>setShowOnlineModal(true)}><span className="bi">♟</span>المتصلين</button>
         </nav>
       )}
 
       {showMainMenu && (
-        <div className="video-parity-overlay" onClick={()=>setShowMainMenu(false)}>
-          <div className="video-parity-drawer" onClick={e=>e.stopPropagation()}>
-            <div className="video-parity-head">
-              <b>{videoMenuSection==='main'?'القائمة الرئيسية':videoMenuSection==='people'?'الأشخاص':videoMenuSection==='social'?'التواصل':videoMenuSection==='content'?'المحتوى':videoMenuSection==='account'?'الحساب':'المزيد'}</b>
-              <button className="video-parity-close" onClick={()=>setShowMainMenu(false)}>×</button>
+        <div className="vr-drawer" onClick={()=>setShowMainMenu(false)}>
+          <div className="vr-drawer-inner" onClick={e=>e.stopPropagation()}>
+            <div style={{height:'58px',background:'#fff',display:'flex',alignItems:'center',padding:'0 18px',borderBottom:'1px solid #ddd'}}>
+              <button onClick={()=>setShowMainMenu(false)} style={{border:0,background:'none',fontSize:'40px',color:'#444'}}>×</button>
             </div>
-            <div className="video-parity-tabs">
-              {([['main','الرئيسية'],['people','الأشخاص'],['social','التواصل'],['content','المحتوى'],['account','الحساب'],['more','المزيد']] as const).map(([id,label])=>
-                <button key={id} className={videoMenuSection===id?'active':''} onClick={()=>setVideoMenuSection(id)}>{label}</button>
-              )}
-            </div>
-            <div className="video-parity-list">
-              {videoMenuSection==='main' && <>
-                <div className="video-parity-section">الغرف والدخول</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowRoomsModal(true)}}><span className="vp-icon">🏠</span><span className="vp-text">قائمة الغرف</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setCurrentView('rooms');setSelectedRoom(null)}}><span className="vp-icon">▦</span><span className="vp-text">صفحة الغرف الرئيسية</span><span className="vp-arrow">‹</span></button>
-                <div className="video-parity-section">الدردشة</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowOnlineModal(true)}}><span className="vp-icon">🟢</span><span className="vp-text">المتصلون الآن</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowMessagesModal(true)}}><span className="vp-icon">✉</span><span className="vp-text">الرسائل الخاصة</span>{totalUnreadMessages>0&&<span className="video-parity-badge">{totalUnreadMessages}</span>}<span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowTopSearch(true)}}><span className="vp-icon">⌕</span><span className="vp-text">البحث عن مستخدم</span><span className="vp-arrow">‹</span></button>
-              </>}
-              {videoMenuSection==='people' && <>
-                <div className="video-parity-section">قوائم المستخدمين</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowOnlineModal(true)}}><span className="vp-icon">🟢</span><span className="vp-text">المتصلون في الغرفة</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowFriendsModal(true)}}><span className="vp-icon">👥</span><span className="vp-text">الأصدقاء</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowRequestsModal(true)}}><span className="vp-icon">➕</span><span className="vp-text">طلبات الصداقة</span>{pendingRequests.length>0&&<span className="video-parity-badge">{pendingRequests.length}</span>}<span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('leaders')}}><span className="vp-icon">🏆</span><span className="vp-text">كبار الشخصيات والترتيب</span><span className="vp-arrow">‹</span></button>
-              </>}
-              {videoMenuSection==='social' && <>
-                <div className="video-parity-section">التواصل والتنبيهات</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);handleOpenNotifications()}}><span className="vp-icon">🔔</span><span className="vp-text">الإشعارات</span>{unreadNotificationsCount>0&&<span className="video-parity-badge">{unreadNotificationsCount}</span>}<span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowMessagesModal(true)}}><span className="vp-icon">✉</span><span className="vp-text">صندوق الرسائل</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowWallModal(true)}}><span className="vp-icon">📝</span><span className="vp-text">حائط الأصدقاء</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowTopSearch(true)}}><span className="vp-icon">🔎</span><span className="vp-text">البحث والتصفية</span><span className="vp-arrow">‹</span></button>
-              </>}
-              {videoMenuSection==='content' && <>
-                <div className="video-parity-section">المحتوى</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowNewsModal(true)}}><span className="vp-icon">📰</span><span className="vp-text">الأخبار والمنشورات</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('ranks')}}><span className="vp-icon">💎</span><span className="vp-text">الرتب والمستويات</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('gifts')}}><span className="vp-icon">🎁</span><span className="vp-text">الهدايا</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowVipModal(true);setVipTab('leaders')}}><span className="vp-icon">👑</span><span className="vp-text">كبار الشخصيات</span><span className="vp-arrow">‹</span></button>
-              </>}
-              {videoMenuSection==='account' && <>
-                <div className="video-parity-section">الحساب والملف</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('info')}}><span className="vp-icon">👤</span><span className="vp-text">ملفي الشخصي</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('options')}}><span className="vp-icon">⚙</span><span className="vp-text">إعدادات الحساب</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('friends')}}><span className="vp-icon">👥</span><span className="vp-text">إعدادات الأصدقاء</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('ignore')}}><span className="vp-icon">🚫</span><span className="vp-text">قائمة التجاهل</span><span className="vp-arrow">‹</span></button>
-              </>}
-              {videoMenuSection==='more' && <>
-                <div className="video-parity-section">خيارات إضافية</div>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('more')}}><span className="vp-icon">☰</span><span className="vp-text">المزيد من الخيارات</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowNewsModal(true)}}><span className="vp-icon">📢</span><span className="vp-text">الإعلانات والأخبار</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>{setShowMainMenu(false);setShowSettingsModal(true);setSettingsTab('options')}}><span className="vp-icon">⚙</span><span className="vp-text">الخيارات العامة</span><span className="vp-arrow">‹</span></button>
-                <button className="video-parity-row" onClick={()=>setShowMainMenu(false)}><span className="vp-icon">ℹ</span><span className="vp-text">معلومات الموقع</span><span className="vp-arrow">‹</span></button>
-              </>}
-            </div>
+            {[
+              ['🟢','متصل',()=>setShowOnlineModal(true)],
+              ['📰','الأخبار',()=>setShowNewsModal(true)],
+              ['✉','إتصل بنا',()=>setShowMessagesModal(true)],
+              ['🔎','بحث',()=>setShowTopSearch(true)],
+              ['💎','كبار الشخصيات',()=>{setShowVipModal(true);setGiftRankTab('leaders')}],
+              ['♛','الأثرياء',()=>{setShowVipModal(true);setGiftRankTab('gifts')}],
+              ['＋','المزيد',()=>setShowRoomsModal(true)],
+              ['f','تابعنا على فيسبوك',()=>{}],
+              ['▶','قناتنا على يوتيوب',()=>{}],
+              ['🤖','تطبيق الأندرويد',()=>{}],
+              ['⟳','تحديث الصفحة',()=>window.location.reload()]
+            ].map(([icon,label,fn],i)=>
+              <button key={i} className="vr-menu-item" onClick={async()=>{setShowMainMenu(false);await (fn as any)()}}>
+                <span className="mi">{icon as any}</span><span>{label as any}</span>
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {showTopSearch && (
-        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#fff',zIndex:270,direction:'rtl',display:'flex',flexDirection:'column'}}>
-          <div style={{height:'82px',display:'flex',alignItems:'center',gap:'14px',padding:'0 18px',borderBottom:'1px solid #ddd'}}>
-            <button onClick={()=>setShowTopSearch(false)} style={{border:0,background:'transparent',fontSize:'38px',color:'#444',cursor:'pointer'}}>×</button>
-            <div style={{flex:1,fontSize:'21px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>البحث عن أشخاص <span style={{color:'#16a6d4',fontSize:'32px'}}>⌕</span></div><button type="button" onClick={()=>{setShowTopSearch(false);setShowVipModal(true)}} title="كبار الشخصيات" style={{border:0,background:'transparent',fontSize:'24px',cursor:'pointer'}}>⭐</button>
+        <div style={{position:'fixed',inset:0,zIndex:650,background:'#fff',direction:'rtl',display:'flex',flexDirection:'column'}}>
+          <div style={{height:'68px',display:'flex',alignItems:'center',justifyContent:'center',borderBottom:'1px solid #ddd',position:'relative',fontSize:'20px',color:'#444'}}>
+            <button onClick={()=>setShowTopSearch(false)} style={{position:'absolute',left:'22px',border:0,background:'none',fontSize:'38px',color:'#444'}}>×</button>
+            <span>البحث عن أشخاص <b style={{color:'#12a8d0',fontSize:'28px'}}>⌕</b></span>
           </div>
-          <div style={{textAlign:'center',fontSize:'18px',padding:'24px'}}>إعلان ترويجي</div>
-          <div style={{flex:1,overflowY:'auto'}}>{onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=><div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'86px',borderBottom:'1px solid #e5e5e5',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px',cursor:'pointer'}}><div style={{display:'flex',alignItems:'center',gap:'12px'}}><span style={{fontSize:'20px',fontWeight:'700',color:'#333'}}>{u.name}</span></div><div style={{width:'58px',height:'58px',borderRadius:'50%',overflow:'hidden',border:'3px solid #17a7d2',background:'#eee'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}>👤</span>}</div></div>)}</div>
+          <div style={{textAlign:'center',height:'65px',paddingTop:'18px',fontSize:'17px',color:'#222',boxSizing:'border-box'}}>إعلان ترويجي</div>
+          <div style={{display:'flex',alignItems:'center',padding:'7px 12px',borderBottom:'1px solid #ddd'}}>
+            <span style={{fontSize:'18px',color:'#12a8d0'}}>⌕</span>
+            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="البحث عن أشخاص" style={{flex:1,border:0,outline:0,fontSize:'13px',textAlign:'right',padding:'7px'}}/>
+            {searchQuery&&<button onClick={()=>setSearchQuery('')} style={{border:0,background:'none',fontSize:'18px'}}>×</button>}
+          </div>
+          <div style={{flex:1,overflow:'auto'}}>
+            {onlineUsersList.filter(u=>u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u=>
+              <div key={u.id} onClick={()=>{setShowTopSearch(false);openUserProfile(u)}} style={{height:'63px',borderBottom:'1px solid #eee',display:'flex',alignItems:'center',padding:'0 14px',cursor:'pointer',direction:'rtl'}}>
+                <div style={{width:'42px',height:'42px',borderRadius:'50%',overflow:'hidden',border:'2px solid #18a7ce',background:'#ddd',marginLeft:'9px'}}>{u.avatarUrl?<img src={u.avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>}</div>
+                <div style={{fontSize:'13px',fontWeight:700,color:u.nameColor||'#333',flex:1}}>{u.name}</div>
+                <span style={{fontSize:'15px'}}>{u.flag||'🌐'}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -2816,43 +2769,23 @@ export default function App() {
       )}
 
       {showVipModal && (
-        <div className="video-parity-modal" onClick={()=>setShowVipModal(false)}>
-          <div className="video-parity-card" onClick={e=>e.stopPropagation()}>
-            <div className="video-parity-card-head"><b>كبار الشخصيات والرتب</b><button onClick={()=>setShowVipModal(false)}>×</button></div>
-            <div className="video-vip-tabs">
-              <button className={vipTab==='leaders'?'active':''} onClick={()=>setVipTab('leaders')}>كبار الشخصيات</button>
-              <button className={vipTab==='ranks'?'active':''} onClick={()=>setVipTab('ranks')}>الرتب</button>
-              <button className={vipTab==='gifts'?'active':''} onClick={()=>setVipTab('gifts')}>الهدايا</button>
+        <div className="vr-rank-overlay" onClick={()=>setShowVipModal(false)}>
+          <div className="vr-rank-box" onClick={e=>e.stopPropagation()}>
+            <div className="vr-rank-head"><b>الأثرياء والكبار</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'28px'}}>×</button></div>
+            <div className="vr-rank-tabs">
+              <button className={giftRankTab==='leaders'?'active':''} onClick={()=>setGiftRankTab('leaders')}>كبار الشخصيات</button>
+              <button className={giftRankTab==='gifts'?'active':''} onClick={()=>setGiftRankTab('gifts')}>الهدايا</button>
+              <button className={giftRankTab==='ranks'?'active':''} onClick={()=>setGiftRankTab('ranks')}>الرتب</button>
             </div>
-            <div className="video-parity-body">
-              {vipTab==='leaders' && <div>
-                {rankedUsers.length===0
-                  ? <div style={{padding:'30px',textAlign:'center',fontSize:'11px',color:'#888'}}>لا توجد بيانات ترتيب متاحة حالياً.</div>
-                  : rankedUsers.map((u:any,i:number)=>
-                    <div className="video-rank-row" key={u.id||i} onClick={()=>{setShowVipModal(false);openUserProfile(u)}}>
-                      <div className="video-rank-num">{i+1}</div>
-                      <div className="video-rank-avatar">{u.avatarUrl?<img src={u.avatarUrl} alt=""/>:'👤'}</div>
-                      <div className="video-rank-name"><b style={{color:u.nameColor||'#008fa3'}}>{u.displayName||u.name||'مستخدم'}</b><div style={{fontSize:'8px',color:'#999'}}>{u.country||''} {u.flag||''} · {normalizeRole(u.role)}</div></div>
-                      <span style={{fontSize:'13px'}}>›</span>
-                    </div>
-                  )
-                }
-              </div>}
-              {vipTab==='ranks' && <div>
-                {['عضو جديد','عضو نشيط','عضو مميز','VIP','Super VIP','مراقب','مشرف','Super Admin','صاحب الموقع'].map((r,i)=>
-                  <div className="video-rank-row" key={r}>
-                    <div className="video-rank-num">{i+1}</div>
-                    <div className="video-rank-avatar" style={{display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>{['👤','⭐','💠','💎','👑','🛡️','🔰','🏆','👑'][i]}</div>
-                    <div className="video-rank-name"><b>{r}</b><div style={{fontSize:'8px',color:'#999'}}>رتبة ومزايا الحساب</div></div>
-                  </div>
-                )}
-              </div>}
-              {vipTab==='gifts' && <div style={{padding:'4px 0'}}>
-                {['🎁 هدية ترحيب','💎 ألماسة','👑 تاج ملكي','🌹 وردة','❤️ قلب','🔥 نار','🎉 حفلة','🏆 كأس','🚀 صاروخ','💰 ذهب'].map((g,i)=>
-                  <div className="video-gift-row" key={g}><span style={{fontSize:'20px',marginLeft:'8px'}}>{g.split(' ')[0]}</span><span>{g.substring(g.indexOf(' ')+1)}</span><span style={{marginRight:'auto',fontSize:'8px'}}>#{i+1}</span></div>
-                )}
-              </div>}
-            </div>
+            {giftRankTab==='leaders' && <div style={{background:'#fff',maxHeight:'65dvh',overflow:'auto'}}>
+              {rankedUsers.map((u:any,i:number)=><div key={u.id||i} style={{height:'58px',borderBottom:'1px solid #ddd',display:'flex',alignItems:'center',padding:'0 10px',cursor:'pointer'}} onClick={()=>{setShowVipModal(false);openUserProfile(u)}}><b style={{width:'28px'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#ddd',marginLeft:'8px'}}>{u.avatarUrl?<img src={u.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><span style={{fontWeight:800,color:u.nameColor||'#008fa3'}}>{u.displayName||u.name}</span><span style={{marginRight:'auto',fontSize:'10px',color:'#999'}}>{u.role||'عضو'}</span></div>)}
+            </div>}
+            {giftRankTab==='gifts' && <div className="vr-gift-list">
+              {['الملك 👑','MoOoKAlI كنج','دار زايد 🕊','Silda★NightMare','ذيبان TOP','♨BYURA','سالم العبيدي','Khalid VIP','المزيد'].map((x,i)=><div className="vr-gift" key={x}><span>{x}</span><span>{i+1}</span></div>)}
+            </div>}
+            {giftRankTab==='ranks' && <div style={{background:'#fff',maxHeight:'65dvh',overflow:'auto'}}>
+              {['زائر','عضو رتبة 1','عضو مشارك رتبة 5','عضو نشيط رتبة 10','عضو مميز رتبة 20','عضو ذهبي مرتبة 45','مشرف','Admin','Super Admin','صاحب الموقع'].map((x,i)=><div key={x} style={{height:'52px',borderBottom:'1px solid #ddd',display:'flex',alignItems:'center',padding:'0 15px'}}><b style={{width:'35px'}}>{i+1}</b><span style={{fontSize:'13px',fontWeight:800}}>{x}</span></div>)}
+            </div>}
           </div>
         </div>
       )}
@@ -3044,10 +2977,9 @@ export default function App() {
               <button onClick={() => setShowSettingsModal(false)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
 
-            <div className="video-settings-tabs">
-              {([['info','المعلومات'],['friends','الأصدقاء'],['ignore','التجاهل'],['options','الخيارات'],['more','المزيد']] as const).map(([id,label])=>
-                <button key={id} className={settingsTab===id?'active':''} onClick={()=>setSettingsTab(id)}>{label}</button>
-              )}
+            <div style={{ display: 'flex', borderBottom: '1px solid #cbd5e1', backgroundColor: '#f8fafc' }}>
+              <button onClick={() => setSettingsTab('info')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'info' ? '#ffffff' : 'transparent', color: settingsTab === 'info' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'info' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>المعلومات</button>
+              <button onClick={() => setSettingsTab('options')} style={{ flex: 1, padding: '8px 4px', fontSize: '11px', fontWeight: 'bold', border: 'none', background: settingsTab === 'options' ? '#ffffff' : 'transparent', color: settingsTab === 'options' ? '#0284c7' : '#64748b', borderBottom: settingsTab === 'options' ? '2px solid #0284c7' : 'none', cursor: 'pointer' }}>الخيارات</button>
             </div>
 
             <div style={{ padding: '16px', overflowY: 'auto', flex: 1 }}>
@@ -3203,20 +3135,6 @@ export default function App() {
                 </div>
               )}
 
-              {settingsTab === 'friends' && (
-                <div>
-                  <div className="video-setting-row"><span>عرض قائمة الأصدقاء</span><select defaultValue="all"><option value="all">الجميع</option><option value="online">المتصلون فقط</option></select></div>
-                  <div className="video-setting-row"><span>السماح بطلبات الصداقة</span><input type="checkbox" defaultChecked /></div>
-                  <div className="video-setting-row"><span>إظهار حالة الاتصال</span><input type="checkbox" defaultChecked /></div>
-                </div>
-              )}
-              {settingsTab === 'ignore' && (
-                <div>
-                  <div className="video-setting-row"><span>قائمة المستخدمين المتجاهلين</span><span style={{color:'#999'}}>0</span></div>
-                  <div className="video-setting-row"><span>إخفاء رسائل المتجاهلين</span><input type="checkbox" defaultChecked /></div>
-                  <div style={{padding:'12px',fontSize:'9px',color:'#888'}}>لا توجد أسماء متجاهلة حالياً.</div>
-                </div>
-              )}
               {settingsTab === 'options' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <button 
@@ -3234,15 +3152,6 @@ export default function App() {
                   </button>
                 </div>
               )}
-              {settingsTab === 'more' && (
-                <div>
-                  <div className="video-setting-row"><span>صوت الإشعارات</span><input type="checkbox" defaultChecked /></div>
-                  <div className="video-setting-row"><span>تشغيل الراديو تلقائياً</span><input type="checkbox" /></div>
-                  <div className="video-setting-row"><span>إظهار الرسائل الجديدة</span><input type="checkbox" defaultChecked /></div>
-                  <div className="video-setting-row"><span>الوضع الليلي</span><input type="checkbox" /></div>
-                  <div className="video-setting-row"><span>حجم الخط</span><select defaultValue="normal"><option value="small">صغير</option><option value="normal">متوسط</option><option value="large">كبير</option></select></div>
-                </div>
-              )}
             </div>
 
           </div>
@@ -3250,257 +3159,77 @@ export default function App() {
       )}
 
       {selectedProfileUser && (
-        <div className="video-profile-backdrop"
-          onClick={() => { stopProfileSong(); setSelectedProfileUser(null); }}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 120, display: 'flex', justifyContent: 'center', alignItems: 'center', direction: 'rtl', padding: '12px' }}
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            style={{ 
-              width: '100%', 
-              maxWidth: '360px', 
-              backgroundColor: selectedProfileUser.profileBgColor || '#ffffff', 
-              borderRadius: '16px', 
-              overflow: 'hidden', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              boxShadow: '0 12px 30px rgba(0,0,0,0.4)', 
-              border: '1px solid #1e293b', 
-              maxHeight: '90dvh',
-              transition: 'background-color 0.3s ease'
-            }}
-          >
-            
-            <div style={{ position: 'relative', width: '100%', backgroundColor: '#0b1724', minHeight: '280px', overflow: 'hidden' }}>
-              
-              <div 
-                onClick={() => {
-                  if (canEditCover) {
-                    coverInputRef.current?.click();
-                  } else if (selectedProfileUser.coverUrl) {
-                    setPreviewImage(selectedProfileUser.coverUrl);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: '100%',
-                  height: '100%',
-                  backgroundImage: selectedProfileUser.coverUrl ? `url(${selectedProfileUser.coverUrl})` : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                  cursor: (canEditCover || selectedProfileUser.coverUrl) ? 'pointer' : 'default'
-                }}
-              />
-
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, rgba(11,23,36,0.2) 0%, rgba(11,23,36,0.85) 100%)', pointerEvents: 'none' }} />
-
-              <button 
-                onClick={(e) => { e.stopPropagation(); stopProfileSong(); setSelectedProfileUser(null); }} 
-                style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#ffffff', fontSize: '16px', cursor: 'pointer', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 10 }}
-              >
-                ✕
-              </button>
-
-              {canAddSong && (
-                <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10, display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  {selectedProfileUser.profileSongUrl ? (
-                    <>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); songInputRef.current?.click(); }}
-                        style={{ background: 'rgba(34,197,94,0.9)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <span>🎵</span>
-                        <span>تغيير الأغنية</span>
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteSong(); }}
-                        style={{ background: 'rgba(220,38,38,0.9)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                      >
-                        🗑️
-                      </button>
-                    </>
-                  ) : (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); songInputRef.current?.click(); }}
-                      style={{ background: 'rgba(124,58,237,0.9)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <span>🎵</span>
-                      <span>إضافة أغنية</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', textAlign: 'center', paddingBottom: '14px', width: '100%' }}>
-                
-                <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <div 
-                    onClick={() => {
-                      if (canEditAvatar) {
-                        avatarInputRef.current?.click();
-                      } else if (selectedProfileUser.avatarUrl) {
-                        setPreviewImage(selectedProfileUser.avatarUrl);
-                      }
-                    }}
-                    style={{
-                      width: '76px',
-                      height: '76px',
-                      borderRadius: '50%',
-                      backgroundColor: '#0284c7',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '32px',
-                      fontWeight: 'bold',
-                      border: '3px solid #ffffff',
-                      boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                      overflow: 'hidden',
-                      cursor: (canEditAvatar || selectedProfileUser.avatarUrl) ? 'pointer' : 'default'
-                    }}
-                  >
-                    {selectedProfileUser.avatarUrl ? (
-                      <img src={selectedProfileUser.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      '👤'
-                    )}
-                  </div>
-
-                  {canEditAvatar && (
-                    <div 
-                      onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
-                      style={{ position: 'absolute', bottom: '0', right: '0', backgroundColor: '#0284c7', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', border: '2px solid #ffffff', cursor: 'pointer' }}
-                    >
-                      📷
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: 'bold', padding: '2px 10px', borderRadius: '12px', marginTop: '6px' }}>
-                  {selectedProfileUser.role}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px', width: '100%' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 'bold', ...getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || '#2563eb') }}>
-                    {selectedProfileUser.name}
-                  </span>
-                  {canModifyTargetName && (
-                    <span 
-                      onClick={() => setIsEditingNameActive(!isEditingNameActive)}
-                      style={{ cursor: 'pointer', fontSize: '14px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                      title="تعديل الاسم"
-                    >
-                      ✏️
-                    </span>
-                  )}
-                </div>
-
-              </div>
-
-              {canEditCover && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
-                  style={{ position: 'absolute', top: '46px', right: '12px', background: 'rgba(0,0,0,0.75)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', padding: '5px 12px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <span>📷</span>
-                  <span>تغيير الغلاف</span>
-                </button>
-              )}
-
+        <div className="vr-profile-overlay" onClick={()=>{stopProfileSong();setSelectedProfileUser(null)}}>
+          <div className="vr-profile" onClick={e=>e.stopPropagation()}>
+            <div className="vr-profile-head">
+              <button className="close" onClick={()=>{stopProfileSong();setSelectedProfileUser(null)}}>×</button>
+              <img className="vr-profile-avatar" src={selectedProfileUser.avatarUrl||VIDEO_PROFILE_AVATAR} alt="" />
+              <div className="vr-profile-name">{selectedProfileUser.name}</div>
             </div>
-
-            <div style={{ padding: '14px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px', color: '#334155' }}>
-              
-              {isEditingNameActive && canModifyTargetName && (
-                <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>✏️ تعديل اسم المستخدم:</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <input 
-                      type="text" 
-                      value={editingUserName} 
-                      onChange={(e) => setEditingUserName(e.target.value)}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
-                    />
-                    <button 
-                      onClick={handleUpdateUserName}
-                      style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}
-                    >
-                      حفظ
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
-                <span style={{ opacity: 0.7 }}>الجنس:</span>
-                <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.gender}</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
-                <span style={{ opacity: 0.7 }}>تاريخ الانضمام:</span>
-                <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.joinedDate}</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
-                <span style={{ opacity: 0.7 }}>المتواجد حالياً في:</span>
-                <span style={{ fontWeight: 'bold', color: '#0284c7' }}>{selectedProfileUser.roomName}</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '6px' }}>
-                <span style={{ opacity: 0.7 }}>آخر ظهور:</span>
-                <span style={{ fontWeight: 'bold' }}>{selectedProfileUser.lastSeen}</span>
-              </div>
-
-              {isAdmin && !isSelfProfile && !['Owner', 'Admin', 'Super Admin'].includes(normalizeRole(selectedProfileUser?.role)) && (
-                <div style={{ marginTop: '10px', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#991b1b', marginBottom: '6px' }}>🚫 لوحة الطرد (للأعضاء والزوار فقط):</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
-                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 1)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>دقيقة 1</button>
-                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 5)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>5 دقائق</button>
-                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 30)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>30 دقيقة</button>
-                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 60)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>ساعة</button>
-                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 120)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>ساعتين</button>
-                    <button onClick={() => handleKickUser(selectedProfileUser.userId, 180)} style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 4px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>3 ساعات</button>
-                  </div>
-                </div>
-              )}
-
-              {isOwner && !isSelfProfile && (
-                <div style={{ marginTop: '10px', backgroundColor: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', marginBottom: '6px' }}>لوحة التحكم بالرتب (للمالك فقط):</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Admin')} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Admin 👑</button>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Super Admin')} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Super Admin ⚡</button>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Premium')} style={{ backgroundColor: '#eab308', color: '#000', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Set Premium 💎</button>
-                    <button onClick={() => handleUpdateUserRole(selectedProfileUser.userId, 'Member')} style={{ backgroundColor: '#64748b', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Demote Member 👤</button>
-                  </div>
-                </div>
-              )}
-
-              {!isSelfProfile && (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                  <button 
-                    onClick={() => openPrivateChatWithUser(selectedProfileUser.userId, selectedProfileUser.name)}
-                    style={{ flex: 1, backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                  >
-                    محادثة خاصة ✉️
-                  </button>
-                  <button 
-                    onClick={() => handleSendFriendRequest(selectedProfileUser.userId, selectedProfileUser.name)}
-                    style={{ flex: 1, backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                  >
-                    إضافة صديق 👤⁺
-                  </button>
-                </div>
-              )}
-
+            <div className="vr-profile-tabs">
+              <button className={profileTab==='complete'?'active':''} onClick={()=>setProfileTab('complete')}>✎ إكمال التسجيل</button>
+              <button className={profileTab==='info'?'active':''} onClick={()=>setProfileTab('info')}>معلوماتي</button>
+              <button className={profileTab==='ignore'?'active':''} onClick={()=>setProfileTab('ignore')}>تجاهل</button>
+              <button className={profileTab==='options'?'active':''} onClick={()=>setProfileTab('options')}>خيارات</button>
+              <button className={profileTab==='more'?'active':''} onClick={()=>setProfileTab('more')}>المزيد</button>
             </div>
-
+            <div className="vr-profile-body">
+              {profileTab==='complete' && <div>
+                <div className="vr-field-label">اسم المستخدم</div><input className="vr-select" value={editingUserName} onChange={e=>setEditingUserName(e.target.value)}/>
+                <div className="vr-grid2">
+                  <div><div className="vr-field-label">تحديد الجنس</div><select className="vr-select" value={profileGender} onChange={e=>setProfileGender(e.target.value)}><option>ذكر</option><option>أنثى</option></select></div>
+                  <div><div className="vr-field-label">تحديد العمر</div><select className="vr-select" defaultValue={selectedProfileUser.age||26}>{Array.from({length:63},(_,i)=>18+i).map(a=><option key={a}>{a}</option>)}</select></div>
+                </div>
+                <div className="vr-grid2">
+                  <div><div className="vr-field-label">البلد</div><select className="vr-select" value={profileCountry} onChange={e=>setProfileCountry(e.target.value)}>{COUNTRIES_LIST.map(c=><option key={c}>{c}</option>)}</select></div>
+                  <div><div className="vr-field-label">العلاقة</div><select className="vr-select" defaultValue="عدم إظهار"><option>عدم إظهار</option><option>أعزب</option><option>مرتبط</option></select></div>
+                </div>
+                <button className="vr-save" onClick={async()=>{await handleUpdateUserName();saveSettingToFirebase('gender',profileGender);saveSettingToFirebase('country',profileCountry);saveSettingToFirebase('age',selectedProfileUser.age||'');saveSettingToFirebase('relationship','عدم إظهار');}}>حفظ 💾</button>
+              </div>}
+              {profileTab==='info' && <div>
+                <div className="vr-info-row"><b>الجنس</b><span>{selectedProfileUser.gender||'ذكر'}</span></div>
+                <div className="vr-info-row"><b>العمر</b><span>{selectedProfileUser.age||'غير محدد'}</span></div>
+                <div className="vr-info-row"><b>العلاقة</b><span>{selectedProfileUser.relationship||'عدم إظهار'}</span></div>
+                <div className="vr-info-row"><b>البلد</b><span>{selectedProfileUser.country||profileCountry} {selectedProfileUser.flag||currentFlag}</span></div>
+                <div className="vr-info-row"><b>تاريخ الانضمام</b><span>{selectedProfileUser.joinedDate}</span></div>
+                <div className="vr-info-row"><b>الغرفة الحالية</b><span>{selectedProfileUser.roomName}</span></div>
+                <div className="vr-info-row"><b>آخر تواجد</b><span>{selectedProfileUser.lastSeen}</span></div>
+                <div className="vr-info-row"><b>النقاط</b><span>{selectedProfileUser.points||0}</span></div>
+                <div className="vr-info-row"><b>رابط الملف الشخصي</b><span>https://www.arabic.chat/#id{selectedProfileUser.userId}</span></div>
+                <div className="vr-info-row" style={{minHeight:'70px'}}><b>معلوماتي</b><span>{selectedProfileUser.bio||'افعل مايجعلك سعيداً'}</span></div>
+              </div>}
+              {profileTab==='ignore' && <div>
+                <div className="vr-grid2">
+                  <div><div className="vr-field-label">تحديد الجنس</div><select className="vr-select" value={selectedProfileUser.gender||'ذكر'} onChange={e=>setSelectedProfileUser((v:any)=>({...v,gender:e.target.value}))}><option>ذكر</option><option>أنثى</option><option>آخر</option></select></div>
+                  <div><div className="vr-field-label">تحديد العمر</div><select className="vr-select" defaultValue={selectedProfileUser.age||26}>{Array.from({length:63},(_,i)=>18+i).map(a=><option key={a}>{a}</option>)}</select></div>
+                </div>
+                <div className="vr-grid2">
+                  <div><div className="vr-field-label">العلاقة</div><select className="vr-select" defaultValue={selectedProfileUser.relationship||'عدم إظهار'}><option>عدم إظهار</option><option>أعزب</option><option>مرتبط</option></select></div>
+                  <div><div className="vr-field-label">البلد</div><select className="vr-select" value={selectedProfileUser.country||profileCountry} onChange={e=>setSelectedProfileUser((v:any)=>({...v,country:e.target.value}))}>{COUNTRIES_LIST.map(c=><option key={c}>{c}</option>)}</select></div>
+                </div>
+                <button className="vr-save" onClick={()=>{saveSettingToFirebase('gender',selectedProfileUser.gender||'ذكر');saveSettingToFirebase('country',selectedProfileUser.country||profileCountry)}}>حفظ 💾</button>
+              </div>}
+              {profileTab==='options' && <div>
+                <div className="vr-field-label">لغة الدردشة</div><select className="vr-select" defaultValue="Arabic"><option>Arabic</option><option>English</option></select>
+                <div className="vr-field-label">منطقة التوقيت الزمني</div><select className="vr-select" defaultValue="Asia/Amman"><option>Asia/Amman</option><option>Asia/Riyadh</option><option>UTC</option></select>
+                <div className="vr-grid2">
+                  <div><div className="vr-field-label">دردشة خاصة</div><select className="vr-select" defaultValue="تشغيل"><option>تشغيل</option><option>إيقاف</option></select></div>
+                  <div><div className="vr-field-label">الذين يمكنهم إرسال صور خاصة</div><select className="vr-select" defaultValue="لا أحد"><option>لا أحد</option><option>الأصدقاء</option><option>الجميع</option></select></div>
+                  <div><div className="vr-field-label">ظهور رسائل الانضمام</div><select className="vr-select" defaultValue="تشغيل"><option>تشغيل</option><option>إيقاف</option></select></div>
+                  <div><div className="vr-field-label">كتم الرسائل غير المرغوبة</div><select className="vr-select" defaultValue="إيقاف"><option>إيقاف</option><option>تشغيل</option></select></div>
+                  <div><div className="vr-field-label">الثيم</div><select className="vr-select" defaultValue="الثيم الافتراضي"><option>الثيم الافتراضي</option><option>فاتح</option><option>داكن</option></select></div>
+                  <div><div className="vr-field-label">الأصوات</div><select className="vr-select" defaultValue="جميع الأصوات"><option>جميع الأصوات</option><option>إيقاف</option></select></div>
+                </div>
+                <div className="vr-field-label">فتح الخاص تلقائياً للرسائل غير المقروءة</div><select className="vr-select" defaultValue="إيقاف"><option>إيقاف</option><option>تشغيل</option></select>
+              </div>}
+              {profileTab==='more' && <div>
+                <div className="vr-field-label">المزيد</div>
+                <button className="vr-menu-item" onClick={() => setPreviewImage(selectedProfileUser.avatarUrl || VIDEO_PROFILE_AVATAR)}>🖼 معاينة الصورة</button>
+                {selectedProfileUser.profileSongUrl&&<button className="vr-menu-item" onClick={()=>playProfileSong(selectedProfileUser.profileSongUrl)}>🎵 تشغيل الأغنية</button>}
+                <button className="vr-menu-item" onClick={()=>setShowTopSearch(true)}>🔎 البحث عن المستخدم</button>
+                <button className="vr-menu-item" onClick={()=>setSelectedProfileUser(null)}>✕ إغلاق</button>
+              </div>}
+            </div>
           </div>
         </div>
       )}
