@@ -706,24 +706,23 @@ export default function App() {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-
         if (width > height) {
-          if (width > maxWidth) {
-            height *= maxWidth / width;
-            width = maxWidth;
-          }
+          if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
         } else {
-          if (height > maxHeight) {
-            width *= maxHeight / height;
-            height = maxHeight;
-          }
+          if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
         }
-
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = Math.max(1, Math.round(width));
+        canvas.height = Math.max(1, Math.round(height));
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // صور الدردشة يجب أن تبقى صغيرة بما يكفي لحد Firestore (1 MiB للوثيقة).
+        let quality = 0.62;
+        let compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        while (compressedBase64.length > 700000 && quality > 0.25) {
+          quality -= 0.07;
+          compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        }
         callback(compressedBase64);
       };
     };
@@ -1090,41 +1089,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRoom || !user) return;
-
-    let cleanupTimer: number | null = null;
-
-    // Spark-safe cleanup: expired voice messages are removed from Firestore
-    // by their sender while that sender has the room open. No Cloud Functions
-    // or Cloud Storage are required for this step.
-    const cleanupExpiredVoiceMessages = async () => {
-      try {
-        const expiredQuery = query(
-          collection(db, 'rooms', selectedRoom.id, 'messages'),
-          where('expiresAt', '<=', new Date()),
-          limit(20)
-        );
-        const expiredSnapshot = await getDocs(expiredQuery);
-
-        for (const docSnap of expiredSnapshot.docs) {
-          const data = docSnap.data();
-          if (data.mediaType !== 'voice' || data.userId !== user.uid) continue;
-          try {
-            await deleteDoc(docSnap.ref);
-          } catch (error) {
-            console.warn('تعذر حذف التسجيل الصوتي المنتهي', error);
-          }
-        }
-      } catch (error) {
-        console.warn('تعذر تنفيذ تنظيف التسجيلات الصوتية المنتهية', error);
-      }
-    };
-
-    cleanupExpiredVoiceMessages();
-    cleanupTimer = window.setInterval(cleanupExpiredVoiceMessages, 5 * 60 * 1000);
-
+    if (!selectedRoom) return;
     const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(20));
-    const unsubscribe = onSnapshot(msgQuery, (snapshot) => {
+    return onSnapshot(msgQuery, (snapshot) => {
       const now = Date.now();
       const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
@@ -1151,12 +1118,7 @@ export default function App() {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     });
-
-    return () => {
-      unsubscribe();
-      if (cleanupTimer) window.clearInterval(cleanupTimer);
-    };
-  }, [selectedRoom, user]);
+  }, [selectedRoom]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1292,7 +1254,7 @@ export default function App() {
   const handleChatImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    compressAndUploadImage(file, 900, 900, (base64) => {
+    compressAndUploadImage(file, 700, 700, (base64) => {
       setPendingChatImage(base64);
       setPendingChatImageName(file.name || 'image.jpg');
     });
@@ -1300,30 +1262,39 @@ export default function App() {
   };
 
   const sendChatMedia = async (mediaType: 'image'|'voice', mediaData: string, mediaName = 'media') => {
-    if (!selectedRoom || !user) return;
+    if (!selectedRoom || !user || !mediaData) return;
     const { senderName, roleText } = getSenderInfo();
     try {
-      const mediaMessage: any = {
+      // Firestore يسمح بحد أقصى يقارب 1 MiB للوثيقة. نترك هامشًا آمنًا للحقول الأخرى.
+      if (mediaData.length > 900000) {
+        setErrorMessage(mediaType === 'image'
+          ? '❌ الصورة ما زالت كبيرة. اختر صورة أصغر وحاول مرة أخرى.'
+          : '❌ التسجيل طويل جدًا للإرسال. سجّل مقطعًا أقصر ثم أرسله.');
+        return;
+      }
+      setErrorMessage('');
+      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
         user: senderName, userId: user.uid, text: '', role: roleText,
         color: nameColor, nameStyle, profileBgColor: hasRankForCustomization ? profileBgColor : '', avatarUrl: profileAvatar || '',
         mediaType, mediaData, mediaName, isSystemSpecial: false, createdAt: serverTimestamp()
-      };
-
-      if (mediaType === 'voice') {
-        // Keep voice data in Firestore on Spark and mark it for client-side cleanup.
-        mediaMessage.expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-      }
-
-      await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), mediaMessage);
+      });
       setPendingChatImage(null); setRecordingData(null); setRecordingSeconds(0);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      console.error('sendChatMedia error:', e);
+      setErrorMessage('❌ تعذر إرسال الوسائط. حاول مرة أخرى.');
+    }
   };
 
   const startVoiceRecording = async () => {
     if (!navigator.mediaDevices?.getUserMedia || isRecording) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const preferredMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+      const recorder = preferredMime
+        ? new MediaRecorder(stream, { mimeType: preferredMime, audioBitsPerSecond: 16000 })
+        : new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
       voiceChunksRef.current = [];
       recorder.ondataavailable = (ev) => { if (ev.data.size) voiceChunksRef.current.push(ev.data); };
       recorder.onstop = () => {
