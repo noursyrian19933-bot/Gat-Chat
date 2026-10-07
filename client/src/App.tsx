@@ -3240,7 +3240,7 @@ export default function App() {
               {!isSelfProfile && <button onClick={()=>setShowProfileActions(v=>!v)} style={{position:'absolute',top:11,left:55,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>☰</button>}
               {!isSelfProfile && <button onClick={()=>setSuccessMessage('🚩 تم تسجيل البلاغ عن المستخدم.')} style={{position:'absolute',top:11,left:91,border:0,background:'transparent',color:'#fff',fontSize:18,lineHeight:1,cursor:'pointer',zIndex:3}}>{getCountryFlag(selectedProfileUser.country || 'الأردن')}</button>}
               {!isSelfProfile && <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:11,right:17,border:0,background:'transparent',color:'#fff',fontSize:23,lineHeight:1,cursor:'pointer',zIndex:3}}>✉</button>}
-              <div style={{position:'relative',width:'90px',height:'90px',borderRadius:'50%',background:'#e2e8f0',border:'4px solid #94a3b8',overflow:'hidden',marginBottom:'7px',zIndex:1}>
+              <div style={{position:'relative',width:'90px',height:'90px',borderRadius:'50%',background:'#e2e8f0',border:'4px solid #94a3b8',overflow:'hidden',marginBottom:'7px',zIndex:1}}>
                 {selectedProfileUser.avatarUrl ? (
                   <img
                     src={selectedProfileUser.avatarUrl}
