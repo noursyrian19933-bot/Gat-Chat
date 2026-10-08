@@ -765,9 +765,30 @@ export default function App() {
           ...prev,
           [user.uid]: { ...(prev[user.uid] || {}), userId: user.uid, [field]: value }
         }));
+
+        // التحديث فوري في كل القوائم والرسائل المفتوحة، وليس فقط الرسائل الجديدة.
+        // عند تغيير لون الاسم، نستبدل اللون القديم للمستخدم نفسه في كل مكان يعتمد على بياناته الحية.
         setMessages(prev => prev.map((m: any) =>
-          m.userId === user.uid ? { ...m, [field]: value, ...(field === 'nameColor' ? { color: value } : {}) } : m
+          m.userId === user.uid
+            ? { ...m, [field]: value, ...(field === 'nameColor' ? { color: value, authorNameColor: value } : {}) }
+            : m
         ));
+        setOnlineUsersList(prev => prev.map((u: any) =>
+          (u.userId || u.id) === user.uid ? { ...u, [field]: value, ...(field === 'nameColor' ? { color: value } : {}) } : u
+        ));
+        setRankedUsers(prev => prev.map((u: any) =>
+          (u.userId || u.id) === user.uid ? { ...u, [field]: value, ...(field === 'nameColor' ? { color: value } : {}) } : u
+        ));
+        setNotificationsList(prev => prev.map((n: any) =>
+          (n.userId || n.authorId || n.authorUid || n.uid) === user.uid && field === 'nameColor'
+            ? { ...n, authorNameColor: value, nameColor: value, color: value }
+            : n
+        ));
+        setSelectedProfileUser((prev: any) =>
+          prev && prev.userId === user.uid
+            ? { ...prev, [field]: value, ...(field === 'nameColor' ? { color: value } : {}) }
+            : prev
+        );
       }
 
       const presenceRef = doc(db, 'room_presence', user.uid);
@@ -1205,7 +1226,10 @@ export default function App() {
       };
       const sorted = [...list].sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
       if (owner && !sorted.some(u => u.id === owner.id)) sorted.unshift(owner);
-      setRankedUsers(sorted);
+      setRankedUsers(sorted.map((u:any) => {
+        const live = profileMap[u.id];
+        return live ? { ...u, ...live } : u;
+      }));
     });
     return () => unsub();
   }, []);
@@ -3035,7 +3059,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(u.nameColor||'#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:u.nameColor||'#2563eb'}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#2563eb')}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
           </div>
         </div>
       )}
