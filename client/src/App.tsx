@@ -103,6 +103,14 @@ const COUNTRIES_LIST = [
 
 const EMOJIS_LIST = `😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫡 🤭 🤫 🤥 😶 🫠 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🤑 🤠 😈 👿 👹 👺 🤡 💩 👻 💀 ☠️ 👽 👾 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 💫 💥 💦 💨 🕳️ 💯 💢 💬 🗨️ 🗯️ 💭 💤 👋 🤚 🖐️ ✋ 🖖 👌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ ✍️ 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💅 🤳 💪 🦾 🦿 🦵 🦶 👂 👃 🧠 🫀 🫁 🦷 🦴 👀 👁️ 👅 👄 💋 🫦 👶 🧒 👦 👧 🧑 👱 👨 🧔 👨‍🦰 👨‍🦱 👨‍🦳 👨‍🦲 👩 👩‍🦰 👩‍🦱 👩‍🦳 👩‍🦲 🧓 👴 👵 🙍 🙎 🙅 🙆 💁 🙋 🧏 🙇 🤦 🤷 👮 👷 💂 🕵️ 👩‍⚕️ 👨‍⚕️ 👩‍🎓 👨‍🎓 👩‍🏫 👨‍🏫 👩‍💻 👨‍💻 👩‍🍳 👨‍🍳 👩‍🚀 👨‍🚀 👩‍🚒 👨‍🚒 🧙 🧚 🧛 🧜 🧝 🧞 🧟 💃 🕺 🕴️ 👯 🚶 🏃 🧘 🛀 🛌 ❤️‍🔥 ❤️‍🩹 🩷 🩵 🩶 🫶 🫂 🤍‍🔥 ⭐ 🌟 ✨ ⚡ 🔥 🎉 🎊 🎁 🎈 💎 👑 🏆 🥇 🥈 🥉 ⚽ 🏀 🏈 ⚾ 🎾 🏐 🏉 🎱 🪀 🪁 🎮 🎯 🎲 🎸 🎹 🎺 🎻 📱 💻 🖥️ ⌨️ 🖱️ 📷 📸 🎥 📺 ☎️ 📞 💡 🔔 🔕 📌 📍 ✏️ 📝 📚 📖 🔑 🔒 🔓 ⚙️ 🛠️ 🔧 🔨 🧰 💰 💵 💳 📦 🚗 🚕 🚌 🚓 🚑 ✈️ 🚀 🚲 🏠 🏡 🏢 🌍 🌎 🌏 ☀️ 🌙 ⭐ 🌈 ☁️ ❄️ ☔ 🌧️ 🌊 🌴 🌹 🌷 🌺 🌸 🌼 🌻 🍎 🍓 🍉 🍌 🍇 🍒 🍑 🍍 🥝 🍕 🍔 🍟 🌭 🌮 🍿 🍩 🍪 ☕ 🥤 🍺 🍰 🎂 🍫 🍭 🧃`.split(' ').filter(Boolean);
 
+const getContrastTextColor = (hex: string) => {
+  const clean = String(hex || '#ffffff').replace('#','');
+  if (clean.length !== 6) return '#111827';
+  const r = parseInt(clean.slice(0,2),16), g = parseInt(clean.slice(2,4),16), b = parseInt(clean.slice(4,6),16);
+  const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+  return luminance < 0.58 ? '#ffffff' : '#111827';
+};
+
 const getNameStyleProps = (style: string, color: string) => {
   switch (style) {
     case 'glowing':
@@ -195,6 +203,7 @@ export default function App() {
   const [loadingMoreRoomMessages, setLoadingMoreRoomMessages] = useState(false);
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
+  const [liveUserProfiles, setLiveUserProfiles] = useState<Record<string, any>>({});
   
   const [showOnlineModal, setShowOnlineModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
@@ -1141,6 +1150,30 @@ export default function App() {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
       const list = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      const profileMap: Record<string, any> = {};
+      list.forEach((u:any) => {
+        profileMap[u.id] = {
+          ...u,
+          userId: u.userId || u.id,
+          name: u.displayName || u.userName || u.name || 'مستخدم',
+          role: normalizeRole(u.role),
+          nameColor: u.nameColor || '#2563eb',
+          nameStyle: u.nameStyle || 'normal',
+          profileBgColor: u.profileBgColor || '#ffffff',
+          avatarUrl: u.avatarUrl || '',
+          coverUrl: u.coverUrl || '',
+          profileSongUrl: u.profileSongUrl || ''
+        };
+      });
+      setLiveUserProfiles(profileMap);
+      setOnlineUsersList(prev => prev.map((u:any) => {
+        const live = profileMap[u.userId || u.id];
+        return live ? { ...u, ...live, id: u.id, userId: u.userId || u.id, roomId: u.roomId, lastActive: u.lastActive } : u;
+      }));
+      setMessages(prev => prev.map((m:any) => {
+        const live = profileMap[m.userId];
+        return live ? { ...m, user: live.displayName || live.userName || live.name || m.user, role: normalizeRole(live.role || m.role), color: live.nameColor || m.color, nameColor: live.nameColor || m.nameColor, nameStyle: live.nameStyle || m.nameStyle, profileBgColor: live.profileBgColor || m.profileBgColor, avatarUrl: live.avatarUrl || m.avatarUrl } : m;
+      }));
       const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(u.role) === 'Owner');
       const roleRank = (u:any) => {
         const r = normalizeRole(u.role);
@@ -2482,9 +2515,11 @@ export default function App() {
                 </div>
               ) : (
                 messages.map((m, idx) => {
-                  const mCanCustomize = canDisplayProfileCustomization(m);
-                  const styleProps = mCanCustomize ? getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
-                  const hasCustomBg = mCanCustomize && m.profileBgColor && m.profileBgColor !== '#ffffff';
+                  const liveProfile = liveUserProfiles[m.userId] || {};
+                  const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle, profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
+                  const mCanCustomize = canDisplayProfileCustomization(displayMessage);
+                  const styleProps = mCanCustomize ? getNameStyleProps(displayMessage.nameStyle || 'normal', displayMessage.nameColor || displayMessage.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
+                  const hasCustomBg = mCanCustomize && displayMessage.profileBgColor && displayMessage.profileBgColor !== '#ffffff';
 
                   if (m.isSystemSpecial) {
                     return (
@@ -2502,7 +2537,7 @@ export default function App() {
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', 
+                        backgroundColor: hasCustomBg ? displayMessage.profileBgColor : (idx % 2 === 0 ? '#ffffff' : '#f1f1f1'), 
                         padding: '4px 6px', 
                         minHeight: '30px',
                         borderBottom: '1px solid #e7e7e7', 
@@ -2513,9 +2548,9 @@ export default function App() {
                       }}
                     >
                       
-                      <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        {m.avatarUrl ? (
-                          <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div onClick={() => openUserProfile(displayMessage)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        {displayMessage.avatarUrl ? (
+                          <img src={displayMessage.avatarUrl} alt={displayMessage.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           '👤'
                         )}
@@ -3204,8 +3239,8 @@ export default function App() {
 
       {selectedProfileUser && (
         <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
-          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
-            <div style={{position:'relative',height:'300px',background:'#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
+          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
+            <div style={{position:'relative',height:'300px',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
               {canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
               <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.15),rgba(0,30,34,.92))'}}/>
               <button onClick={()=>{stopProfileSong();setSelectedProfileUser(null);setShowProfileMenu(false)}} style={{position:'absolute',top:14,left:14,zIndex:5,width:32,height:32,border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
@@ -3232,7 +3267,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{overflowY:'auto',background:'#fff',padding:'0 18px 16px',color:'#4a4a4a'}}>
+            <div style={{overflowY:'auto',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',padding:'0 18px 16px',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a'}}>
               {[
                 ...(selectedProfileUser.age && selectedProfileUser.age !== 'عدم إظهار' ? [['العمر', selectedProfileUser.age]] : []),
                 ['الجنس',selectedProfileUser.gender || 'غير محدد'],
@@ -3241,12 +3276,12 @@ export default function App() {
                 ['تاريخ الانضمام',selectedProfileUser.joinedDate || 'غير متوفر'],
                 ['الغرفة الحالية',selectedProfileUser.roomName || 'غير متوفر'],
                 ['آخر تواجد',selectedProfileUser.lastSeen || 'غير متوفر']
-              ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:50,borderBottom:'1px solid #d9d9d9',fontSize:14}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
+              ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:50,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
 
-              <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:12,fontWeight:700}}>رابط الملف الشخصي 🔗</div>
-              <div style={{paddingBottom:6,textAlign:'center',color:'#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
+              <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:12,fontWeight:700,color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333'}}>رابط الملف الشخصي 🔗</div>
+              <div style={{paddingBottom:6,textAlign:'center',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
 
             </div>
           </div>
