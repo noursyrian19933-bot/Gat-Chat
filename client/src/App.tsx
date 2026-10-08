@@ -2210,9 +2210,11 @@ export default function App() {
 
   // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
   // وAdmin وSuper Admin وPremium، وكل عمليات الإضافة والتغيير والحذف تتم من الإعدادات فقط.
+  // التخصيص يخص حساب المستخدم الحالي فقط، لذلك يعمل من نافذة الإعدادات
+  // حتى عندما لا يكون هناك ملف شخصي مفتوح (selectedProfileUser = null).
   const canCustomizeMedia = Boolean(
-    isSelfProfile &&
-    !user?.isAnonymous &&
+    user &&
+    !user.isAnonymous &&
     (isOwner || ['Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole))
   );
 
@@ -3053,9 +3055,9 @@ export default function App() {
               <button onClick={()=>setShowSettingsModal(false)} style={{position:'absolute',top:14,left:16,zIndex:4,border:0,background:'transparent',color:'#fff',fontSize:32,cursor:'pointer',lineHeight:1}}>✕</button>
               <div style={{position:'absolute',top:26,right:26,width:168,height:168,borderRadius:5,overflow:'hidden',background:'#334155'}}>
                 {profileAvatar ? <img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64}}>👤</div>}
-                {canEditAvatar && <div style={{position:'absolute',bottom:0,left:0,right:0,height:48,background:'rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'space-around'}}>
-                  <button onClick={()=>avatarInputRef.current?.click()} style={{border:0,background:'transparent',color:'#fff',fontSize:25,cursor:'pointer'}}>✕</button>
-                  <button onClick={()=>avatarInputRef.current?.click()} style={{border:0,background:'transparent',color:'#fff',fontSize:25,cursor:'pointer'}}>📷</button>
+                {canEditAvatar && <div style={{position:'absolute',bottom:0,left:0,right:0,height:48,background:'rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'center',gap:18}}>
+                  <button onClick={()=>avatarInputRef.current?.click()} title={profileAvatar ? 'تغيير الصورة' : 'إضافة صورة'} style={{border:0,background:'transparent',color:'#fff',fontSize:23,cursor:'pointer'}}>📷</button>
+                  {profileAvatar && <button onClick={handleDeleteAvatar} title="حذف الصورة" style={{border:0,background:'transparent',color:'#fff',fontSize:23,cursor:'pointer'}}>🗑️</button>}
                 </div>}
               </div>
               <div style={{position:'absolute',right:220,bottom:25,fontSize:22,fontWeight:700}}>{user?.displayName || user?.email?.split('@')[0] || guestName || 'زائر'} <span style={{fontSize:26}}>✎</span></div>
