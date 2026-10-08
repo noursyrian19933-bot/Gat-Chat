@@ -1148,7 +1148,7 @@ export default function App() {
           coverUrl: data.coverUrl || '',
           profileSongUrl: data.profileSongUrl || '',
           nameColor: data.nameColor || '#2563eb',
-          nameStyle: data.nameStyle || 'normal',
+          nameStyle: data.nameStyle || undefined,
           profileBgColor: data.profileBgColor || '#ffffff',
           joinedDate: data.joinedDate || '',
           lastSeen: data.lastSeen || '',
@@ -1186,7 +1186,7 @@ export default function App() {
           name: u.displayName || u.userName || u.name || 'مستخدم',
           role: String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(u.role),
           nameColor: u.nameColor || '#2563eb',
-          nameStyle: u.nameStyle || 'normal',
+          nameStyle: u.nameStyle || undefined,
           profileBgColor: u.profileBgColor || '#ffffff',
           avatarUrl: u.avatarUrl || '',
           coverUrl: u.coverUrl || '',
@@ -1200,7 +1200,7 @@ export default function App() {
       }));
       setMessages(prev => prev.map((m:any) => {
         const live = profileMap[m.userId];
-        return live ? { ...m, user: live.displayName || live.userName || live.name || m.user, role: normalizeRole(live.role || m.role), color: live.nameColor || m.color, nameColor: live.nameColor || m.nameColor, nameStyle: live.nameStyle || m.nameStyle, profileBgColor: live.profileBgColor || m.profileBgColor, avatarUrl: live.avatarUrl || m.avatarUrl } : m;
+        return live ? { ...m, user: live.displayName || live.userName || live.name || m.user, role: normalizeRole(live.role || m.role), color: live.nameColor || m.color, nameColor: live.nameColor || m.nameColor, nameStyle: live.nameStyle || m.nameStyle || 'normal', profileBgColor: live.profileBgColor || m.profileBgColor, avatarUrl: live.avatarUrl || m.avatarUrl } : m;
       }));
       const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase());
       const roleRank = (u:any) => {
@@ -1304,7 +1304,7 @@ export default function App() {
               displayName: d.displayName || d.userName || d.name || '',
               role: String(d.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(d.role),
               nameColor: d.nameColor || '#2563eb',
-              nameStyle: d.nameStyle || 'normal',
+              nameStyle: d.nameStyle || undefined,
               profileBgColor: d.profileBgColor || '#ffffff',
               avatarUrl: d.avatarUrl || '',
               coverUrl: d.coverUrl || '',
@@ -2120,7 +2120,7 @@ export default function App() {
           coverUrl: data.coverUrl || '',
           profileSongUrl: data.profileSongUrl || '',
           nameColor: data.nameColor || '',
-          nameStyle: data.nameStyle || 'normal',
+          nameStyle: data.nameStyle || undefined,
           profileBgColor: data.profileBgColor || ''
         };
       });
@@ -2628,7 +2628,7 @@ export default function App() {
               ) : (
                 messages.map((m, idx) => {
                   const liveProfile = liveUserProfiles[m.userId] || {};
-                  const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle, profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
+                  const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle || 'normal', profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
                   const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#0284c7';
                   // Use the exact same saved name decoration/color in public chat and all other views.
@@ -3066,7 +3066,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=>{const liveU={...u,...(liveUserProfiles[u.userId||u.id]||{})};const canStyle=canDisplayProfileCustomization(liveU);const nameStyle=getNameStyleProps(canStyle?(liveU.nameStyle||'normal'):'normal',liveU.nameColor||liveU.color||'#2563eb');const bg=canStyle?(liveU.profileBgColor||'#ffffff'):'transparent';return <div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(liveU);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveU.nameColor||'#17a7d2')}}>{liveU.avatarUrl?<img src={liveU.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{display:'inline-block',fontSize:'12px',fontWeight:'bold',...nameStyle,background:bg,color:undefined,padding:canStyle?'3px 6px':0,borderRadius:canStyle?'4px':0}}>{liveU.displayName||liveU.userName||liveU.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(liveU.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(liveU.role)==='Owner')?'صاحب الموقع':normalizeRole(liveU.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{liveU.country||''} {liveU.flag||''}</div></div></div>})}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=>{const liveU={...u,...(liveUserProfiles[u.userId||u.id]||{})};const canStyle=canDisplayProfileCustomization(liveU);const nameStyle=getNameStyleProps(canStyle?(liveU.nameStyle||'normal'):'normal',liveU.nameColor||liveU.color||'#2563eb');const bg=canStyle?(liveU.profileBgColor||'#ffffff'):'transparent';return <div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(liveU);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveU.nameColor||'#17a7d2')}}>{liveU.avatarUrl?<img src={liveU.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{display:'inline-block',fontSize:'12px',fontWeight:'bold',...nameStyle,background:bg,padding:canStyle?'3px 6px':0,borderRadius:canStyle?'4px':0}}>{liveU.displayName||liveU.userName||liveU.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(liveU.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(liveU.role)==='Owner')?'صاحب الموقع':normalizeRole(liveU.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{liveU.country||''} {liveU.flag||''}</div></div></div>})}</div>
           </div>
         </div>
       )}
@@ -3240,7 +3240,7 @@ export default function App() {
                       {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : 'transparent', color: undefined, padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
+                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : 'transparent', padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
                               {parts.name}
                             </span>
                           </div>
