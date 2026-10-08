@@ -3197,7 +3197,8 @@ export default function App() {
                       backgroundColor: uCanCustomize && u.profileBgColor ? u.profileBgColor : '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                      transition: 'background-color 0.3s ease'
+                      transition: 'background-color 0.3s ease',
+                      position: 'relative'
                     }}
                   >
                     <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', direction:'rtl', minWidth:0 }}>
@@ -3212,7 +3213,7 @@ export default function App() {
                             </span>
                           </div>
                           {(parts.flag || parts.tag) && (
-                            <div style={{ marginLeft:'auto', paddingLeft:'18px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
+                            <div style={{ position:'absolute', left:'0px', top:'50%', transform:'translateY(-50%)', paddingLeft:'0px', paddingRight:'0px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
                               {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
                               {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
                             </div>
