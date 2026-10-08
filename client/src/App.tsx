@@ -3428,11 +3428,22 @@ export default function App() {
                   fontSize:18,
                   fontWeight:800,
                   marginTop:1,
-                  ...(canDisplayProfileCustomization(selectedProfileUser)
-                    ? getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb')
-                    : { color: selectedProfileUser.nameColor || selectedProfileUser.color || '#fff' })
+                  ...(() => {
+                    // Use the same live Firebase profile values as chat and online lists.
+                    const liveProfile = liveUserProfiles[selectedProfileUser.userId] || {};
+                    const currentNameColor = liveProfile.nameColor || selectedProfileUser.nameColor || liveProfile.color || selectedProfileUser.color || '#2563eb';
+                    const currentNameStyle = liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal';
+                    const profileForStyle = {
+                      ...selectedProfileUser,
+                      role: normalizeRole(liveProfile.role || selectedProfileUser.role),
+                      email: liveProfile.email || selectedProfileUser.email
+                    };
+                    return canDisplayProfileCustomization(profileForStyle)
+                      ? getNameStyleProps(currentNameStyle, currentNameColor)
+                      : { color: currentNameColor };
+                  })()
                 }}>
-                  {selectedProfileUser.name}
+                  {liveUserProfiles[selectedProfileUser.userId]?.displayName || liveUserProfiles[selectedProfileUser.userId]?.userName || liveUserProfiles[selectedProfileUser.userId]?.name || selectedProfileUser.name}
                 </div>
               </div>
             </div>
