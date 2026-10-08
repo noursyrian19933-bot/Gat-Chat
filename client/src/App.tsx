@@ -3182,7 +3182,7 @@ export default function App() {
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
               {filteredOnlineUsers.map((u) => {
                 const uCanCustomize = canDisplayProfileCustomization(u);
-                const uStyleProps = getNameStyleProps(u.nameStyle || 'normal', u.nameColor || u.color || '#2563eb');
+                const uStyleProps = getNameStyleProps(uCanCustomize ? (u.nameStyle || 'normal') : 'normal', u.nameColor || u.color || '#2563eb');
                 return (
                   <div 
                     key={u.id} 
@@ -3205,11 +3205,15 @@ export default function App() {
                         {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps, display:'inline-flex', alignItems:'center', gap:'10px', direction:'rtl', unicodeBidi:'isolate' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps, display:'inline-flex', alignItems:'center', justifyContent:'flex-start', gap:'12px', direction:'rtl', unicodeBidi:'isolate', whiteSpace:'nowrap' }}>
                           {(() => { const parts = getOnlineNameParts(u); return <>
-                            <span>{parts.name}</span>
-                            {parts.flag && <span>{parts.flag}</span>}
-                            {parts.tag && <span>{parts.tag}</span>}
+                            <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.name}</span>
+                            {(parts.flag || parts.tag) && (
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:'0px', direction:'rtl', unicodeBidi:'isolate' }}>
+                                {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
+                                {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
+                              </span>
+                            )}
                           </>; })()}
                         </span>
                       </div>
