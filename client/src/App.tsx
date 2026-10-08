@@ -2220,7 +2220,9 @@ export default function App() {
     (isOwner || ['Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole))
   );
 
-  const canEditAvatar = canCustomizeMedia;
+  // العضو المسجل يمكنه تغيير الصورة الشخصية فقط.
+  // صاحب الموقع والرتب المحددة يمكنهم جميع التخصيصات. الزائر لا يملك أي تخصيص.
+  const canEditAvatar = Boolean(user && !user.isAnonymous && (hasRankForCustomization || normalizedCurrentRole === 'Member'));
   const canEditCover = canCustomizeMedia;
   const canAddSong = canCustomizeMedia;
 
@@ -3155,13 +3157,15 @@ export default function App() {
                     </div>
                   </div>
                 </>}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
-                  <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
-                </div>
-                <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:46,marginTop:6,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:14}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
-                <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:6,border:'1px solid #ddd',borderRadius:5,padding:8,boxSizing:'border-box'}}/></label>
-                <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:12,border:0,borderRadius:6,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
+                {hasRankForCustomization && <>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
+                  </div>
+                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:46,marginTop:6,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:14}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
+                  <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:6,border:'1px solid #ddd',borderRadius:5,padding:8,boxSizing:'border-box'}}/></label>
+                  <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:12,border:0,borderRadius:6,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
+                </>}
                 <button onClick={()=>{setShowSettingsModal(false);setSettingsTab('info')}} style={{padding:16,textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
               </div>}
             </div>
@@ -3173,7 +3177,7 @@ export default function App() {
         <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
           <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
             <div style={{position:'relative',height:'300px',background:'#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
-              {selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
+              {canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
               <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.15),rgba(0,30,34,.92))'}}/>
               <button onClick={()=>{stopProfileSong();setSelectedProfileUser(null);setShowProfileMenu(false)}} style={{position:'absolute',top:14,left:14,zIndex:5,width:40,height:40,border:0,background:'transparent',color:'#fff',fontSize:28,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
               <button onClick={()=>setShowProfileMenu(v=>!v)} style={{position:'absolute',top:14,left:58,zIndex:5,width:40,height:40,border:0,background:'transparent',color:'#fff',fontSize:27,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>☰</button>
