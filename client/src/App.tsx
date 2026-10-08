@@ -2694,7 +2694,7 @@ export default function App() {
                               fontWeight: 'bold'
                             }}
                           >
-                            <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps, color: getContrastTextColor(displayMessage.profileBgColor || '#ffffff') }} onClick={() => openUserProfile(displayMessage)}>
+                            <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
                               {displayMessage.user}
                             </span>
                           </span>
@@ -3066,7 +3066,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',...(canDisplayProfileCustomization({...u, role:normalizeRole(liveUserProfiles[u.id]?.role || u.role)}) ? getNameStyleProps(liveUserProfiles[u.id]?.nameStyle || u.nameStyle || 'normal', liveUserProfiles[u.id]?.nameColor || u.nameColor || '#2563eb') : {color:'#2563eb'})}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=>{const liveU={...u,...(liveUserProfiles[u.userId||u.id]||{})};const canStyle=canDisplayProfileCustomization(liveU);const nameStyle=getNameStyleProps(canStyle?(liveU.nameStyle||'normal'):'normal',liveU.nameColor||liveU.color||'#2563eb');const bg=canStyle?(liveU.profileBgColor||'#ffffff'):'transparent';return <div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(liveU);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveU.nameColor||'#17a7d2')}}>{liveU.avatarUrl?<img src={liveU.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{display:'inline-block',fontSize:'12px',fontWeight:'bold',...nameStyle,background:bg,color:undefined,padding:canStyle?'3px 6px':0,borderRadius:canStyle?'4px':0}}>{liveU.displayName||liveU.userName||liveU.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(liveU.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(liveU.role)==='Owner')?'صاحب الموقع':normalizeRole(liveU.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{liveU.country||''} {liveU.flag||''}</div></div></div>})}</div>
           </div>
         </div>
       )}
@@ -3212,8 +3212,9 @@ export default function App() {
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
               {filteredOnlineUsers.map((u) => {
-                const uCanCustomize = canDisplayProfileCustomization(u);
-                const uStyleProps = getNameStyleProps(uCanCustomize ? (u.nameStyle || 'normal') : 'normal', u.nameColor || u.color || '#2563eb');
+                const liveU = { ...u, ...(liveUserProfiles[u.userId || u.id] || {}) };
+                const uCanCustomize = canDisplayProfileCustomization(liveU);
+                const uStyleProps = getNameStyleProps(uCanCustomize ? (liveU.nameStyle || 'normal') : 'normal', liveU.nameColor || liveU.color || '#2563eb');
                 return (
                   <div 
                     key={u.id} 
@@ -3225,7 +3226,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: uCanCustomize && u.profileBgColor ? u.profileBgColor : '#ffffff', 
+                      backgroundColor: uCanCustomize && liveU.profileBgColor ? liveU.profileBgColor : '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
@@ -3234,12 +3235,12 @@ export default function App() {
                   >
                     <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', direction:'rtl', minWidth:0 }}>
                       <div style={{ width:'32px', height:'32px', borderRadius:'50%', backgroundColor:'#0284c7', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'bold', overflow:'hidden', flexShrink:0 }}>
-                        {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '👤'}
+                        {liveU.avatarUrl ? <img src={liveU.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '👤'}
                       </div>
-                      {(() => { const parts = getOnlineNameParts(u); return (
+                      {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (u.profileBgColor || '#ffffff') : 'transparent', padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
+                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : 'transparent', color: undefined, padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
                               {parts.name}
                             </span>
                           </div>
