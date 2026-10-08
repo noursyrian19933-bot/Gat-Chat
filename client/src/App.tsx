@@ -794,6 +794,20 @@ export default function App() {
     });
   };
 
+  const handleDeleteAvatar = async () => {
+    if (!user || !canCustomizeMedia) return;
+    setProfileAvatar('');
+    setSelectedProfileUser((prev: any) => prev ? { ...prev, avatarUrl: '' } : null);
+    await saveSettingToFirebase('avatarUrl', '');
+  };
+
+  const handleDeleteCover = async () => {
+    if (!user || !canCustomizeMedia) return;
+    setProfileCover('');
+    setSelectedProfileUser((prev: any) => prev ? { ...prev, coverUrl: '' } : null);
+    await saveSettingToFirebase('coverUrl', '');
+  };
+
   const handleSongSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -2194,23 +2208,17 @@ export default function App() {
 
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
 
-  const canEditAvatar = Boolean(
+  // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
+  // وAdmin وSuper Admin وPremium، وكل عمليات الإضافة والتغيير والحذف تتم من الإعدادات فقط.
+  const canCustomizeMedia = Boolean(
     isSelfProfile &&
     !user?.isAnonymous &&
-    hasCurrentPermission('edit_avatar')
+    (isOwner || ['Admin', 'Super Admin', 'Premium'].includes(normalizedCurrentRole))
   );
 
-  const canEditCover = Boolean(
-    isSelfProfile &&
-    !user?.isAnonymous &&
-    hasCurrentPermission('edit_cover')
-  );
-
-  const canAddSong = Boolean(
-    isSelfProfile &&
-    !user?.isAnonymous &&
-    hasRankForCustomization
-  );
+  const canEditAvatar = canCustomizeMedia;
+  const canEditCover = canCustomizeMedia;
+  const canAddSong = canCustomizeMedia;
 
   const targetUserEmail = String(selectedProfileUser?.email || '').trim().toLowerCase();
   const ownerEmailClean = ADMIN_EMAIL.trim().toLowerCase();
@@ -3099,10 +3107,48 @@ export default function App() {
               </div>}
 
               {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:12,fontSize:16}}>
-                {canEditAvatar && <button onClick={()=>avatarInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>📷 تغيير الصورة الشخصية</button>}
-                {canEditCover && <button onClick={()=>coverInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>🖼️ تغيير الغلاف</button>}
-                {canAddSong && <button onClick={()=>songInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>🎵 إضافة أغنية للملف الشخصي</button>}
-                {canAddSong && profileSong && <button onClick={handleDeleteSong} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer',color:'#dc2626'}}>🗑️ حذف أغنية الملف الشخصي</button>}
+                {canEditAvatar && <>
+                  <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:54,height:54,borderRadius:'50%',overflow:'hidden',background:'#e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          {profileAvatar ? <img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontSize:24}}>👤</span>}
+                        </div>
+                        <div><div style={{fontWeight:700,color:'#159db9'}}>الصورة الشخصية</div><div style={{fontSize:11,color:'#888'}}>{profileAvatar ? 'يمكنك تغييرها أو حذفها' : 'لا توجد صورة حالياً'}</div></div>
+                      </div>
+                      <div style={{display:'flex',gap:6}}>
+                        <button onClick={()=>avatarInputRef.current?.click()} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',cursor:'pointer'}}>📷 {profileAvatar ? 'تغيير' : 'إضافة'}</button>
+                        {profileAvatar && <button onClick={handleDeleteAvatar} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
+                      </div>
+                    </div>
+                  </div>
+                </>}
+                {canEditCover && <>
+                  <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
+                        <div style={{width:86,height:48,borderRadius:5,overflow:'hidden',background:'#003d43',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          {profileCover ? <img src={profileCover} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontSize:20,color:'#fff'}}>🖼️</span>}
+                        </div>
+                        <div><div style={{fontWeight:700,color:'#159db9'}}>غلاف الملف الشخصي</div><div style={{fontSize:11,color:'#888'}}>{profileCover ? 'يمكنك تغييره أو حذفه' : 'لا يوجد غلاف حالياً'}</div></div>
+                      </div>
+                      <div style={{display:'flex',gap:6}}>
+                        <button onClick={()=>coverInputRef.current?.click()} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',cursor:'pointer'}}>🖼️ {profileCover ? 'تغيير' : 'إضافة'}</button>
+                        {profileCover && <button onClick={handleDeleteCover} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
+                      </div>
+                    </div>
+                  </div>
+                </>}
+                {canAddSong && <>
+                  <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
+                    <div style={{fontWeight:700,color:'#159db9',marginBottom:8}}>🎵 أغنية الملف الشخصي</div>
+                    <div style={{fontSize:11,color:'#888',marginBottom:8}}>{profileSong ? 'الأغنية مضافة ويمكنك تغييرها أو حذفها.' : 'أضف أغنية تظهر في ملفك الشخصي. هذه الميزة متاحة لصاحب الموقع وAdmin وSuper Admin وPremium فقط.'}</div>
+                    <div style={{display:'flex',gap:7}}>
+                      <button onClick={()=>songInputRef.current?.click()} style={{flex:1,padding:10,border:0,borderRadius:5,background:'#7c3aed',color:'#fff',cursor:'pointer'}}>🎵 {profileSong ? 'تغيير الأغنية' : 'إضافة أغنية'}</button>
+                      {profileSong && <button onClick={handleDeleteSong} style={{padding:'10px 14px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
+                    </div>
+                  </div>
+                </>}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
                   <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
