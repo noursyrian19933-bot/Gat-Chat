@@ -3327,12 +3327,12 @@ export default function App() {
             <div style={{overflowY:'auto',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',padding:'0 18px 16px',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a'}}>
               {[
                 ...(selectedProfileUser.age && selectedProfileUser.age !== 'عدم إظهار' ? [['العمر', selectedProfileUser.age]] : []),
-                ['الجنس',selectedProfileUser.gender || 'غير محدد'],
-                ['العلاقة',selectedProfileUser.relationship || 'عدم إظهار'],
-                ['البلد',selectedProfileUser.country || 'غير محدد'],
-                ['تاريخ الانضمام',selectedProfileUser.joinedDate || 'غير متوفر'],
-                ['الغرفة الحالية',selectedProfileUser.roomName || 'غير متوفر'],
-                ['آخر تواجد',selectedProfileUser.lastSeen || 'غير متوفر']
+                ...(selectedProfileUser.gender && selectedProfileUser.gender !== 'عدم إظهار' ? [['الجنس', selectedProfileUser.gender]] : []),
+                ...(selectedProfileUser.relationship && selectedProfileUser.relationship !== 'عدم إظهار' ? [['العلاقة', selectedProfileUser.relationship]] : []),
+                ...(selectedProfileUser.country && selectedProfileUser.country !== 'عدم إظهار' ? [['البلد', selectedProfileUser.country]] : []),
+                ...(selectedProfileUser.joinedDate && selectedProfileUser.joinedDate !== 'عدم إظهار' ? [['تاريخ الانضمام', selectedProfileUser.joinedDate]] : []),
+                ...(selectedProfileUser.roomName && selectedProfileUser.roomName !== 'عدم إظهار' ? [['الغرفة الحالية', selectedProfileUser.roomName]] : []),
+                ...(selectedProfileUser.lastSeen && selectedProfileUser.lastSeen !== 'عدم إظهار' ? [['آخر تواجد', selectedProfileUser.lastSeen]] : [])
               ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:42,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
