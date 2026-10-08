@@ -134,39 +134,11 @@ const getNameStyleProps = (style: string, color: string) => {
       };
     case 'gold':
       return {
-        background: 'linear-gradient(135deg, #eab308, #fef08a, #b45309)',
+        background: 'linear-gradient(135deg, #eab308, #fef08a)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         filter: 'drop-shadow(0 0 3px rgba(234, 179, 8, 0.9))'
       };
-    case 'silver':
-      return { background: 'linear-gradient(135deg, #64748b, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 2px rgba(148,163,184,.9))' };
-    case 'rainbow':
-      return { background: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #3b82f6, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 2px rgba(168,85,247,.65))' };
-    case 'neon':
-      return { color: '#67e8f9', textShadow: '0 0 2px #fff, 0 0 6px #06b6d4, 0 0 12px #06b6d4, 0 0 20px #0891b2' };
-    case 'pink':
-      return { color: '#f472b6', textShadow: '0 0 5px #f472b6, 0 0 11px #ec4899' };
-    case 'emerald':
-      return { color: '#34d399', textShadow: '0 0 5px #10b981, 0 0 10px #059669' };
-    case 'purple':
-      return { color: '#c084fc', textShadow: '0 0 5px #a855f7, 0 0 12px #7e22ce' };
-    case 'ruby':
-      return { background: 'linear-gradient(135deg, #be123c, #fda4af, #9f1239)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(225,29,72,.8))' };
-    case 'diamond':
-      return { background: 'linear-gradient(135deg, #06b6d4, #f0f9ff, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(6,182,212,.85))' };
-    case 'shadow':
-      return { color: color || '#111827', textShadow: '2px 2px 0 rgba(0,0,0,.28), 0 0 5px rgba(0,0,0,.18)' };
-    case 'bold':
-      return { color: color || '#0284c7', fontWeight: 900, letterSpacing: '.3px', textShadow: '0 1px 0 rgba(0,0,0,.18)' };
-    case 'outline':
-      return { color: color || '#0284c7', WebkitTextStroke: '0.5px currentColor', textShadow: '1px 1px 0 rgba(0,0,0,.25)' };
-    case 'glitter':
-      return { color: color || '#eab308', textShadow: '0 0 2px #fff, 0 0 5px #facc15, 0 0 10px #f59e0b' };
-    case 'ocean':
-      return { background: 'linear-gradient(135deg, #0e7490, #67e8f9, #155e75)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(8,145,178,.8))' };
-    case 'flame':
-      return { background: 'linear-gradient(0deg, #b91c1c, #f97316, #fef08a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 4px rgba(249,115,22,.9))' };
     default:
       return {
         color: color || '#0284c7'
@@ -2671,8 +2643,12 @@ export default function App() {
                   const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle, profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
                   const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#0284c7';
-                  const styleProps = { color: effectiveNameColor };
-                  const hasCustomBg = mCanCustomize && Boolean(displayMessage.profileBgColor);
+                  // Use the exact same saved name decoration/color in public chat and all other views.
+                  const styleProps = getNameStyleProps(
+                    mCanCustomize ? (displayMessage.nameStyle || 'normal') : 'normal',
+                    effectiveNameColor
+                  );
+                  const hasCustomBg = mCanCustomize && displayMessage.profileBgColor && displayMessage.profileBgColor !== '#ffffff';
 
                   if (m.isSystemSpecial) {
                     return (
@@ -2718,8 +2694,8 @@ export default function App() {
                         {getRoleTag(displayMessage) ? (
                           <span
                             style={{
-                              backgroundColor: displayMessage.profileBgColor || '#ffffff',
-                              color: getContrastTextColor(displayMessage.profileBgColor || '#ffffff'),
+                              backgroundColor: effectiveNameColor,
+                              color: getContrastTextColor(effectiveNameColor),
                               padding: '3px 8px',
                               borderRadius: '5px',
                               border: '1px solid rgba(0,0,0,0.12)',
@@ -2729,12 +2705,12 @@ export default function App() {
                               fontWeight: 'bold'
                             }}
                           >
-                            <span style={{ fontWeight: 'bold', cursor: 'pointer', ...getNameStyleProps(displayMessage.nameStyle || 'normal', effectiveNameColor) }} onClick={() => openUserProfile(displayMessage)}>
+                            <span style={{ fontWeight: 'bold', cursor: 'pointer', color: getContrastTextColor(effectiveNameColor) }} onClick={() => openUserProfile(displayMessage)}>
                               {displayMessage.user}
                             </span>
                           </span>
                         ) : (
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...getNameStyleProps(displayMessage.nameStyle || 'normal', effectiveNameColor) }} onClick={() => openUserProfile(displayMessage)}>
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', color: effectiveNameColor }} onClick={() => openUserProfile(displayMessage)}>
                             {displayMessage.user}
                           </span>
                         )}
@@ -3101,7 +3077,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer',backgroundColor:u.profileBgColor || '#ffffff'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',...getNameStyleProps(liveUserProfiles[u.id]?.nameStyle || u.nameStyle || 'normal',liveUserProfiles[u.id]?.nameColor || u.nameColor || '#2563eb')}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#2563eb')}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
           </div>
         </div>
       )}
@@ -3400,10 +3376,11 @@ export default function App() {
                   </div>
                 </>}
                 {hasRankForCustomization && <>
-                  <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف الشخصي (يظهر في الملف وقوائم الشات والرسائل)<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:38,marginTop:5}}/></label>
-                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);void saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}>
-                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💡</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="flame">لهيب مشتعل 🔥</option><option value="rainbow">قوس قزح 🌈</option><option value="pink">وردي متوهج 💗</option><option value="emerald">زمردي 💚</option><option value="purple">بنفسجي متوهج 💜</option><option value="ruby">ياقوتي ❤️</option><option value="diamond">ألماسي 💎</option><option value="ocean">محيطي 🌊</option><option value="glitter">لامع ✨</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف 🔠</option>
-                  </select></label>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{const value=e.target.value;setNameColor(value);void saveSettingToFirebase('nameColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
+                  </div>
+                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
                   <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
                 </>}
@@ -3447,7 +3424,14 @@ export default function App() {
                 <div style={{fontSize:17,fontWeight:700,marginTop:6}}>
                   {getRoleLabel(selectedProfileUser)}
                 </div>
-                <div style={{fontSize:18,fontWeight:800,marginTop:1,color: selectedProfileUser.nameColor || '#fff'}}>
+                <div style={{
+                  fontSize:18,
+                  fontWeight:800,
+                  marginTop:1,
+                  ...(canDisplayProfileCustomization(selectedProfileUser)
+                    ? getNameStyleProps(selectedProfileUser.nameStyle || 'normal', selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb')
+                    : { color: selectedProfileUser.nameColor || selectedProfileUser.color || '#fff' })
+                }}>
                   {selectedProfileUser.name}
                 </div>
               </div>
