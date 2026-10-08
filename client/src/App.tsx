@@ -1250,7 +1250,7 @@ export default function App() {
     cleanupTimer = window.setInterval(cleanupExpiredVoiceMessages, 5 * 60 * 1000);
 
     const msgQuery = query(collection(db, 'rooms', selectedRoom.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(20));
-    const unsubscribe = onSnapshot(msgQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(msgQuery, async (snapshot) => {
       const now = Date.now();
       const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
