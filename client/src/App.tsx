@@ -2682,21 +2682,35 @@ export default function App() {
                       </div>
 
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
-                                                <span 
-                          style={{ 
-                            backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
-                            padding: hasCustomBg ? '3px 8px' : '0',
-                            borderRadius: hasCustomBg ? '6px' : '0',
-                            border: hasCustomBg ? '1px solid rgba(0,0,0,0.1)' : 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
-                            {displayMessage.user}:
+                                                {getRoleTag(displayMessage) && (
+                          <span style={{ flexShrink: 0, fontWeight: 'bold', lineHeight: 1 }} aria-label={getRoleLabel(displayMessage)}>
+                            {getRoleTag(displayMessage)}
                           </span>
-                        </span>
+                        )}
+                        {getRoleTag(displayMessage) ? (
+                          <span
+                            style={{
+                              backgroundColor: effectiveNameColor,
+                              color: getContrastTextColor(effectiveNameColor),
+                              padding: '3px 8px',
+                              borderRadius: '5px',
+                              border: '1px solid rgba(0,0,0,0.12)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              transition: 'background-color 0.2s ease, color 0.2s ease',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            <span style={{ fontWeight: 'bold', cursor: 'pointer', color: getContrastTextColor(effectiveNameColor) }} onClick={() => openUserProfile(displayMessage)}>
+                              {displayMessage.user}
+                            </span>
+                          </span>
+                        ) : (
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', color: effectiveNameColor }} onClick={() => openUserProfile(displayMessage)}>
+                            {displayMessage.user}
+                          </span>
+                        )}
+                        <span style={{ color: '#111827' }}>:</span>
 
                         {m.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
