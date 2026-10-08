@@ -750,7 +750,21 @@ export default function App() {
         setCurrentFlag(newFlag);
         updateData.flag = newFlag;
       }
+
+      // اللون هو إعداد دائم للحساب: نحفظه في users أولاً، وليس داخل الرسالة نفسها فقط.
+      // لذلك تبقى الرسائل القديمة مرتبطة باللون الحالي للمستخدم بعد تحديث الصفحة.
       await setDoc(userRef, updateData, { merge: true });
+
+      // حدّث نسخة الملف الحية فوراً حتى لا ننتظر إعادة تحميل قائمة المستخدمين.
+      if (field === 'nameColor' || field === 'profileBgColor' || field === 'nameStyle') {
+        setLiveUserProfiles(prev => ({
+          ...prev,
+          [user.uid]: { ...(prev[user.uid] || {}), userId: user.uid, [field]: value }
+        }));
+        setMessages(prev => prev.map((m: any) =>
+          m.userId === user.uid ? { ...m, [field]: value, ...(field === 'nameColor' ? { color: value } : {}) } : m
+        ));
+      }
 
       const presenceRef = doc(db, 'room_presence', user.uid);
       await setDoc(presenceRef, updateData, { merge: true });
@@ -3223,8 +3237,8 @@ export default function App() {
                 </>}
                 {hasRankForCustomization && <>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
-                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{const value=e.target.value;setNameColor(value);void saveSettingToFirebase('nameColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
                   </div>
                   <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
