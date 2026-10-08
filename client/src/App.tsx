@@ -428,7 +428,7 @@ export default function App() {
             permissions: rolePermissions[normalizeRole(activeRole)] || [],
             flag: getCountryFlag(selectedCountry),
             country: selectedCountry,
-            gender: 'ذكر',
+            gender: 'غير محدد',
             age: 'عدم إظهار',
             relationship: 'عدم إظهار',
             bio: 'أهلاً بك في ملفي الشخصي.',
@@ -1019,7 +1019,7 @@ export default function App() {
       email: (user.email || '').trim().toLowerCase(),
       role: currentRole,
       flag: currentFlag || '🇯🇴',
-      gender: profileGender || 'ذكر',
+      gender: profileGender || 'غير محدد',
       country: profileCountry || 'الأردن',
       avatarUrl: profileAvatar || '',
       coverUrl: profileCover || '',
@@ -1156,15 +1156,6 @@ export default function App() {
     });
     return () => unsub();
   }, []);
-
-  // مزامنة الملف المفتوح مع أحدث بيانات المستخدم؛ أي تغيير في الاسم أو اللون أو
-  // الخلفية أو الصورة أو بقية معلومات الملف يظهر فورًا حتى والنافذة مفتوحة.
-  useEffect(() => {
-    if (!selectedProfileUser?.userId || rankedUsers.length === 0) return;
-    const latest = rankedUsers.find((u:any) => String(u.id || u.uid || '') === String(selectedProfileUser.userId));
-    if (!latest) return;
-    setSelectedProfileUser((prev:any) => prev ? { ...prev, ...latest, userId: prev.userId } : prev);
-  }, [rankedUsers]);
 
   useEffect(() => {
     if (!showWallModal || !user) return;
@@ -1919,12 +1910,12 @@ export default function App() {
       name: uData.name || uData.user || uData.userName || 'زائر',
       role: normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
       age: uData.age || (targetId === user?.uid ? profileAge : 'عدم إظهار'),
-      gender: uData.gender || (targetId === user?.uid ? profileGender : 'ذكر'),
+      gender: uData.gender || (targetId === user?.uid ? profileGender : 'غير محدد'),
       relationship: uData.relationship || (targetId === user?.uid ? profileRelationship : 'عدم إظهار'),
-      country: uData.country || (targetId === user?.uid ? profileCountry : 'الأردن'),
-      joinedDate: uData.joinedDate || userJoinedDate || new Date().toISOString().split('T')[0],
-      roomName: uData.roomName || uData.currentRoomName || 'القائمة الرئيسية',
-      lastSeen: uData.lastSeen || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      country: uData.country || (targetId === user?.uid ? profileCountry : 'غير محدد'),
+      joinedDate: uData.joinedDate || (targetId === user?.uid ? userJoinedDate : ''),
+      roomName: uData.roomName || uData.currentRoomName || '',
+      lastSeen: uData.lastSeen || '',
       points: uData.points ?? 0,
       nextLevelPoints: 2000,
       friendsVisibilitySetting: uData.friendsVisibilitySetting || 'الجميع',
@@ -1948,11 +1939,11 @@ export default function App() {
             ...fetchedData,
             name: data.displayName || fetchedData.name,
             role: normalizeRole(data.role || fetchedData.role),
-            age: data.age || fetchedData.age,
-            gender: data.gender || fetchedData.gender,
-            relationship: data.relationship || fetchedData.relationship,
-            country: data.country || fetchedData.country,
-            joinedDate: data.joinedDate || fetchedData.joinedDate,
+            age: data.age || '',
+            gender: data.gender || '',
+            relationship: data.relationship || '',
+            country: data.country || '',
+            joinedDate: data.joinedDate || '',
             roomName: data.currentRoomName || fetchedData.roomName,
             lastSeen: data.lastSeen || fetchedData.lastSeen,
             points: data.points ?? fetchedData.points,
@@ -1995,10 +1986,39 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (selectedProfileUser) {
-      setEditingUserName(selectedProfileUser.name || '');
-    }
-  }, [selectedProfileUser]);
+    if (!selectedProfileUser?.userId || selectedProfileUser.userId === 'guest_id') return;
+    const targetRef = doc(db, 'users', selectedProfileUser.userId);
+    const unsubscribe = onSnapshot(targetRef, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setSelectedProfileUser((prev: any) => {
+        if (!prev || prev.userId !== selectedProfileUser.userId) return prev;
+        return {
+          ...prev,
+          name: data.displayName || prev.name || 'مستخدم',
+          role: normalizeRole(data.role || prev.role),
+          age: data.age || '',
+          gender: data.gender || '',
+          relationship: data.relationship || '',
+          country: data.country || '',
+          joinedDate: data.joinedDate || '',
+          roomName: data.currentRoomName || '',
+          lastSeen: data.lastSeen || prev.lastSeen || '',
+          points: data.points ?? 0,
+          friendsVisibilitySetting: data.friendsVisibilitySetting || prev.friendsVisibilitySetting,
+          pointsVisibilitySetting: data.pointsVisibilitySetting || prev.pointsVisibilitySetting,
+          privateChatSetting: data.privateChatSetting || prev.privateChatSetting,
+          avatarUrl: data.avatarUrl || '',
+          coverUrl: data.coverUrl || '',
+          profileSongUrl: data.profileSongUrl || '',
+          nameColor: data.nameColor || '',
+          nameStyle: data.nameStyle || 'normal',
+          profileBgColor: data.profileBgColor || ''
+        };
+      });
+    });
+    return () => unsubscribe();
+  }, [selectedProfileUser?.userId]);
 
   useEffect(() => {
     if (selectedProfileUser && selectedProfileUser.profileSongUrl) {
@@ -2462,32 +2482,21 @@ export default function App() {
                 </div>
               ) : (
                 messages.map((m, idx) => {
-                  // نأخذ أحدث بيانات صاحب الرسالة من users بشكل لحظي.
-                  // بهذا تتحدث الرسائل القديمة أيضًا فور تغيير الاسم/اللون/الزخرفة/الخلفية أو الصورة.
-                  const liveProfile = rankedUsers.find((u:any) => String(u.id || u.uid || '') === String(m.userId || ''));
-                  const liveMessage = liveProfile ? {
-                    ...m,
-                    user: liveProfile.displayName || liveProfile.name || m.user,
-                    color: liveProfile.nameColor || m.color,
-                    nameStyle: liveProfile.nameStyle || m.nameStyle,
-                    profileBgColor: liveProfile.profileBgColor || m.profileBgColor,
-                    avatarUrl: liveProfile.avatarUrl || m.avatarUrl
-                  } : m;
-                  const mCanCustomize = canDisplayProfileCustomization(liveProfile || liveMessage);
-                  const styleProps = mCanCustomize ? getNameStyleProps(liveMessage.nameStyle || 'normal', liveMessage.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
-                  const hasCustomBg = mCanCustomize && liveMessage.profileBgColor && liveMessage.profileBgColor !== '#ffffff';
+                  const mCanCustomize = canDisplayProfileCustomization(m);
+                  const styleProps = mCanCustomize ? getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
+                  const hasCustomBg = mCanCustomize && m.profileBgColor && m.profileBgColor !== '#ffffff';
 
-                  if (liveMessage.isSystemSpecial) {
+                  if (m.isSystemSpecial) {
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
                         <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
-                          📢 {liveMessage.text}
+                          📢 {m.text}
                         </div>
                       </div>
                     );
                   }
 
-                  const youtubeEmbedUrl = extractYouTubeEmbedUrl(liveMessage.text);
+                  const youtubeEmbedUrl = extractYouTubeEmbedUrl(m.text);
 
                   return (
                     <div 
@@ -2504,9 +2513,9 @@ export default function App() {
                       }}
                     >
                       
-                      <div onClick={() => openUserProfile(liveProfile || m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        {liveMessage.avatarUrl ? (
-                          <img src={liveMessage.avatarUrl} alt={liveMessage.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        {m.avatarUrl ? (
+                          <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           '👤'
                         )}
@@ -2515,7 +2524,7 @@ export default function App() {
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
                                                 <span 
                           style={{ 
-                            backgroundColor: hasCustomBg ? liveMessage.profileBgColor : 'transparent',
+                            backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
                             padding: hasCustomBg ? '3px 8px' : '0',
                             borderRadius: hasCustomBg ? '6px' : '0',
                             border: hasCustomBg ? '1px solid rgba(0,0,0,0.1)' : 'none',
@@ -2524,18 +2533,18 @@ export default function App() {
                             gap: '4px'
                           }}
                         >
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(liveProfile || m)}>
-                            {liveMessage.user}:
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
+                            {m.user}:
                           </span>
                         </span>
 
-                        {liveMessage.mediaType === 'image' ? (
+                        {m.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
-                            <img src={liveMessage.mediaData} alt={liveMessage.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
-                            <a href={liveMessage.mediaData} download={liveMessage.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
+                            <img src={m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
+                            <a href={m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
                           </div>
-                        ) : liveMessage.mediaType === 'voice' ? (
-                          <audio controls src={liveMessage.mediaData} style={{width:'190px',height:'34px'}} />
+                        ) : m.mediaType === 'voice' ? (
+                          <audio controls src={m.mediaData} style={{width:'190px',height:'34px'}} />
                         ) : youtubeEmbedUrl ? (
                           <button 
                             onClick={() => setActiveVideoUrl(youtubeEmbedUrl)}
@@ -2559,7 +2568,7 @@ export default function App() {
                           </button>
                         ) : (
                           <span style={{ color: '#1e293b', fontWeight: '500' }}>
-                            {renderBadgeText(liveMessage.text)}
+                            {renderBadgeText(m.text)}
                           </span>
                         )}
                       </div>
@@ -2568,7 +2577,7 @@ export default function App() {
                         <button 
                           onClick={async () => {
                             try {
-                              await deleteDoc(doc(db, 'rooms', selectedRooliveMessage.id, 'messages', liveMessage.id));
+                              await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
                             } catch (e) {
                               console.error(e);
                             }
@@ -3099,7 +3108,7 @@ export default function App() {
               {settingsTab==='info' && <>
                 {[
                   ['تحديد العمر','profileAge',profileAge,setProfileAge,['عدم إظهار','18 سنة','20 سنة','25 سنة','30 سنة','34 سنة','40 سنة','50 سنة']],
-                  ['تحديد الجنس','profileGender',profileGender,setProfileGender,['ذكر','أنثى']],
+                  ['تحديد الجنس','profileGender',profileGender,setProfileGender,['غير محدد','ذكر','أنثى']],
                   ['البلد','profileCountry',profileCountry,setProfileCountry,COUNTRIES_LIST],
                   ['العلاقة','profileRelationship',profileRelationship,setProfileRelationship,['عدم إظهار','أعزب','متزوج','مرتبط','مطلق','أرمل']]
                 ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,alignItems:'center',marginBottom:10}}>
@@ -3225,12 +3234,12 @@ export default function App() {
 
             <div style={{overflowY:'auto',background:'#fff',padding:'0 18px 16px',color:'#4a4a4a'}}>
               {[
-                ['العمر',selectedProfileUser.age || 'عدم إظهار'],
-                ['الجنس',selectedProfileUser.gender || 'عدم إظهار'],
+                ...(selectedProfileUser.age && selectedProfileUser.age !== 'عدم إظهار' ? [['العمر', selectedProfileUser.age]] : []),
+                ['الجنس',selectedProfileUser.gender || 'غير محدد'],
                 ['العلاقة',selectedProfileUser.relationship || 'عدم إظهار'],
-                ['البلد',selectedProfileUser.country || 'عدم إظهار'],
+                ['البلد',selectedProfileUser.country || 'غير محدد'],
                 ['تاريخ الانضمام',selectedProfileUser.joinedDate || 'غير متوفر'],
-                ['الغرفة الحالية',selectedProfileUser.roomName || 'القائمة الرئيسية'],
+                ['الغرفة الحالية',selectedProfileUser.roomName || 'غير متوفر'],
                 ['آخر تواجد',selectedProfileUser.lastSeen || 'غير متوفر']
               ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:50,borderBottom:'1px solid #d9d9d9',fontSize:14}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
