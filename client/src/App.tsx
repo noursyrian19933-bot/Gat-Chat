@@ -3166,7 +3166,7 @@ export default function App() {
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
                   <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
                 </>}
-                <button onClick={()=>{setShowSettingsModal(false);setSettingsTab('info')}} style={{padding:10px,textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
+                <button onClick={() => { setShowSettingsModal(false); setSettingsTab('info'); }} style={{padding:'10px',textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
               </div>}
             </div>
           </div>
