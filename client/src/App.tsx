@@ -112,37 +112,25 @@ const getContrastTextColor = (hex: string) => {
 };
 
 const getNameStyleProps = (style: string, color: string) => {
+  const chosen = color || '#2563eb';
   switch (style) {
-    case 'glowing':
-      return {
-        color: color || '#2563eb',
-        textShadow: `0 0 8px ${color || '#2563eb'}, 0 0 14px ${color || '#2563eb'}`
-      };
-    case 'icy':
-      return {
-        background: 'linear-gradient(135deg, #38bdf8, #e0f2fe)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        filter: 'drop-shadow(0 0 3px rgba(56, 189, 248, 0.9))'
-      };
-    case 'fire':
-      return {
-        background: 'linear-gradient(135deg, #ef4444, #f97316)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        filter: 'drop-shadow(0 0 3px rgba(239, 68, 68, 0.9))'
-      };
-    case 'gold':
-      return {
-        background: 'linear-gradient(135deg, #eab308, #fef08a)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        filter: 'drop-shadow(0 0 3px rgba(234, 179, 8, 0.9))'
-      };
-    default:
-      return {
-        color: color || '#0284c7'
-      };
+    case 'glowing': return { color: chosen, textShadow: `0 0 5px ${chosen}, 0 0 10px ${chosen}, 0 0 18px ${chosen}` };
+    case 'icy': return { background: 'linear-gradient(135deg,#38bdf8,#e0f2fe,#7dd3fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(56,189,248,.9))' };
+    case 'fire': return { background: 'linear-gradient(135deg,#ef4444,#f97316,#facc15)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(239,68,68,.8))' };
+    case 'gold': return { background: 'linear-gradient(135deg,#a16207,#facc15,#fff1a8,#ca8a04)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 2px rgba(161,98,7,.55))' };
+    case 'neon': return { color: '#39ff14', textShadow: '0 0 4px #39ff14, 0 0 9px #39ff14, 0 0 16px #16a34a' };
+    case 'rainbow': return { background: 'linear-gradient(90deg,#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' };
+    case 'silver': return { background: 'linear-gradient(135deg,#64748b,#f8fafc,#94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 1px rgba(15,23,42,.45))' };
+    case 'pink': return { color: '#ec4899', textShadow: '0 0 5px rgba(236,72,153,.7), 0 0 12px rgba(236,72,153,.55)' };
+    case 'violet': return { color: '#a78bfa', textShadow: '0 0 6px rgba(139,92,246,.8)' };
+    case 'emerald': return { color: '#10b981', textShadow: '0 0 5px rgba(16,185,129,.65)' };
+    case 'ruby': return { color: '#e11d48', textShadow: '0 0 5px rgba(225,29,72,.7)' };
+    case 'ocean': return { background: 'linear-gradient(90deg,#0e7490,#22d3ee,#2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' };
+    case 'shadow': return { color: chosen, textShadow: '2px 2px 0 rgba(15,23,42,.5), 0 0 4px rgba(15,23,42,.25)' };
+    case 'bold': return { color: chosen, fontWeight: 900, letterSpacing: '.3px', textShadow: '0 1px 0 rgba(0,0,0,.18)' };
+    case 'outline': return { color: chosen, WebkitTextStroke: '0.5px rgba(15,23,42,.65)', paintOrder: 'stroke fill' };
+    case 'soft': return { color: chosen, textShadow: `0 0 7px ${chosen}66` };
+    default: return { color: chosen };
   }
 };
 
@@ -3078,7 +3066,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',color:(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#2563eb')}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=><div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(u);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveUserProfiles[u.id]?.nameColor || u.nameColor || '#17a7d2')}}>{u.avatarUrl?<img src={u.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'bold',...(canDisplayProfileCustomization({...u, role:normalizeRole(liveUserProfiles[u.id]?.role || u.role)}) ? getNameStyleProps(liveUserProfiles[u.id]?.nameStyle || u.nameStyle || 'normal', liveUserProfiles[u.id]?.nameColor || u.nameColor || '#2563eb') : {color:'#2563eb'})}}>{u.displayName||u.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(u.role)==='Owner')?'صاحب الموقع':normalizeRole(u.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{u.country||''} {u.flag||''}</div></div></div>)}</div>
           </div>
         </div>
       )}
@@ -3377,11 +3365,10 @@ export default function App() {
                   </div>
                 </>}
                 {hasRankForCustomization && <>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{const value=e.target.value;setNameColor(value);void saveSettingToFirebase('nameColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
-                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
-                  </div>
-                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
+                  <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
+                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);void saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}>
+                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💚</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="rainbow">قوس قزح 🌈</option><option value="pink">وردي 💗</option><option value="violet">بنفسجي 💜</option><option value="emerald">زمردي 💚</option><option value="ruby">ياقوتي ❤️</option><option value="ocean">محيطي 🌊</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option>
+                  </select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
                   <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
                 </>}
