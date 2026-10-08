@@ -3213,7 +3213,7 @@ export default function App() {
                             </span>
                           </div>
                           {(parts.flag || parts.tag) && (
-                            <div style={{ position:'absolute', left:'0px', top:'50%', transform:'translateY(-50%)', paddingLeft:'0px', paddingRight:'0px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
+                            <div style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', paddingLeft:'0px', paddingRight:'0px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
                               {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
                               {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
                             </div>
