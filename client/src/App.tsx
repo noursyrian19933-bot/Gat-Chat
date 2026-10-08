@@ -2694,23 +2694,24 @@ export default function App() {
                         {getRoleTag(displayMessage) ? (
                           <span
                             style={{
-                              backgroundColor: effectiveNameColor,
-                              color: getContrastTextColor(effectiveNameColor),
+                              // The chosen profile background color is the name-box color everywhere.
+                              backgroundColor: displayMessage.profileBgColor || '#ffffff',
+                              color: getContrastTextColor(displayMessage.profileBgColor || '#ffffff'),
                               padding: '3px 8px',
                               borderRadius: '5px',
-                              border: '1px solid rgba(0,0,0,0.12)',
+                              border: '1px solid rgba(0,0,0,0.18)',
                               display: 'inline-flex',
                               alignItems: 'center',
                               transition: 'background-color 0.2s ease, color 0.2s ease',
                               fontWeight: 'bold'
                             }}
                           >
-                            <span style={{ fontWeight: 'bold', cursor: 'pointer', color: getContrastTextColor(effectiveNameColor) }} onClick={() => openUserProfile(displayMessage)}>
+                            <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps, color: getContrastTextColor(displayMessage.profileBgColor || '#ffffff') }} onClick={() => openUserProfile(displayMessage)}>
                               {displayMessage.user}
                             </span>
                           </span>
                         ) : (
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', color: effectiveNameColor }} onClick={() => openUserProfile(displayMessage)}>
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
                             {displayMessage.user}
                           </span>
                         )}
@@ -3250,7 +3251,7 @@ export default function App() {
                       {(() => { const parts = getOnlineNameParts(u); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
+                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (u.profileBgColor || '#ffffff') : 'transparent', color: uCanCustomize ? getContrastTextColor(u.profileBgColor || '#ffffff') : (u.nameColor || u.color || '#2563eb'), padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
                               {parts.name}
                             </span>
                           </div>
@@ -3428,6 +3429,11 @@ export default function App() {
                   fontSize:18,
                   fontWeight:800,
                   marginTop:1,
+                  display:'inline-flex',
+                  alignSelf:'center',
+                  padding:'3px 10px',
+                  borderRadius:5,
+                  backgroundColor: canDisplayProfileCustomization(selectedProfileUser) ? (liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : 'transparent',
                   ...(() => {
                     // Use the same live Firebase profile values as chat and online lists.
                     const liveProfile = liveUserProfiles[selectedProfileUser.userId] || {};
