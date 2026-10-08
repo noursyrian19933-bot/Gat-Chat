@@ -3333,12 +3333,12 @@ export default function App() {
                 ['تاريخ الانضمام',selectedProfileUser.joinedDate || 'غير متوفر'],
                 ['الغرفة الحالية',selectedProfileUser.roomName || 'غير متوفر'],
                 ['آخر تواجد',selectedProfileUser.lastSeen || 'غير متوفر']
-              ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:50,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
+              ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:42,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
 
-              <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:12,fontWeight:700,color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333'}}>رابط الملف الشخصي 🔗</div>
-              <div style={{paddingBottom:6,textAlign:'center',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
+              <div style={{padding:'10px 0 4px',textAlign:'right',fontSize:12,fontWeight:700,color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333'}}>رابط الملف الشخصي 🔗</div>
+              <div style={{paddingBottom:4,textAlign:'center',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
 
             </div>
           </div>
