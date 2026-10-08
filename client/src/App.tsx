@@ -1271,7 +1271,50 @@ export default function App() {
         return { id: docSnap.id, isExpired, ...data };
       }).filter(m => !m.isExpired);
 
-      setMessages(msgs);
+      // بعد كل تحميل/تحديث للصفحة، اقرأ لون المرسل الحالي من users مباشرةً.
+      // لا نعتمد على اللون المحفوظ داخل الرسالة القديمة، لذلك الرسائل القديمة
+      // تعرض دائماً آخر لون محفوظ للمستخدم حتى بعد Refresh.
+      const senderIds = Array.from(new Set(msgs.map((m:any) => m.userId).filter((id:any) => id && id !== 'system')));
+      const currentProfiles: Record<string, any> = {};
+      await Promise.all(senderIds.map(async (uid:any) => {
+        try {
+          const senderSnap = await getDoc(doc(db, 'users', uid));
+          if (senderSnap.exists()) {
+            const d:any = senderSnap.data();
+            currentProfiles[uid] = {
+              userId: uid,
+              displayName: d.displayName || d.userName || d.name || '',
+              role: normalizeRole(d.role),
+              nameColor: d.nameColor || '#2563eb',
+              nameStyle: d.nameStyle || 'normal',
+              profileBgColor: d.profileBgColor || '#ffffff',
+              avatarUrl: d.avatarUrl || '',
+              coverUrl: d.coverUrl || '',
+              profileSongUrl: d.profileSongUrl || ''
+            };
+          }
+        } catch (e) {
+          console.warn('تعذر تحميل إعدادات لون المرسل', e);
+        }
+      }));
+
+      const refreshedMsgs = msgs.map((m:any) => {
+        const profile = currentProfiles[m.userId];
+        return profile ? {
+          ...m,
+          user: profile.displayName || m.user,
+          role: profile.role || m.role,
+          color: profile.nameColor || m.color,
+          nameColor: profile.nameColor || m.nameColor,
+          nameStyle: profile.nameStyle || m.nameStyle,
+          profileBgColor: profile.profileBgColor || m.profileBgColor,
+          avatarUrl: profile.avatarUrl || m.avatarUrl
+        } : m;
+      });
+
+      // اجعل هذه القيم هي المصدر الفعلي للعرض بعد Refresh أيضاً.
+      setLiveUserProfiles(prev => ({ ...prev, ...currentProfiles }));
+      setMessages(refreshedMsgs);
       setTimeout(() => {
         chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
