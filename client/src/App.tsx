@@ -3057,44 +3057,44 @@ export default function App() {
       {showSettingsModal && (
         <div className="video-profile-backdrop" onClick={() => setShowSettingsModal(false)} style={{ position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,0.65)', zIndex:110, display:'flex', justifyContent:'center', alignItems:'center', direction:'rtl', padding:'14px' }}>
           <div onClick={(e)=>e.stopPropagation()} style={{ width:'100%', maxWidth:'664px', background:'#fff', borderRadius:'5px', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 12px 32px rgba(0,0,0,.35)', maxHeight:'90dvh' }}>
-            <div style={{ position:'relative', height:'218px', background:'#003d43', color:'#fff', flexShrink:0 }}>
-              <button onClick={()=>setShowSettingsModal(false)} style={{position:'absolute',top:14,left:16,zIndex:4,border:0,background:'transparent',color:'#fff',fontSize:32,cursor:'pointer',lineHeight:1}}>✕</button>
-              <div style={{position:'absolute',top:26,right:26,width:168,height:168,borderRadius:5,overflow:'hidden',background:'#334155'}}>
+            <div style={{ position:'relative', height:'180px', background:'#003d43', color:'#fff', flexShrink:0 }}>
+              <button onClick={()=>setShowSettingsModal(false)} style={{position:'absolute',top:10,left:12,zIndex:4,border:0,background:'transparent',color:'#fff',fontSize:22,cursor:'pointer',lineHeight:1}}>✕</button>
+              <div style={{position:'absolute',top:18,right:20,width:120,height:120,borderRadius:5,overflow:'hidden',background:'#334155'}}>
                 {profileAvatar ? <img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64}}>👤</div>}
-                {canEditAvatar && <div style={{position:'absolute',bottom:0,left:0,right:0,height:48,background:'rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'center',gap:18}}>
-                  <button onClick={()=>avatarInputRef.current?.click()} title={profileAvatar ? 'تغيير الصورة' : 'إضافة صورة'} style={{border:0,background:'transparent',color:'#fff',fontSize:23,cursor:'pointer'}}>📷</button>
-                  {profileAvatar && <button onClick={handleDeleteAvatar} title="حذف الصورة" style={{border:0,background:'transparent',color:'#fff',fontSize:23,cursor:'pointer'}}>🗑️</button>}
+                {canEditAvatar && <div style={{position:'absolute',bottom:0,left:0,right:0,height:34,background:'rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>
+                  <button onClick={()=>avatarInputRef.current?.click()} title={profileAvatar ? 'تغيير الصورة' : 'إضافة صورة'} style={{border:0,background:'transparent',color:'#fff',fontSize:18,cursor:'pointer'}}>📷</button>
+                  {profileAvatar && <button onClick={handleDeleteAvatar} title="حذف الصورة" style={{border:0,background:'transparent',color:'#fff',fontSize:18,cursor:'pointer'}}>🗑️</button>}
                 </div>}
               </div>
-              <div style={{position:'absolute',right:220,bottom:25,fontSize:18,fontWeight:700}}>{user?.displayName || user?.email?.split('@')[0] || guestName || 'زائر'} <span style={{fontSize:26}}>✎</span></div>
+              <div style={{position:'absolute',right:155,bottom:20,fontSize:15,fontWeight:700}}>{user?.displayName || user?.email?.split('@')[0] || guestName || 'زائر'} <span style={{fontSize:20}}>✎</span></div>
             </div>
 
             <div style={{display:'flex',borderBottom:'1px solid #ddd',background:'#f5f5f5',direction:'rtl',flexShrink:0}}>
               {[
                 ['info','معلوماتي'],['friends','الأصدقاء'],['ignore','تجاهل'],['options','خيارات'],['more','المزيد']
-              ].map(([key,label])=><button key={key} onClick={()=>setSettingsTab(key as any)} style={{flex:1,padding:'12px 5px',border:0,background:settingsTab===key?'#003d43':'#f5f5f5',color:settingsTab===key?'#fff':'#666',fontSize:14,cursor:'pointer'}}>{label}</button>)}
+              ].map(([key,label])=><button key={key} onClick={()=>setSettingsTab(key as any)} style={{flex:1,padding:'8px 4px',border:0,background:settingsTab===key?'#003d43':'#f5f5f5',color:settingsTab===key?'#fff':'#666',fontSize:12,cursor:'pointer'}}>{label}</button>)}
             </div>
 
-            <div style={{flex:1,overflowY:'auto',padding:'18px 40px',background:'#fff'}}>
+            <div style={{flex:1,overflowY:'auto',padding:'12px 24px',background:'#fff'}}>
               {settingsTab==='info' && <>
                 {[
                   ['تحديد العمر','profileAge',profileAge,setProfileAge,['عدم إظهار','18 سنة','20 سنة','25 سنة','30 سنة','34 سنة','40 سنة','50 سنة']],
                   ['تحديد الجنس','profileGender',profileGender,setProfileGender,['ذكر','أنثى']],
                   ['البلد','profileCountry',profileCountry,setProfileCountry,COUNTRIES_LIST],
                   ['العلاقة','profileRelationship',profileRelationship,setProfileRelationship,['عدم إظهار','أعزب','متزوج','مرتبط','مطلق','أرمل']]
-                ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,alignItems:'center',marginBottom:16}}>
-                  <label style={{color:'#159db9',fontSize:14,fontWeight:700}}>{label}</label>
-                  <select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field==='profileAge'?'age':field==='profileGender'?'gender':field==='profileCountry'?'country':'relationship',e.target.value)}} style={{width:'100%',height:48,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 14px',fontSize:14,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select>
+                ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,alignItems:'center',marginBottom:10}}>
+                  <label style={{color:'#159db9',fontSize:12,fontWeight:700}}>{label}</label>
+                  <select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field==='profileAge'?'age':field==='profileGender'?'gender':field==='profileCountry'?'country':'relationship',e.target.value)}} style={{width:'100%',height:38,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 10px',fontSize:12,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select>
                 </div>)}
-                <button onClick={()=>{saveSettingToFirebase('age',profileAge);saveSettingToFirebase('gender',profileGender);saveSettingToFirebase('country',profileCountry);saveSettingToFirebase('relationship',profileRelationship);setSuccessMessage('تم حفظ المعلومات');setTimeout(()=>setSuccessMessage(''),1800)}} style={{width:170,height:52,border:0,borderRadius:7,background:'#13acd0',color:'#fff',fontSize:14,cursor:'pointer',fontWeight:700}}>حفظ 💾</button>
-                {profileBio && <div style={{marginTop:18,color:'#777',fontSize:13}}>{profileBio}</div>}
+                <button onClick={()=>{saveSettingToFirebase('age',profileAge);saveSettingToFirebase('gender',profileGender);saveSettingToFirebase('country',profileCountry);saveSettingToFirebase('relationship',profileRelationship);setSuccessMessage('تم حفظ المعلومات');setTimeout(()=>setSuccessMessage(''),1800)}} style={{width:130,height:40,border:0,borderRadius:7,background:'#13acd0',color:'#fff',fontSize:14,cursor:'pointer',fontWeight:700}}>حفظ 💾</button>
+                {profileBio && <div style={{marginTop:12,color:'#777',fontSize:12}}>{profileBio}</div>}
               </>}
 
               {settingsTab==='friends' && <div>
-                {filteredFriendsList.length===0 ? <div style={{textAlign:'center',padding:'55px 10px',color:'#aaa',fontSize:14}}>قائمة أصدقائك فارغة</div> : filteredFriendsList.map((f:any)=><div key={f.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 4px',borderBottom:'1px solid #eee'}}><div style={{fontWeight:700}}>{f.name}</div><div style={{display:'flex',gap:6}}><button onClick={()=>openPrivateChatWithUser(f.friendUid,f.name)} style={{border:0,borderRadius:5,padding:'7px 12px',background:'#159db9',color:'#fff',cursor:'pointer'}}>خاص</button><button onClick={()=>handleRemoveFriend(f.friendUid)} style={{border:0,borderRadius:5,padding:'7px 12px',background:'#ef4444',color:'#fff',cursor:'pointer'}}>حذف</button></div></div>)}
+                {filteredFriendsList.length===0 ? <div style={{textAlign:'center',padding:'35px 10px',color:'#aaa',fontSize:12}}>قائمة أصدقائك فارغة</div> : filteredFriendsList.map((f:any)=><div key={f.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 4px',borderBottom:'1px solid #eee'}}><div style={{fontWeight:700}}>{f.name}</div><div style={{display:'flex',gap:6}}><button onClick={()=>openPrivateChatWithUser(f.friendUid,f.name)} style={{border:0,borderRadius:5,padding:'5px 9px',background:'#159db9',color:'#fff',cursor:'pointer'}}>خاص</button><button onClick={()=>handleRemoveFriend(f.friendUid)} style={{border:0,borderRadius:5,padding:'5px 9px',background:'#ef4444',color:'#fff',cursor:'pointer'}}>حذف</button></div></div>)}
               </div>}
 
-              {settingsTab==='ignore' && <div style={{textAlign:'center',padding:'55px 10px',color:'#aaa',fontSize:14}}><div style={{fontSize:52,marginBottom:10}}>🚫</div>قائمة التجاهل فارغة</div>}
+              {settingsTab==='ignore' && <div style={{textAlign:'center',padding:'35px 10px',color:'#aaa',fontSize:12}}><div style={{fontSize:52,marginBottom:10}}>🚫</div>قائمة التجاهل فارغة</div>}
 
               {settingsTab==='options' && <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 {[
@@ -3110,63 +3110,63 @@ export default function App() {
                   ['الأصوات','soundSetting',soundSetting,setSoundSetting,['صامت','تشغيل']],
                   ['الثيم','themeSetting',themeSetting,setThemeSetting,['الثيم الافتراضي','فاتح','داكن']],
                   ['فتح الخاص تلقائيًا للرسائل غير المقروءة','autoOpenUnreadSetting',autoOpenUnreadSetting,setAutoOpenUnreadSetting,['تشغيل','إيقاف']]
-                ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,alignItems:'center'}}><label style={{color:'#159db9',fontSize:14,fontWeight:700}}>{label}</label><select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field,e.target.value)}} style={{height:48,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 12px',fontSize:14,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select></div>)}
-                <button onClick={async()=>{await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload()}} style={{background:'#dc2626',color:'#fff',border:0,padding:12,borderRadius:6,fontWeight:700,cursor:'pointer',fontSize:14}}>تسجيل الخروج 🚪</button>
+                ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,alignItems:'center'}}><label style={{color:'#159db9',fontSize:12,fontWeight:700}}>{label}</label><select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field,e.target.value)}} style={{height:38,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 12px',fontSize:14,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select></div>)}
+                <button onClick={async()=>{await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload()}} style={{background:'#dc2626',color:'#fff',border:0,padding:8px 10px,borderRadius:5,fontWeight:700,cursor:'pointer',fontSize:12}}>تسجيل الخروج 🚪</button>
               </div>}
 
-              {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:12,fontSize:14}}>
+              {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:8,fontSize:12}}>
                 {canEditAvatar && <>
-                  <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
+                  <div style={{padding:'7px 0',borderBottom:'1px solid #ddd'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
                       <div style={{display:'flex',alignItems:'center',gap:10}}>
                         <div style={{width:54,height:54,borderRadius:'50%',overflow:'hidden',background:'#e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                           {profileAvatar ? <img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontSize:24}}>👤</span>}
                         </div>
-                        <div><div style={{fontWeight:700,color:'#159db9'}}>الصورة الشخصية</div><div style={{fontSize:11,color:'#888'}}>{profileAvatar ? 'يمكنك تغييرها أو حذفها' : 'لا توجد صورة حالياً'}</div></div>
+                        <div><div style={{fontWeight:700,color:'#159db9'}}>الصورة الشخصية</div><div style={{fontSize:10,color:'#888'}}>{profileAvatar ? 'يمكنك تغييرها أو حذفها' : 'لا توجد صورة حالياً'}</div></div>
                       </div>
                       <div style={{display:'flex',gap:6}}>
-                        <button onClick={()=>avatarInputRef.current?.click()} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',cursor:'pointer'}}>📷 {profileAvatar ? 'تغيير' : 'إضافة'}</button>
-                        {profileAvatar && <button onClick={handleDeleteAvatar} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
+                        <button onClick={()=>avatarInputRef.current?.click()} style={{padding:'6px 8px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',cursor:'pointer'}}>📷 {profileAvatar ? 'تغيير' : 'إضافة'}</button>
+                        {profileAvatar && <button onClick={handleDeleteAvatar} style={{padding:'6px 8px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
                       </div>
                     </div>
                   </div>
                 </>}
                 {canEditCover && <>
-                  <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
+                  <div style={{padding:'7px 0',borderBottom:'1px solid #ddd'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
-                      <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
-                        <div style={{width:86,height:48,borderRadius:5,overflow:'hidden',background:'#003d43',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <div style={{display:'flex',alignItems:'center',gap:7,minWidth:0}}>
+                        <div style={{width:70,height:40,borderRadius:5,overflow:'hidden',background:'#003d43',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                           {profileCover ? <img src={profileCover} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontSize:20,color:'#fff'}}>🖼️</span>}
                         </div>
-                        <div><div style={{fontWeight:700,color:'#159db9'}}>غلاف الملف الشخصي</div><div style={{fontSize:11,color:'#888'}}>{profileCover ? 'يمكنك تغييره أو حذفه' : 'لا يوجد غلاف حالياً'}</div></div>
+                        <div><div style={{fontWeight:700,color:'#159db9'}}>غلاف الملف الشخصي</div><div style={{fontSize:10,color:'#888'}}>{profileCover ? 'يمكنك تغييره أو حذفه' : 'لا يوجد غلاف حالياً'}</div></div>
                       </div>
                       <div style={{display:'flex',gap:6}}>
-                        <button onClick={()=>coverInputRef.current?.click()} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',cursor:'pointer'}}>🖼️ {profileCover ? 'تغيير' : 'إضافة'}</button>
-                        {profileCover && <button onClick={handleDeleteCover} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
+                        <button onClick={()=>coverInputRef.current?.click()} style={{padding:'6px 8px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',cursor:'pointer'}}>🖼️ {profileCover ? 'تغيير' : 'إضافة'}</button>
+                        {profileCover && <button onClick={handleDeleteCover} style={{padding:'6px 8px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
                       </div>
                     </div>
                   </div>
                 </>}
                 {canAddSong && <>
-                  <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
+                  <div style={{padding:'7px 0',borderBottom:'1px solid #ddd'}}>
                     <div style={{fontWeight:700,color:'#159db9',marginBottom:8}}>🎵 أغنية الملف الشخصي</div>
-                    <div style={{fontSize:11,color:'#888',marginBottom:8}}>{profileSong ? 'الأغنية مضافة ويمكنك تغييرها أو حذفها.' : 'أضف أغنية تظهر في ملفك الشخصي. هذه الميزة متاحة لصاحب الموقع وAdmin وSuper Admin وPremium فقط.'}</div>
+                    <div style={{fontSize:10,color:'#888',marginBottom:8}}>{profileSong ? 'الأغنية مضافة ويمكنك تغييرها أو حذفها.' : 'أضف أغنية تظهر في ملفك الشخصي. هذه الميزة متاحة لصاحب الموقع وAdmin وSuper Admin وPremium فقط.'}</div>
                     <div style={{display:'flex',gap:7}}>
                       <button onClick={()=>songInputRef.current?.click()} style={{flex:1,padding:10,border:0,borderRadius:5,background:'#7c3aed',color:'#fff',cursor:'pointer'}}>🎵 {profileSong ? 'تغيير الأغنية' : 'إضافة أغنية'}</button>
-                      {profileSong && <button onClick={handleDeleteSong} style={{padding:'10px 14px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
+                      {profileSong && <button onClick={handleDeleteSong} style={{padding:'7px 10px',border:0,borderRadius:5,background:'#dc2626',color:'#fff',cursor:'pointer'}}>🗑️ حذف</button>}
                     </div>
                   </div>
                 </>}
                 {hasRankForCustomization && <>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
-                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
+                    <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
                   </div>
-                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:46,marginTop:6,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:14}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
-                  <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:6,border:'1px solid #ddd',borderRadius:5,padding:8,boxSizing:'border-box'}}/></label>
-                  <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:12,border:0,borderRadius:6,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
+                  <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
+                  <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
+                  <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:8px 10px,border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
                 </>}
-                <button onClick={()=>{setShowSettingsModal(false);setSettingsTab('info')}} style={{padding:16,textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
+                <button onClick={()=>{setShowSettingsModal(false);setSettingsTab('info')}} style={{padding:10px,textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
               </div>}
             </div>
           </div>
@@ -3199,7 +3199,7 @@ export default function App() {
                   <span style={{position:'absolute',right:1,bottom:1,width:22,height:22,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
                 </div>
                 <div style={{fontSize:17,fontWeight:700,marginTop:6}}>{selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
-                <div style={{fontSize:23,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>{selectedProfileUser.name}</div>
+                <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>{selectedProfileUser.name}</div>
               </div>
             </div>
 
@@ -3216,7 +3216,7 @@ export default function App() {
 
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
 
-              <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:14,fontWeight:700}}>رابط الملف الشخصي 🔗</div>
+              <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:12,fontWeight:700}}>رابط الملف الشخصي 🔗</div>
               <div style={{paddingBottom:6,textAlign:'center',color:'#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
 
             </div>
