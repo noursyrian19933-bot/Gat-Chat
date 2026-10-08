@@ -3205,13 +3205,13 @@ export default function App() {
                         {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps, display:'inline-flex', alignItems:'center', justifyContent:'flex-start', gap:'12px', direction:'rtl', unicodeBidi:'isolate', whiteSpace:'nowrap' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps, display:'inline-flex', alignItems:'center', justifyContent:'flex-start', gap:'18px', direction:'rtl', unicodeBidi:'isolate', whiteSpace:'nowrap' }}>
                           {(() => { const parts = getOnlineNameParts(u); return <>
                             <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.name}</span>
                             {(parts.flag || parts.tag) && (
-                              <span style={{ display:'inline-flex', alignItems:'center', gap:'0px', direction:'rtl', unicodeBidi:'isolate' }}>
-                                {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', direction:'rtl', unicodeBidi:'isolate' }}>
                                 {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
+                                {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
                               </span>
                             )}
                           </>; })()}
