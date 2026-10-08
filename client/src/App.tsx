@@ -370,8 +370,10 @@ export default function App() {
 
   // ألوان الخلفية وزخرفة الاسم تظهر فقط للرتب المسموح لها بالتخصيص.
   const canDisplayProfileCustomization = (profileUser: any) => {
+    const email = String(profileUser?.email || '').trim().toLowerCase();
     const role = normalizeRole(profileUser?.role);
-    return ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(role);
+    const isProfileOwner = email === ADMIN_EMAIL.trim().toLowerCase() || role === 'Owner';
+    return isProfileOwner || ['Admin', 'Super Admin', 'Premium'].includes(role);
   };
 
   const hasCurrentPermission = (permission: string) =>
@@ -1071,36 +1073,30 @@ export default function App() {
     };
   }, [selectedRoom, user, currentFlag, profileGender, profileCountry, guestName, isAdmin, profileAvatar, profileCover, profileSong, currentUserRole, nameColor, nameStyle, profileBgColor, userJoinedDate]);
 
-  // الحضور اللحظي للغرفة الحالية فقط.
-  // مهم: نبقي بنية presence الحالية كما هي حتى لا نحتاج لتغيير Rules الموجودة الآن.
-  // الاستعلام يطلب من Realtime Database فقط السجلات التي roomId فيها يساوي الغرفة الحالية،
-  // بدل تحميل جميع المستخدمين المتصلين في جميع الغرف لكل مستخدم.
+  // الحضور اللحظي للغرفة الحالية. نقرأ presence كاملة ثم نرشّح بالغرفة داخل التطبيق،
+  // حتى لا تختفي قائمة المتصلين بسبب استعلام RTDB أو فهرس مفقود.
   useEffect(() => {
     const roomId = selectedRoom?.id || 'lobby';
-    const currentRoomPresenceQuery = rtdbQuery(
-      ref(rdb, 'presence'),
-      rtdbOrderByChild('roomId'),
-      rtdbEqualTo(roomId)
-    );
+    const presenceQuery = ref(rdb, 'presence');
 
-    return onValue(currentRoomPresenceQuery, (snapshot) => {
+    return onValue(presenceQuery, (snapshot) => {
       const raw = snapshot.val() || {};
       const now = Date.now();
       const users: any[] = [];
 
       Object.entries(raw).forEach(([uid, data]: [string, any]) => {
-        if (!data || data.online !== true || !data.userId) return;
-        // حماية إضافية للحالات القديمة التي لم يصلها onDisconnect.
+        if (!data) return;
+        const dataRoomId = data.roomId || 'lobby';
+        if (dataRoomId !== roomId) return;
+        if (data.online !== true) return;
         if (data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
-        // حماية إضافية حتى لا تظهر حالة من غرفة أخرى بسبب بيانات قديمة.
-        if ((data.roomId || 'lobby') !== roomId) return;
 
         users.push({
           id: uid,
-          userId: uid,
+          userId: data.userId || uid,
           name: data.userName || 'زائر',
           email: data.email || '',
-          role: data.role || 'Guest',
+          role: normalizeRole(data.role),
           flag: data.flag || '🇯🇴',
           country: data.country || 'الأردن',
           gender: data.gender || 'ذكر',
@@ -1118,10 +1114,10 @@ export default function App() {
           nameColor: data.nameColor || '#2563eb',
           nameStyle: data.nameStyle || 'normal',
           profileBgColor: data.profileBgColor || '#ffffff',
-          joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],
+          joinedDate: data.joinedDate || '',
           lastSeen: data.lastSeen || '',
           points: data.points || 0,
-          roomId: data.roomId || 'lobby',
+          roomId: dataRoomId,
           roomName: data.roomName || 'القائمة الرئيسية',
           lastActive: data.lastActive || 0
         });
