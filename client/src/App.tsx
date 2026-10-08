@@ -3111,7 +3111,7 @@ export default function App() {
                   ['الثيم','themeSetting',themeSetting,setThemeSetting,['الثيم الافتراضي','فاتح','داكن']],
                   ['فتح الخاص تلقائيًا للرسائل غير المقروءة','autoOpenUnreadSetting',autoOpenUnreadSetting,setAutoOpenUnreadSetting,['تشغيل','إيقاف']]
                 ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,alignItems:'center'}}><label style={{color:'#159db9',fontSize:12,fontWeight:700}}>{label}</label><select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field,e.target.value)}} style={{height:38,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 12px',fontSize:14,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select></div>)}
-                <button onClick={async()=>{await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload()}} style={{background:'#dc2626',color:'#fff',border:0,padding:8px 10px,borderRadius:5,fontWeight:700,cursor:'pointer',fontSize:12}}>تسجيل الخروج 🚪</button>
+                <button onClick={async()=>{await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload()}} style={{background:'#dc2626',color:'#fff',border:0,padding:'8px 10px',borderRadius:5,fontWeight:700,cursor:'pointer',fontSize:12}}>تسجيل الخروج 🚪</button>
               </div>}
 
               {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:8,fontSize:12}}>
@@ -3164,7 +3164,7 @@ export default function App() {
                   </div>
                   <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
-                  <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:8px 10px,border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
+                  <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
                 </>}
                 <button onClick={()=>{setShowSettingsModal(false);setSettingsTab('info')}} style={{padding:10px,textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
               </div>}
