@@ -322,7 +322,8 @@ export default function App() {
 
   const normalizeRole = (role: any): string => {
     const value = String(role || '').trim().toLowerCase();
-    if (value === 'owner') return 'Owner';
+    if (value === 'site owner' || value === 'site_owner' || value === 'siteowner') return 'Site Owner';
+    if (value === 'owner' || value === 'Owner') return 'Owner';
     if (value === 'admin') return 'Admin';
     if (value === 'super admin' || value === 'super_admin' || value === 'superadmin') return 'Super Admin';
     if (value === 'premium') return 'Premium';
@@ -331,7 +332,8 @@ export default function App() {
   };
 
   const rolePermissions: Record<string, string[]> = {
-    Owner: ['manage_roles', 'manage_admins', 'manage_rooms', 'manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
+    'Site Owner': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick', 'manage_roles', 'manage_admins', 'manage_rooms'],
+    Owner: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
     Admin: ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
     'Super Admin': ['manage_users', 'edit_avatar', 'edit_cover', 'add_song', 'custom_profile', 'kick'],
     Premium: ['edit_avatar', 'edit_cover', 'add_song', 'custom_profile'],
@@ -341,14 +343,15 @@ export default function App() {
 
   const normalizedCurrentRole = normalizeRole(currentUserRole);
   const normalizedCurrentEmail = (user?.email || '').trim().toLowerCase();
+  // صاحب الموقع الحقيقي يُحدد بالبريد الأساسي فقط، أما Owner فهي رتبة مستقلة.
   const isOwner = Boolean(
     user &&
     !user.isAnonymous &&
-    (
-      normalizedCurrentEmail === ADMIN_EMAIL.trim().toLowerCase() ||
-      normalizedCurrentRole === 'Owner'
-    )
+    normalizedCurrentEmail === ADMIN_EMAIL.trim().toLowerCase()
   );
+
+  const isSiteOwnerProfile = (profileUser: any) =>
+    String(profileUser?.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase();
 
   const isAdmin = Boolean(
     user &&
@@ -356,7 +359,8 @@ export default function App() {
     (
       isOwner ||
       normalizedCurrentRole === 'Admin' ||
-      normalizedCurrentRole === 'Super Admin'
+      normalizedCurrentRole === 'Super Admin' ||
+      normalizedCurrentRole === 'Owner'
     )
   );
 
@@ -408,7 +412,7 @@ export default function App() {
         let activeRole = currentUser.isAnonymous ? 'Guest' : 'Member';
 
         if (cleanEmail === ownerEmail) {
-          activeRole = 'Owner';
+          activeRole = 'Site Owner';
         } else if (!currentUser.isAnonymous && cleanEmail) {
           try {
             const roleDoc = await getDoc(doc(db, 'roles_by_email', cleanEmail));
@@ -423,7 +427,7 @@ export default function App() {
         }
 
         if (cleanEmail === ownerEmail) {
-          activeRole = 'Owner';
+          activeRole = 'Site Owner';
         }
 
         setCurrentUserRole(activeRole);
@@ -556,7 +560,7 @@ export default function App() {
 
     if (!user.isAnonymous && user.email) {
       if (cleanEmail === ownerEmail) {
-        setCurrentUserRole('Owner');
+        setCurrentUserRole('Site Owner');
       }
 
       const roleRef = doc(db, 'roles_by_email', cleanEmail);
@@ -564,7 +568,7 @@ export default function App() {
         roleRef,
         (roleSnap) => {
           if (cleanEmail === ownerEmail) {
-            setCurrentUserRole('Owner');
+            setCurrentUserRole('Site Owner');
             return;
           }
 
@@ -1027,7 +1031,7 @@ export default function App() {
 
     const currentRole = user.isAnonymous
       ? 'Guest'
-      : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+      : (isOwner ? 'Site Owner' : normalizeRole(currentUserRole));
 
     // نحفظ الغرفة الحالية أيضًا في ملف المستخدم حتى يبقى الملف الشخصي دقيقًا بعد إعادة التحميل.
     setDoc(doc(db, 'users', user.uid), {
@@ -1148,11 +1152,12 @@ export default function App() {
 
       const rank = (u: any) => {
         const r = normalizeRole(u.role);
-        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase()) return 1;
         if (r === 'Super Admin') return 2;
         if (r === 'Admin') return 3;
-        if (r === 'Member' || r === 'Premium') return 4;
-        return 5;
+        if (r === 'Owner') return 4;
+        if (r === 'Member' || r === 'Premium') return 5;
+        return 6;
       };
 
       users.sort((a, b) => rank(a) - rank(b) || String(a.name).localeCompare(String(b.name)));
@@ -1170,7 +1175,7 @@ export default function App() {
           ...u,
           userId: u.userId || u.id,
           name: u.displayName || u.userName || u.name || 'مستخدم',
-          role: normalizeRole(u.role),
+          role: String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(u.role),
           nameColor: u.nameColor || '#2563eb',
           nameStyle: u.nameStyle || 'normal',
           profileBgColor: u.profileBgColor || '#ffffff',
@@ -1188,14 +1193,15 @@ export default function App() {
         const live = profileMap[m.userId];
         return live ? { ...m, user: live.displayName || live.userName || live.name || m.user, role: normalizeRole(live.role || m.role), color: live.nameColor || m.color, nameColor: live.nameColor || m.nameColor, nameStyle: live.nameStyle || m.nameStyle, profileBgColor: live.profileBgColor || m.profileBgColor, avatarUrl: live.avatarUrl || m.avatarUrl } : m;
       }));
-      const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || normalizeRole(u.role) === 'Owner');
+      const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase());
       const roleRank = (u:any) => {
         const r = normalizeRole(u.role);
-        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() || r === 'Owner') return 1;
+        if (String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase()) return 1;
         if (r === 'Super Admin') return 2;
         if (r === 'Admin') return 3;
-        if (r === 'Member' || r === 'Premium') return 4;
-        return 5;
+        if (r === 'Owner') return 4;
+        if (r === 'Member' || r === 'Premium') return 5;
+        return 6;
       };
       const sorted = [...list].sort((a,b) => roleRank(a)-roleRank(b) || String(a.displayName || '').localeCompare(String(b.displayName || '')));
       if (owner && !sorted.some(u => u.id === owner.id)) sorted.unshift(owner);
@@ -1284,7 +1290,7 @@ export default function App() {
             currentProfiles[uid] = {
               userId: uid,
               displayName: d.displayName || d.userName || d.name || '',
-              role: normalizeRole(d.role),
+              role: String(d.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(d.role),
               nameColor: d.nameColor || '#2563eb',
               nameStyle: d.nameStyle || 'normal',
               profileBgColor: d.profileBgColor || '#ffffff',
@@ -1418,7 +1424,7 @@ export default function App() {
         ? (user.displayName || storedGuest || 'زائر') 
         : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
-      const currentRoleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+      const currentRoleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Site Owner' : normalizeRole(currentUserRole));
 
       try {
         await addDoc(collection(db, 'rooms', room.id, 'messages'), {
@@ -1455,7 +1461,7 @@ export default function App() {
   const getSenderInfo = () => {
     const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
     const senderName = user?.isAnonymous ? (user.displayName || storedGuest || 'زائر') : (user?.displayName || user?.email?.split('@')[0] || 'عضو');
-    const roleText = user?.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+    const roleText = user?.isAnonymous ? 'Guest' : (isOwner ? 'Site Owner' : normalizeRole(currentUserRole));
     return { senderName, roleText };
   };
 
@@ -1597,7 +1603,7 @@ export default function App() {
       ? (user.displayName || storedGuest || 'زائر') 
       : (user.displayName || user.email?.split('@')[0] || 'عضو');
 
-    let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Owner' : normalizeRole(currentUserRole));
+    let roleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Site Owner' : normalizeRole(currentUserRole));
     const textMsg = inputText.trim();
 
     try {
@@ -1964,7 +1970,7 @@ export default function App() {
     
     const targetEmail = String(selectedProfileUser.email || '').trim().toLowerCase();
     const ownerEmail = ADMIN_EMAIL.trim().toLowerCase();
-    const isTargetOwner = targetEmail === ownerEmail || selectedProfileUser.role === 'Owner';
+    const isTargetOwner = targetEmail === ownerEmail;
     const isCurrentOwner = user && (user.email || '').trim().toLowerCase() === ownerEmail;
 
     if (isTargetOwner && !isCurrentOwner) {
@@ -1998,7 +2004,7 @@ export default function App() {
     let fetchedData = {
       userId: targetId,
       name: uData.name || uData.user || uData.userName || 'زائر',
-      role: normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
+      role: String(uData.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(uData.role || (targetId === user?.uid && user?.isAnonymous ? 'Guest' : 'Member')),
       age: uData.age || (targetId === user?.uid ? profileAge : 'عدم إظهار'),
       gender: uData.gender || (targetId === user?.uid ? profileGender : 'غير محدد'),
       relationship: uData.relationship || (targetId === user?.uid ? profileRelationship : 'عدم إظهار'),
@@ -2028,7 +2034,7 @@ export default function App() {
           fetchedData = {
             ...fetchedData,
             name: data.displayName || fetchedData.name,
-            role: normalizeRole(data.role || fetchedData.role),
+            role: String(data.email || uData.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(data.role || fetchedData.role),
             age: data.age || '',
             gender: data.gender || '',
             relationship: data.relationship || '',
@@ -2086,7 +2092,7 @@ export default function App() {
         return {
           ...prev,
           name: data.displayName || prev.name || 'مستخدم',
-          role: normalizeRole(data.role || prev.role),
+          role: String(data.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(data.role || prev.role),
           age: data.age || '',
           gender: data.gender || '',
           relationship: data.relationship || '',
@@ -2127,7 +2133,7 @@ export default function App() {
     };
   }, []);
 
-  const filteredOnlineUsers = onlineUsersList.filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && u.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a,b) => { const rank=(u:any)=>{const r=normalizeRole(u.role); if(r==='Owner'||String(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Member'||r==='Premium') return 4; return 5;}; return rank(a)-rank(b); });
+  const filteredOnlineUsers = onlineUsersList.filter(u => (!selectedRoom || u.roomId === selectedRoom.id) && u.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a,b) => { const rank=(u:any)=>{const r=normalizeRole(u.role); if(String(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase()) return 1; if(r==='Super Admin') return 2; if(r==='Admin') return 3; if(r==='Owner') return 4; if(r==='Member'||r==='Premium') return 5; return 6;}; return rank(a)-rank(b); });
   const filteredFriendsList = friendsList.filter(f => f.name.toLowerCase().includes(friendsSearchQuery.toLowerCase()));
 
   const totalUnreadMessages = privateConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0);
@@ -2625,8 +2631,8 @@ export default function App() {
                             gap: '4px'
                           }}
                         >
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
-                            {m.user}:
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
+                            {displayMessage.user}{isSiteOwnerProfile(displayMessage) ? ' 🏆 صاحب الموقع' : ''}:
                           </span>
                         </span>
 
@@ -2965,7 +2971,7 @@ export default function App() {
           <div style={{flex:1,overflowY:'auto',padding:'10px'}}>
             {newsItems.length===0 ? <div style={{textAlign:'center',padding:'40px',color:'#64748b',fontSize:'12px'}}>لا توجد أخبار حالياً.</div> : newsItems.map(n=>{
               const likes=Array.isArray(n.likes)?n.likes:[]; const comments=Array.isArray(n.comments)?n.comments:[]; const interact=canInteractWithNews(n);
-              const roleLabel=n.authorRole==='Owner'?'صاحب الموقع':n.authorRole==='Super Admin'?'سوبر أدمن':n.authorRole==='Admin'?'أدمن':(n.authorRole||'عضو');
+              const roleLabel=n.authorRole==='Site Owner'?'صاحب الموقع':n.authorRole==='Owner'?'Owner':n.authorRole==='Super Admin'?'سوبر أدمن':n.authorRole==='Admin'?'أدمن':(n.authorRole||'عضو');
               return <article key={n.id} style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'10px',marginBottom:'9px',boxShadow:'0 1px 3px rgba(0,0,0,.05)',borderRight:n.pinned?'3px solid #eab308':'1px solid #e2e8f0'}}>
                 {n.pinned&&<div style={{fontSize:'10px',color:'#92400e',marginBottom:'5px'}}>📌 منشور مثبت</div>}
                 <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
@@ -3308,8 +3314,13 @@ export default function App() {
               {showProfileMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:70,left:20,zIndex:20,width:230,background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',overflow:'hidden'}}>
                 <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✉️ محادثة خاصة</button>
                 {!isSelfProfile && <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>👤⁺ إضافة صديق</button>}
-                {isAdmin && !isSelfProfile && !['Owner','Admin','Super Admin'].includes(normalizeRole(selectedProfileUser.role)) && <button onClick={()=>handleKickUser(selectedProfileUser.userId,5)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد 5 دقائق</button>}
-                {isOwner && !isSelfProfile && <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Admin')} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>👑 تعيين Admin</button>}
+                {isAdmin && !isSelfProfile && !['Site Owner','Owner','Admin','Super Admin'].includes(normalizeRole(selectedProfileUser.role)) && <button onClick={()=>handleKickUser(selectedProfileUser.userId,5)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد 5 دقائق</button>}
+                {isOwner && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
+                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Owner')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🏆 تعيين Owner</button>
+                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Admin')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>👑 تعيين Admin</button>
+                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Super Admin')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🛡️ تعيين Super Admin</button>
+                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Member')} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>↩️ سحب الرتبة وإعادته Member</button>
+                </>}
               </div>}
 
               <div style={{position:'absolute',bottom:24,left:0,right:0,zIndex:4,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center'}}>
@@ -3319,8 +3330,8 @@ export default function App() {
                   </div>
                   <span style={{position:'absolute',right:1,bottom:1,width:22,height:22,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
                 </div>
-                <div style={{fontSize:17,fontWeight:700,marginTop:6}}>{selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
-                <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>{selectedProfileUser.name}</div>
+                <div style={{fontSize:17,fontWeight:700,marginTop:6}}>{selectedProfileUser.role==='Site Owner'?'صاحب الموقع':selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
+                <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>{selectedProfileUser.name}{isSiteOwnerProfile(selectedProfileUser) ? ' 🏆 صاحب الموقع' : ''}</div>
               </div>
             </div>
 
