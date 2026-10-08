@@ -2251,7 +2251,7 @@ export default function App() {
         .video-rooms-panel form input { font-size:12px !important; }
         .video-rooms-panel form button { border-radius:10px !important; }
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
-        .video-profile-backdrop > div { border-radius:18px !important; max-width:390px !important; }
+        .video-profile-backdrop > div { border-radius:18px !important; max-width:664px !important; width:100% !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
         .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
@@ -3045,10 +3045,10 @@ export default function App() {
               <button onClick={()=>setShowSettingsModal(false)} style={{position:'absolute',top:14,left:16,zIndex:4,border:0,background:'transparent',color:'#fff',fontSize:32,cursor:'pointer',lineHeight:1}}>✕</button>
               <div style={{position:'absolute',top:26,right:26,width:168,height:168,borderRadius:5,overflow:'hidden',background:'#334155'}}>
                 {profileAvatar ? <img src={profileAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64}}>👤</div>}
-                <div style={{position:'absolute',bottom:0,left:0,right:0,height:48,background:'rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'space-around'}}>
+                {canEditAvatar && <div style={{position:'absolute',bottom:0,left:0,right:0,height:48,background:'rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'space-around'}}>
                   <button onClick={()=>avatarInputRef.current?.click()} style={{border:0,background:'transparent',color:'#fff',fontSize:25,cursor:'pointer'}}>✕</button>
                   <button onClick={()=>avatarInputRef.current?.click()} style={{border:0,background:'transparent',color:'#fff',fontSize:25,cursor:'pointer'}}>📷</button>
-                </div>
+                </div>}
               </div>
               <div style={{position:'absolute',right:220,bottom:25,fontSize:22,fontWeight:700}}>{user?.displayName || user?.email?.split('@')[0] || guestName || 'زائر'} <span style={{fontSize:26}}>✎</span></div>
             </div>
@@ -3099,9 +3099,10 @@ export default function App() {
               </div>}
 
               {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:12,fontSize:16}}>
-                <button onClick={()=>avatarInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>📷 تغيير الصورة الشخصية</button>
-                <button onClick={()=>coverInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>🖼️ تغيير الغلاف</button>
-                <button onClick={()=>songInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>🎵 أغنية الملف الشخصي</button>
+                {canEditAvatar && <button onClick={()=>avatarInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>📷 تغيير الصورة الشخصية</button>}
+                {canEditCover && <button onClick={()=>coverInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>🖼️ تغيير الغلاف</button>}
+                {canAddSong && <button onClick={()=>songInputRef.current?.click()} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer'}}>🎵 إضافة أغنية للملف الشخصي</button>}
+                {canAddSong && profileSong && <button onClick={handleDeleteSong} style={{padding:16,textAlign:'right',background:'#fff',border:0,borderBottom:'1px solid #ddd',cursor:'pointer',color:'#dc2626'}}>🗑️ حذف أغنية الملف الشخصي</button>}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
                   <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
@@ -3118,14 +3119,14 @@ export default function App() {
 
       {selectedProfileUser && (
         <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
-          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',maxHeight:'92dvh',background:selectedProfileUser.profileBgColor || '#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
-            <div style={{position:'relative',height:'344px',background:'#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
+          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:selectedProfileUser.profileBgColor || '#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
+            <div style={{position:'relative',height:'300px',background:'#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
               {selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
               <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.15),rgba(0,30,34,.92))'}}/>
-              <button onClick={()=>{stopProfileSong();setSelectedProfileUser(null);setShowProfileMenu(false)}} style={{position:'absolute',top:24,left:22,zIndex:5,border:0,background:'transparent',color:'#fff',fontSize:36,cursor:'pointer',lineHeight:1}}>✕</button>
-              <button onClick={()=>setShowProfileMenu(v=>!v)} style={{position:'absolute',top:25,left:88,zIndex:5,border:0,background:'transparent',color:'#fff',fontSize:34,cursor:'pointer',lineHeight:1}}>☰</button>
-              <button onClick={()=>{setErrorMessage('تم تحديد الملف للإبلاغ/المراجعة');setTimeout(()=>setErrorMessage(''),1800)}} style={{position:'absolute',top:24,left:151,zIndex:5,border:0,background:'transparent',color:'#fff',fontSize:34,cursor:'pointer'}}>⚑</button>
-              <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:24,right:22,zIndex:5,border:0,background:'transparent',color:'#fff',fontSize:34,cursor:'pointer'}}><VideoIcon type="mail" size={34}/></button>
+              <button onClick={()=>{stopProfileSong();setSelectedProfileUser(null);setShowProfileMenu(false)}} style={{position:'absolute',top:14,left:14,zIndex:5,width:40,height:40,border:0,background:'transparent',color:'#fff',fontSize:28,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+              <button onClick={()=>setShowProfileMenu(v=>!v)} style={{position:'absolute',top:14,left:58,zIndex:5,width:40,height:40,border:0,background:'transparent',color:'#fff',fontSize:27,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>☰</button>
+              <button onClick={()=>{setErrorMessage('تم تحديد الملف للإبلاغ/المراجعة');setTimeout(()=>setErrorMessage(''),1800)}} style={{position:'absolute',top:14,left:102,zIndex:5,width:40,height:40,border:0,background:'transparent',color:'#fff',fontSize:27,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⚑</button>
+              <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:14,right:14,zIndex:5,width:40,height:40,border:0,background:'transparent',color:'#fff',fontSize:27,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><VideoIcon type="mail" size={34}/></button>
 
               {showProfileMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:70,left:20,zIndex:20,width:230,background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',overflow:'hidden'}}>
                 <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✉️ محادثة خاصة</button>
@@ -3134,15 +3135,15 @@ export default function App() {
                 {isOwner && !isSelfProfile && <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Admin')} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>👑 تعيين Admin</button>}
               </div>}
 
-              <div style={{position:'absolute',bottom:30,left:0,right:0,zIndex:4,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center'}}>
-                <div style={{position:'relative',width:146,height:146,borderRadius:'50%',background:'#334155',border:'5px solid rgba(255,255,255,.25)',padding:6,boxSizing:'border-box'}}>
-                  <div onClick={()=>{if(isSelfProfile&&canEditAvatar) avatarInputRef.current?.click(); else if(selectedProfileUser.avatarUrl)setPreviewImage(selectedProfileUser.avatarUrl)}} style={{width:'100%',height:'100%',borderRadius:'50%',overflow:'hidden',background:'#e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',cursor:selectedProfileUser.avatarUrl?'pointer':'default'}}>
-                    {selectedProfileUser.avatarUrl?<img src={selectedProfileUser.avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:64}}>👤</span>}
+              <div style={{position:'absolute',bottom:24,left:0,right:0,zIndex:4,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center'}}>
+                <div style={{position:'relative',width:112,height:112,borderRadius:'50%',background:'#334155',border:'4px solid rgba(255,255,255,.25)',padding:5,boxSizing:'border-box'}}>
+                  <div onClick={()=>{if(selectedProfileUser.avatarUrl)setPreviewImage(selectedProfileUser.avatarUrl)}} style={{width:'100%',height:'100%',borderRadius:'50%',overflow:'hidden',background:'#e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',cursor:selectedProfileUser.avatarUrl?'pointer':'default'}}>
+                    {selectedProfileUser.avatarUrl?<img src={selectedProfileUser.avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:48}}>👤</span>}
                   </div>
-                  <span style={{position:'absolute',right:3,bottom:3,width:28,height:28,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
+                  <span style={{position:'absolute',right:1,bottom:1,width:22,height:22,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
                 </div>
-                <div style={{fontSize:20,fontWeight:700,marginTop:8}}>{selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
-                <div style={{fontSize:30,fontWeight:800,marginTop:2,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff')}}>{selectedProfileUser.name}</div>
+                <div style={{fontSize:17,fontWeight:700,marginTop:6}}>{selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
+                <div style={{fontSize:23,fontWeight:800,marginTop:1,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff')}}>{selectedProfileUser.name}</div>
               </div>
             </div>
 
@@ -3155,15 +3156,14 @@ export default function App() {
                 ['تاريخ الانضمام',selectedProfileUser.joinedDate || 'غير متوفر'],
                 ['الغرفة الحالية',selectedProfileUser.roomName || 'القائمة الرئيسية'],
                 ['آخر تواجد',selectedProfileUser.lastSeen || 'غير متوفر']
-              ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:62,borderBottom:'1px solid #d9d9d9',fontSize:17}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
+              ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:50,borderBottom:'1px solid #d9d9d9',fontSize:14}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:88,borderBottom:'1px solid #d9d9d9',fontSize:17,paddingTop:10,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
 
-              <div style={{padding:'18px 0 8px',textAlign:'right',fontSize:17,fontWeight:700}}>رابط الملف الشخصي 🔗</div>
-              <div style={{paddingBottom:8,textAlign:'center',color:'#e5a51b',fontSize:17,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
+              <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:14,fontWeight:700}}>رابط الملف الشخصي 🔗</div>
+              <div style={{paddingBottom:6,textAlign:'center',color:'#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
 
-              {isSelfProfile && canEditCover && <button onClick={()=>coverInputRef.current?.click()} style={{marginTop:10,width:'100%',padding:10,border:0,borderRadius:7,background:'#159db9',color:'#fff',fontWeight:700,cursor:'pointer'}}>🖼️ تغيير الغلاف</button>}
-              {isSelfProfile && canAddSong && selectedProfileUser.profileSongUrl && <button onClick={()=>playProfileSong(selectedProfileUser.profileSongUrl)} style={{marginTop:8,width:'100%',padding:10,border:0,borderRadius:7,background:'#7c3aed',color:'#fff',fontWeight:700,cursor:'pointer'}}>🎵 تشغيل أغنية الملف</button>}
+              {selectedProfileUser.profileSongUrl && <button onClick={()=>playProfileSong(selectedProfileUser.profileSongUrl)} style={{marginTop:8,width:'100%',padding:10,border:0,borderRadius:7,background:'#7c3aed',color:'#fff',fontWeight:700,cursor:'pointer'}}>🎵 تشغيل أغنية الملف</button>}
             </div>
           </div>
         </div>
