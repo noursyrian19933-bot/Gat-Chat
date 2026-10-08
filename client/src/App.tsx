@@ -368,6 +368,12 @@ export default function App() {
     )
   );
 
+  // ألوان الخلفية وزخرفة الاسم تظهر فقط للرتب المسموح لها بالتخصيص.
+  const canDisplayProfileCustomization = (profileUser: any) => {
+    const role = normalizeRole(profileUser?.role);
+    return ['Owner', 'Admin', 'Super Admin', 'Premium'].includes(role);
+  };
+
   const hasCurrentPermission = (permission: string) =>
     isOwner || (rolePermissions[normalizedCurrentRole] || []).includes(permission);
 
@@ -2449,8 +2455,9 @@ export default function App() {
                 </div>
               ) : (
                 messages.map((m, idx) => {
-                  const styleProps = getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7');
-                  const hasCustomBg = m.profileBgColor && m.profileBgColor !== '#ffffff';
+                  const mCanCustomize = canDisplayProfileCustomization(m);
+                  const styleProps = mCanCustomize ? getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
+                  const hasCustomBg = mCanCustomize && m.profileBgColor && m.profileBgColor !== '#ffffff';
 
                   if (m.isSystemSpecial) {
                     return (
@@ -3011,7 +3018,8 @@ export default function App() {
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
               {filteredOnlineUsers.map((u) => {
-                const uStyleProps = getNameStyleProps(u.nameStyle || 'normal', u.nameColor || '#2563eb');
+                const uCanCustomize = canDisplayProfileCustomization(u);
+                const uStyleProps = uCanCustomize ? getNameStyleProps(u.nameStyle || 'normal', u.nameColor || '#2563eb') : getNameStyleProps('normal', '#2563eb');
                 return (
                   <div 
                     key={u.id} 
@@ -3023,7 +3031,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: u.profileBgColor || '#ffffff', 
+                      backgroundColor: uCanCustomize && u.profileBgColor ? u.profileBgColor : '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease'
@@ -3167,7 +3175,7 @@ export default function App() {
 
       {selectedProfileUser && (
         <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
-          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:selectedProfileUser.profileBgColor || '#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
+          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
             <div style={{position:'relative',height:'300px',background:'#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
               {selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
               <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.15),rgba(0,30,34,.92))'}}/>
@@ -3191,7 +3199,7 @@ export default function App() {
                   <span style={{position:'absolute',right:1,bottom:1,width:22,height:22,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
                 </div>
                 <div style={{fontSize:17,fontWeight:700,marginTop:6}}>{selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
-                <div style={{fontSize:23,fontWeight:800,marginTop:1,...getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff')}}>{selectedProfileUser.name}</div>
+                <div style={{fontSize:23,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>{selectedProfileUser.name}</div>
               </div>
             </div>
 
