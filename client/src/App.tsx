@@ -2364,12 +2364,12 @@ export default function App() {
     return country;
   };
 
-  const getOnlineNameWithTag = (profileUser: any) => {
+  const getOnlineNameParts = (profileUser: any) => {
     const name = String(profileUser?.name || 'مستخدم').trim();
     const country = getCountryLabel(profileUser);
     const flag = country ? String(profileUser?.flag || '').trim() : '';
     const tag = getRoleTag(profileUser);
-    return `${name}${flag ? ` ${flag}` : ''}${tag ? ` ${tag}` : ''}`.trim();
+    return { name, flag, tag };
   };
 
   // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
@@ -2619,7 +2619,7 @@ export default function App() {
                   const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle, profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
                   const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#0284c7';
-                  const styleProps = mCanCustomize ? getNameStyleProps(displayMessage.nameStyle || 'normal', effectiveNameColor) : getNameStyleProps('normal', effectiveNameColor);
+                  const styleProps = { color: effectiveNameColor };
                   const hasCustomBg = mCanCustomize && displayMessage.profileBgColor && displayMessage.profileBgColor !== '#ffffff';
 
                   if (m.isSystemSpecial) {
@@ -3182,7 +3182,7 @@ export default function App() {
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
               {filteredOnlineUsers.map((u) => {
                 const uCanCustomize = canDisplayProfileCustomization(u);
-                const uStyleProps = uCanCustomize ? getNameStyleProps(u.nameStyle || 'normal', u.nameColor || '#2563eb') : getNameStyleProps('normal', '#2563eb');
+                const uStyleProps = getNameStyleProps(u.nameStyle || 'normal', u.nameColor || u.color || '#2563eb');
                 return (
                   <div 
                     key={u.id} 
@@ -3205,8 +3205,12 @@ export default function App() {
                         {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps }}>
-                          {getOnlineNameWithTag(u)}
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps, display:'inline-flex', alignItems:'center', gap:'10px', direction:'rtl', unicodeBidi:'isolate' }}>
+                          {(() => { const parts = getOnlineNameParts(u); return <>
+                            <span>{parts.name}</span>
+                            {parts.flag && <span>{parts.flag}</span>}
+                            {parts.tag && <span>{parts.tag}</span>}
+                          </>; })()}
                         </span>
                       </div>
                     </div>
@@ -3371,7 +3375,7 @@ export default function App() {
                 <div style={{fontSize:17,fontWeight:700,marginTop:6}}>
                   {getRoleLabel(selectedProfileUser)}
                 </div>
-                <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>
+                <div style={{fontSize:18,fontWeight:800,marginTop:1,color: selectedProfileUser.nameColor || '#fff'}}>
                   {selectedProfileUser.name}
                 </div>
               </div>
