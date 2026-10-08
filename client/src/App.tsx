@@ -3296,7 +3296,7 @@ export default function App() {
 
       {selectedProfileUser && (
         <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
-          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'92dvh',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
+          <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'auto',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
             <div style={{position:'relative',height:'300px',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
               {canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
               <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.15),rgba(0,30,34,.92))'}}/>
@@ -3324,7 +3324,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{overflowY:'auto',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',padding:'0 18px 16px',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a'}}>
+            <div style={{overflowY:'auto',flex:'0 0 auto',maxHeight:'calc(92dvh - 300px)',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',padding:'0 18px 16px',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a'}}>
               {[
                 ...(selectedProfileUser.age && selectedProfileUser.age !== 'عدم إظهار' ? [['العمر', selectedProfileUser.age]] : []),
                 ...(selectedProfileUser.gender && selectedProfileUser.gender !== 'عدم إظهار' ? [['الجنس', selectedProfileUser.gender]] : []),
