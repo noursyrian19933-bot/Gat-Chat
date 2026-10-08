@@ -1157,6 +1157,15 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  // مزامنة الملف المفتوح مع أحدث بيانات المستخدم؛ أي تغيير في الاسم أو اللون أو
+  // الخلفية أو الصورة أو بقية معلومات الملف يظهر فورًا حتى والنافذة مفتوحة.
+  useEffect(() => {
+    if (!selectedProfileUser?.userId || rankedUsers.length === 0) return;
+    const latest = rankedUsers.find((u:any) => String(u.id || u.uid || '') === String(selectedProfileUser.userId));
+    if (!latest) return;
+    setSelectedProfileUser((prev:any) => prev ? { ...prev, ...latest, userId: prev.userId } : prev);
+  }, [rankedUsers]);
+
   useEffect(() => {
     if (!showWallModal || !user) return;
     const wallRef = collection(db, 'users', user.uid, 'wall_posts');
@@ -2453,21 +2462,32 @@ export default function App() {
                 </div>
               ) : (
                 messages.map((m, idx) => {
-                  const mCanCustomize = canDisplayProfileCustomization(m);
-                  const styleProps = mCanCustomize ? getNameStyleProps(m.nameStyle || 'normal', m.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
-                  const hasCustomBg = mCanCustomize && m.profileBgColor && m.profileBgColor !== '#ffffff';
+                  // نأخذ أحدث بيانات صاحب الرسالة من users بشكل لحظي.
+                  // بهذا تتحدث الرسائل القديمة أيضًا فور تغيير الاسم/اللون/الزخرفة/الخلفية أو الصورة.
+                  const liveProfile = rankedUsers.find((u:any) => String(u.id || u.uid || '') === String(m.userId || ''));
+                  const liveMessage = liveProfile ? {
+                    ...m,
+                    user: liveProfile.displayName || liveProfile.name || m.user,
+                    color: liveProfile.nameColor || m.color,
+                    nameStyle: liveProfile.nameStyle || m.nameStyle,
+                    profileBgColor: liveProfile.profileBgColor || m.profileBgColor,
+                    avatarUrl: liveProfile.avatarUrl || m.avatarUrl
+                  } : m;
+                  const mCanCustomize = canDisplayProfileCustomization(liveProfile || liveMessage);
+                  const styleProps = mCanCustomize ? getNameStyleProps(liveMessage.nameStyle || 'normal', liveMessage.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
+                  const hasCustomBg = mCanCustomize && liveMessage.profileBgColor && liveMessage.profileBgColor !== '#ffffff';
 
-                  if (m.isSystemSpecial) {
+                  if (liveMessage.isSystemSpecial) {
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
                         <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
-                          📢 {m.text}
+                          📢 {liveMessage.text}
                         </div>
                       </div>
                     );
                   }
 
-                  const youtubeEmbedUrl = extractYouTubeEmbedUrl(m.text);
+                  const youtubeEmbedUrl = extractYouTubeEmbedUrl(liveMessage.text);
 
                   return (
                     <div 
@@ -2484,9 +2504,9 @@ export default function App() {
                       }}
                     >
                       
-                      <div onClick={() => openUserProfile(m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
-                        {m.avatarUrl ? (
-                          <img src={m.avatarUrl} alt={m.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div onClick={() => openUserProfile(liveProfile || m)} style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+                        {liveMessage.avatarUrl ? (
+                          <img src={liveMessage.avatarUrl} alt={liveMessage.user} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           '👤'
                         )}
@@ -2495,7 +2515,7 @@ export default function App() {
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
                                                 <span 
                           style={{ 
-                            backgroundColor: hasCustomBg ? m.profileBgColor : 'transparent',
+                            backgroundColor: hasCustomBg ? liveMessage.profileBgColor : 'transparent',
                             padding: hasCustomBg ? '3px 8px' : '0',
                             borderRadius: hasCustomBg ? '6px' : '0',
                             border: hasCustomBg ? '1px solid rgba(0,0,0,0.1)' : 'none',
@@ -2504,18 +2524,18 @@ export default function App() {
                             gap: '4px'
                           }}
                         >
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(m)}>
-                            {m.user}:
+                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(liveProfile || m)}>
+                            {liveMessage.user}:
                           </span>
                         </span>
 
-                        {m.mediaType === 'image' ? (
+                        {liveMessage.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
-                            <img src={m.mediaData} alt={m.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
-                            <a href={m.mediaData} download={m.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
+                            <img src={liveMessage.mediaData} alt={liveMessage.mediaName || 'صورة'} style={{maxWidth:'220px',maxHeight:'220px',borderRadius:'8px',objectFit:'cover',display:'block'}} />
+                            <a href={liveMessage.mediaData} download={liveMessage.mediaName || 'chat-image.jpg'} style={{fontSize:'10px',color:'#0284c7',textDecoration:'none'}}>⬇ تنزيل الصورة</a>
                           </div>
-                        ) : m.mediaType === 'voice' ? (
-                          <audio controls src={m.mediaData} style={{width:'190px',height:'34px'}} />
+                        ) : liveMessage.mediaType === 'voice' ? (
+                          <audio controls src={liveMessage.mediaData} style={{width:'190px',height:'34px'}} />
                         ) : youtubeEmbedUrl ? (
                           <button 
                             onClick={() => setActiveVideoUrl(youtubeEmbedUrl)}
@@ -2539,7 +2559,7 @@ export default function App() {
                           </button>
                         ) : (
                           <span style={{ color: '#1e293b', fontWeight: '500' }}>
-                            {renderBadgeText(m.text)}
+                            {renderBadgeText(liveMessage.text)}
                           </span>
                         )}
                       </div>
@@ -2548,7 +2568,7 @@ export default function App() {
                         <button 
                           onClick={async () => {
                             try {
-                              await deleteDoc(doc(db, 'rooms', selectedRoom.id, 'messages', m.id));
+                              await deleteDoc(doc(db, 'rooms', selectedRooliveMessage.id, 'messages', liveMessage.id));
                             } catch (e) {
                               console.error(e);
                             }
