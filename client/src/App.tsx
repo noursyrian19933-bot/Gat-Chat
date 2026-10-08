@@ -3239,7 +3239,7 @@ export default function App() {
                       {(() => { const parts = getOnlineNameParts(u); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (u.profileBgColor || '#ffffff') : 'transparent', color: uCanCustomize ? getContrastTextColor(u.profileBgColor || '#ffffff') : (u.nameColor || u.color || '#2563eb'), padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
+                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, backgroundColor: uCanCustomize ? (u.profileBgColor || '#ffffff') : 'transparent', padding: uCanCustomize ? '2px 6px' : 0, borderRadius: uCanCustomize ? '4px' : 0, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
                               {parts.name}
                             </span>
                           </div>
@@ -3421,22 +3421,19 @@ export default function App() {
                   padding:'3px 10px',
                   borderRadius:5,
                   backgroundColor: canDisplayProfileCustomization(selectedProfileUser) ? (liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : 'transparent',
-                  ...(() => {
-                    // Use the same live Firebase profile values as chat and online lists.
-                    const liveProfile = liveUserProfiles[selectedProfileUser.userId] || {};
-                    const currentNameColor = liveProfile.nameColor || selectedProfileUser.nameColor || liveProfile.color || selectedProfileUser.color || '#2563eb';
-                    const currentNameStyle = liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal';
-                    const profileForStyle = {
-                      ...selectedProfileUser,
-                      role: normalizeRole(liveProfile.role || selectedProfileUser.role),
-                      email: liveProfile.email || selectedProfileUser.email
-                    };
-                    return canDisplayProfileCustomization(profileForStyle)
-                      ? getNameStyleProps(currentNameStyle, currentNameColor)
-                      : { color: currentNameColor };
-                  })()
+                  color: canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : '#2563eb'
                 }}>
-                  {liveUserProfiles[selectedProfileUser.userId]?.displayName || liveUserProfiles[selectedProfileUser.userId]?.userName || liveUserProfiles[selectedProfileUser.userId]?.name || selectedProfileUser.name}
+                  <span style={{
+                    ...(() => {
+                      const liveProfile = liveUserProfiles[selectedProfileUser.userId] || {};
+                      const profileForStyle = { ...selectedProfileUser, role: normalizeRole(liveProfile.role || selectedProfileUser.role), email: liveProfile.email || selectedProfileUser.email };
+                      return canDisplayProfileCustomization(profileForStyle)
+                        ? getNameStyleProps(liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal', liveProfile.nameColor || selectedProfileUser.nameColor || '#2563eb')
+                        : { color: '#2563eb' };
+                    })()
+                  }}>
+                    {liveUserProfiles[selectedProfileUser.userId]?.displayName || liveUserProfiles[selectedProfileUser.userId]?.userName || liveUserProfiles[selectedProfileUser.userId]?.name || selectedProfileUser.name}
+                  </span>
                 </div>
               </div>
             </div>
