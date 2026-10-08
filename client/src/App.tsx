@@ -3200,25 +3200,25 @@ export default function App() {
                       transition: 'background-color 0.3s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
-                        {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                    <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', direction:'rtl', minWidth:0 }}>
+                      <div style={{ width:'32px', height:'32px', borderRadius:'50%', backgroundColor:'#0284c7', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'bold', overflow:'hidden', flexShrink:0 }}>
+                        {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '👤'}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                        {(() => { const parts = getOnlineNameParts(u); return (
-                          <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', direction:'rtl', unicodeBidi:'isolate', whiteSpace:'nowrap' }}>
+                      {(() => { const parts = getOnlineNameParts(u); return (
+                        <>
+                          <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
                             <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
                               {parts.name}
                             </span>
-                            {(parts.flag || parts.tag) && (
-                              <span style={{ marginRight:'auto', marginLeft:0, paddingRight:'18px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
-                                {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
-                                {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
-                              </span>
-                            )}
                           </div>
-                        ); })()}
-                      </div>
+                          {(parts.flag || parts.tag) && (
+                            <div style={{ marginLeft:'auto', paddingLeft:'18px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
+                              {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
+                              {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
+                            </div>
+                          )}
+                        </>
+                      ); })()}
                     </div>
                   </div>
                 );
