@@ -2335,6 +2335,30 @@ export default function App() {
 
   const isSelfProfile = Boolean(user && selectedProfileUser && user.uid === selectedProfileUser.userId);
 
+  const getRoleLabel = (profileUser: any) => {
+    const email = String(profileUser?.email || '').trim().toLowerCase();
+    const role = email === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(profileUser?.role);
+    if (role === 'Site Owner') return '🏆 صاحب الموقع';
+    if (role === 'Guest') return 'زائر';
+    if (role === 'Owner') return 'Owner';
+    if (role === 'Super Admin') return 'Super Admin';
+    if (role === 'Admin') return 'Admin';
+    if (role === 'Premium') return 'Premium';
+    return 'Member';
+  };
+
+  const getCountryLabel = (profileUser: any) => {
+    const country = String(profileUser?.country || '').trim();
+    if (!country || country === 'عدم إظهار' || country === 'غير محدد') return '';
+    return country;
+  };
+
+  const getOnlineNameWithTag = (profileUser: any) => {
+    const country = getCountryLabel(profileUser);
+    const role = getRoleLabel(profileUser);
+    return country ? `${profileUser?.name || 'مستخدم'} ${country} ${profileUser?.flag || ''} ${role}`.replace(/\s+/g, ' ').trim() : `${profileUser?.name || 'مستخدم'} ${role}`.trim();
+  };
+
   // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
   // وAdmin وSuper Admin وPremium، وكل عمليات الإضافة والتغيير والحذف تتم من الإعدادات فقط.
   // التخصيص يخص حساب المستخدم الحالي فقط، لذلك يعمل من نافذة الإعدادات
@@ -3167,11 +3191,11 @@ export default function App() {
                         {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps }}>{u.name}</span>
-                        <span style={{ fontSize: '10px', color: '#64748b' }}>{u.role}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps }}>
+                          {getOnlineNameWithTag(u)}
+                        </span>
                       </div>
                     </div>
-                    <span style={{ fontSize: '14px' }}>{u.flag}</span>
                   </div>
                 );
               })}
@@ -3330,8 +3354,13 @@ export default function App() {
                   </div>
                   <span style={{position:'absolute',right:1,bottom:1,width:22,height:22,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
                 </div>
-                <div style={{fontSize:17,fontWeight:700,marginTop:6}}>{selectedProfileUser.role==='Site Owner'?'صاحب الموقع':selectedProfileUser.role==='Guest'?'عضو زائر':selectedProfileUser.role} <span style={{color:'#73c600'}}>●</span></div>
-                <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>{selectedProfileUser.name}{isSiteOwnerProfile(selectedProfileUser) ? ' 🏆 صاحب الموقع' : ''}</div>
+                <div style={{fontSize:17,fontWeight:700,marginTop:6}}>
+                  {getRoleLabel(selectedProfileUser)} <span style={{color:'#73c600'}}>●</span>
+                </div>
+                <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>
+                  {selectedProfileUser.name}
+                  {!getCountryLabel(selectedProfileUser) && <span style={{marginRight:6,fontSize:15,fontWeight:700}}>{getRoleLabel(selectedProfileUser)}</span>}
+                </div>
               </div>
             </div>
 
