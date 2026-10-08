@@ -3204,18 +3204,20 @@ export default function App() {
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', overflow: 'hidden' }}>
                         {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', ...uStyleProps, display:'inline-flex', alignItems:'center', justifyContent:'flex-start', gap:'18px', direction:'rtl', unicodeBidi:'isolate', whiteSpace:'nowrap' }}>
-                          {(() => { const parts = getOnlineNameParts(u); return <>
-                            <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.name}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                        {(() => { const parts = getOnlineNameParts(u); return (
+                          <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', direction:'rtl', unicodeBidi:'isolate', whiteSpace:'nowrap' }}>
+                            <span style={{ fontSize:'12px', fontWeight:'bold', ...uStyleProps, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right' }}>
+                              {parts.name}
+                            </span>
                             {(parts.flag || parts.tag) && (
-                              <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', direction:'rtl', unicodeBidi:'isolate' }}>
-                                {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
+                              <span style={{ marginRight:'auto', marginLeft:0, paddingRight:'18px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
                                 {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
+                                {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
                               </span>
                             )}
-                          </>; })()}
-                        </span>
+                          </div>
+                        ); })()}
                       </div>
                     </div>
                   </div>
