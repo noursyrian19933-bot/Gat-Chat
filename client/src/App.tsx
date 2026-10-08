@@ -3060,13 +3060,13 @@ export default function App() {
                   {profileAvatar && <button onClick={handleDeleteAvatar} title="حذف الصورة" style={{border:0,background:'transparent',color:'#fff',fontSize:23,cursor:'pointer'}}>🗑️</button>}
                 </div>}
               </div>
-              <div style={{position:'absolute',right:220,bottom:25,fontSize:22,fontWeight:700}}>{user?.displayName || user?.email?.split('@')[0] || guestName || 'زائر'} <span style={{fontSize:26}}>✎</span></div>
+              <div style={{position:'absolute',right:220,bottom:25,fontSize:18,fontWeight:700}}>{user?.displayName || user?.email?.split('@')[0] || guestName || 'زائر'} <span style={{fontSize:26}}>✎</span></div>
             </div>
 
             <div style={{display:'flex',borderBottom:'1px solid #ddd',background:'#f5f5f5',direction:'rtl',flexShrink:0}}>
               {[
                 ['info','معلوماتي'],['friends','الأصدقاء'],['ignore','تجاهل'],['options','خيارات'],['more','المزيد']
-              ].map(([key,label])=><button key={key} onClick={()=>setSettingsTab(key as any)} style={{flex:1,padding:'12px 5px',border:0,background:settingsTab===key?'#003d43':'#f5f5f5',color:settingsTab===key?'#fff':'#666',fontSize:16,cursor:'pointer'}}>{label}</button>)}
+              ].map(([key,label])=><button key={key} onClick={()=>setSettingsTab(key as any)} style={{flex:1,padding:'12px 5px',border:0,background:settingsTab===key?'#003d43':'#f5f5f5',color:settingsTab===key?'#fff':'#666',fontSize:14,cursor:'pointer'}}>{label}</button>)}
             </div>
 
             <div style={{flex:1,overflowY:'auto',padding:'18px 40px',background:'#fff'}}>
@@ -3077,18 +3077,18 @@ export default function App() {
                   ['البلد','profileCountry',profileCountry,setProfileCountry,COUNTRIES_LIST],
                   ['العلاقة','profileRelationship',profileRelationship,setProfileRelationship,['عدم إظهار','أعزب','متزوج','مرتبط','مطلق','أرمل']]
                 ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,alignItems:'center',marginBottom:16}}>
-                  <label style={{color:'#159db9',fontSize:15,fontWeight:700}}>{label}</label>
-                  <select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field==='profileAge'?'age':field==='profileGender'?'gender':field==='profileCountry'?'country':'relationship',e.target.value)}} style={{width:'100%',height:48,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 14px',fontSize:17,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select>
+                  <label style={{color:'#159db9',fontSize:14,fontWeight:700}}>{label}</label>
+                  <select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field==='profileAge'?'age':field==='profileGender'?'gender':field==='profileCountry'?'country':'relationship',e.target.value)}} style={{width:'100%',height:48,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 14px',fontSize:14,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select>
                 </div>)}
-                <button onClick={()=>{saveSettingToFirebase('age',profileAge);saveSettingToFirebase('gender',profileGender);saveSettingToFirebase('country',profileCountry);saveSettingToFirebase('relationship',profileRelationship);setSuccessMessage('تم حفظ المعلومات');setTimeout(()=>setSuccessMessage(''),1800)}} style={{width:170,height:52,border:0,borderRadius:7,background:'#13acd0',color:'#fff',fontSize:17,cursor:'pointer',fontWeight:700}}>حفظ 💾</button>
+                <button onClick={()=>{saveSettingToFirebase('age',profileAge);saveSettingToFirebase('gender',profileGender);saveSettingToFirebase('country',profileCountry);saveSettingToFirebase('relationship',profileRelationship);setSuccessMessage('تم حفظ المعلومات');setTimeout(()=>setSuccessMessage(''),1800)}} style={{width:170,height:52,border:0,borderRadius:7,background:'#13acd0',color:'#fff',fontSize:14,cursor:'pointer',fontWeight:700}}>حفظ 💾</button>
                 {profileBio && <div style={{marginTop:18,color:'#777',fontSize:13}}>{profileBio}</div>}
               </>}
 
               {settingsTab==='friends' && <div>
-                {filteredFriendsList.length===0 ? <div style={{textAlign:'center',padding:'55px 10px',color:'#aaa',fontSize:15}}>قائمة أصدقائك فارغة</div> : filteredFriendsList.map((f:any)=><div key={f.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 4px',borderBottom:'1px solid #eee'}}><div style={{fontWeight:700}}>{f.name}</div><div style={{display:'flex',gap:6}}><button onClick={()=>openPrivateChatWithUser(f.friendUid,f.name)} style={{border:0,borderRadius:5,padding:'7px 12px',background:'#159db9',color:'#fff',cursor:'pointer'}}>خاص</button><button onClick={()=>handleRemoveFriend(f.friendUid)} style={{border:0,borderRadius:5,padding:'7px 12px',background:'#ef4444',color:'#fff',cursor:'pointer'}}>حذف</button></div></div>)}
+                {filteredFriendsList.length===0 ? <div style={{textAlign:'center',padding:'55px 10px',color:'#aaa',fontSize:14}}>قائمة أصدقائك فارغة</div> : filteredFriendsList.map((f:any)=><div key={f.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 4px',borderBottom:'1px solid #eee'}}><div style={{fontWeight:700}}>{f.name}</div><div style={{display:'flex',gap:6}}><button onClick={()=>openPrivateChatWithUser(f.friendUid,f.name)} style={{border:0,borderRadius:5,padding:'7px 12px',background:'#159db9',color:'#fff',cursor:'pointer'}}>خاص</button><button onClick={()=>handleRemoveFriend(f.friendUid)} style={{border:0,borderRadius:5,padding:'7px 12px',background:'#ef4444',color:'#fff',cursor:'pointer'}}>حذف</button></div></div>)}
               </div>}
 
-              {settingsTab==='ignore' && <div style={{textAlign:'center',padding:'55px 10px',color:'#aaa',fontSize:15}}><div style={{fontSize:52,marginBottom:10}}>🚫</div>قائمة التجاهل فارغة</div>}
+              {settingsTab==='ignore' && <div style={{textAlign:'center',padding:'55px 10px',color:'#aaa',fontSize:14}}><div style={{fontSize:52,marginBottom:10}}>🚫</div>قائمة التجاهل فارغة</div>}
 
               {settingsTab==='options' && <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 {[
@@ -3104,11 +3104,11 @@ export default function App() {
                   ['الأصوات','soundSetting',soundSetting,setSoundSetting,['صامت','تشغيل']],
                   ['الثيم','themeSetting',themeSetting,setThemeSetting,['الثيم الافتراضي','فاتح','داكن']],
                   ['فتح الخاص تلقائيًا للرسائل غير المقروءة','autoOpenUnreadSetting',autoOpenUnreadSetting,setAutoOpenUnreadSetting,['تشغيل','إيقاف']]
-                ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,alignItems:'center'}}><label style={{color:'#159db9',fontSize:15,fontWeight:700}}>{label}</label><select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field,e.target.value)}} style={{height:48,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 12px',fontSize:17,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select></div>)}
+                ].map(([label,field,value,setter,options]:any)=><div key={field} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,alignItems:'center'}}><label style={{color:'#159db9',fontSize:14,fontWeight:700}}>{label}</label><select value={value} onChange={(e)=>{setter(e.target.value);saveSettingToFirebase(field,e.target.value)}} style={{height:48,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,padding:'0 12px',fontSize:14,color:'#666'}}>{options.map((o:string)=><option key={o} value={o}>{o}</option>)}</select></div>)}
                 <button onClick={async()=>{await updateLastSeenOnExit();await signOut(auth);setShowSettingsModal(false);localStorage.clear();window.location.reload()}} style={{background:'#dc2626',color:'#fff',border:0,padding:12,borderRadius:6,fontWeight:700,cursor:'pointer',fontSize:14}}>تسجيل الخروج 🚪</button>
               </div>}
 
-              {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:12,fontSize:16}}>
+              {settingsTab==='more' && <div style={{display:'flex',flexDirection:'column',gap:12,fontSize:14}}>
                 {canEditAvatar && <>
                   <div style={{padding:'10px 0',borderBottom:'1px solid #ddd'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
@@ -3155,7 +3155,7 @@ export default function App() {
                   <label style={{color:'#159db9',fontWeight:700}}>لون الاسم<input type="color" value={nameColor} onChange={(e)=>{setNameColor(e.target.value);saveSettingToFirebase('nameColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
                   <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{setProfileBgColor(e.target.value);saveSettingToFirebase('profileBgColor',e.target.value)}} style={{display:'block',width:'100%',height:42,marginTop:6}}/></label>
                 </div>
-                <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:46,marginTop:6,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:16}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
+                <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:46,marginTop:6,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:14}}><option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="gold">ذهبي 👑</option></select></label>
                 <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:6,border:'1px solid #ddd',borderRadius:5,padding:8,boxSizing:'border-box'}}/></label>
                 <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:12,border:0,borderRadius:6,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
                 <button onClick={()=>{setShowSettingsModal(false);setSettingsTab('info')}} style={{padding:16,textAlign:'right',background:'#fff',border:0,cursor:'pointer'}}>✉️ إدارة البريد الإلكتروني</button>
@@ -3211,7 +3211,6 @@ export default function App() {
               <div style={{padding:'14px 0 6px',textAlign:'right',fontSize:14,fontWeight:700}}>رابط الملف الشخصي 🔗</div>
               <div style={{paddingBottom:6,textAlign:'center',color:'#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
 
-              {selectedProfileUser.profileSongUrl && <button onClick={()=>playProfileSong(selectedProfileUser.profileSongUrl)} style={{marginTop:8,width:'100%',padding:10,border:0,borderRadius:7,background:'#7c3aed',color:'#fff',fontWeight:700,cursor:'pointer'}}>🎵 تشغيل أغنية الملف</button>}
             </div>
           </div>
         </div>
