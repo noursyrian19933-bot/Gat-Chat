@@ -1919,8 +1919,8 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
+      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
       if (selectedRoom) {
-        const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
           : `تم إهداء رتبة ${roleToSave} من ${currentAdminName} إلى ${targetUserName}`;
@@ -2340,11 +2340,22 @@ export default function App() {
     const role = email === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(profileUser?.role);
     if (role === 'Site Owner') return '🏆 صاحب الموقع';
     if (role === 'Guest') return 'زائر';
-    if (role === 'Owner') return 'Owner';
-    if (role === 'Super Admin') return 'Super Admin';
-    if (role === 'Admin') return 'Admin';
-    if (role === 'Premium') return 'Premium';
+    if (role === 'Owner') return '🏆 Owner';
+    if (role === 'Super Admin') return '🛡️ Super Admin';
+    if (role === 'Admin') return '👑 Admin';
+    if (role === 'Premium') return '💎 Premium';
     return 'Member';
+  };
+
+  const getRoleTag = (profileUser: any) => {
+    const email = String(profileUser?.email || '').trim().toLowerCase();
+    const role = email === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(profileUser?.role);
+    if (role === 'Site Owner') return '🏆';
+    if (role === 'Owner') return '🏆';
+    if (role === 'Super Admin') return '🛡️';
+    if (role === 'Admin') return '👑';
+    if (role === 'Premium') return '💎';
+    return '';
   };
 
   const getCountryLabel = (profileUser: any) => {
@@ -2354,9 +2365,11 @@ export default function App() {
   };
 
   const getOnlineNameWithTag = (profileUser: any) => {
+    const name = String(profileUser?.name || 'مستخدم').trim();
     const country = getCountryLabel(profileUser);
-    const role = getRoleLabel(profileUser);
-    return country ? `${profileUser?.name || 'مستخدم'} ${country} ${profileUser?.flag || ''} ${role}`.replace(/\s+/g, ' ').trim() : `${profileUser?.name || 'مستخدم'} ${role}`.trim();
+    const flag = country ? String(profileUser?.flag || '').trim() : '';
+    const tag = getRoleTag(profileUser);
+    return `${name}${flag ? ` ${flag}` : ''}${tag ? ` ${tag}` : ''}`.trim();
   };
 
   // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
@@ -2605,7 +2618,8 @@ export default function App() {
                   const liveProfile = liveUserProfiles[m.userId] || {};
                   const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle, profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
-                  const styleProps = mCanCustomize ? getNameStyleProps(displayMessage.nameStyle || 'normal', displayMessage.nameColor || displayMessage.color || '#0284c7') : getNameStyleProps('normal', '#0284c7');
+                  const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#0284c7';
+                  const styleProps = mCanCustomize ? getNameStyleProps(displayMessage.nameStyle || 'normal', effectiveNameColor) : getNameStyleProps('normal', effectiveNameColor);
                   const hasCustomBg = mCanCustomize && displayMessage.profileBgColor && displayMessage.profileBgColor !== '#ffffff';
 
                   if (m.isSystemSpecial) {
@@ -2656,7 +2670,7 @@ export default function App() {
                           }}
                         >
                           <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
-                            {displayMessage.user}{isSiteOwnerProfile(displayMessage) ? ' 🏆 صاحب الموقع' : ''}:
+                            {displayMessage.user}:
                           </span>
                         </span>
 
@@ -3355,11 +3369,10 @@ export default function App() {
                   <span style={{position:'absolute',right:1,bottom:1,width:22,height:22,borderRadius:'50%',background:'#73c600',border:'3px solid #fff'}}/>
                 </div>
                 <div style={{fontSize:17,fontWeight:700,marginTop:6}}>
-                  {getRoleLabel(selectedProfileUser)} <span style={{color:'#73c600'}}>●</span>
+                  {getRoleLabel(selectedProfileUser)}
                 </div>
                 <div style={{fontSize:18,fontWeight:800,marginTop:1,...(canDisplayProfileCustomization(selectedProfileUser) ? getNameStyleProps(selectedProfileUser.nameStyle||'normal',selectedProfileUser.nameColor||'#fff') : getNameStyleProps('normal','#fff'))}}>
                   {selectedProfileUser.name}
-                  {!getCountryLabel(selectedProfileUser) && <span style={{marginRight:6,fontSize:15,fontWeight:700}}>{getRoleLabel(selectedProfileUser)}</span>}
                 </div>
               </div>
             </div>
