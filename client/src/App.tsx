@@ -2444,7 +2444,8 @@ export default function App() {
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
-        .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div:not(:last-child) { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div:last-child:empty { min-height:0 !important; height:0 !important; padding:0 !important; margin:0 !important; border:0 !important; gap:0 !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
@@ -2649,7 +2650,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="video-chat-scroll" style={{ flex: '0 1 auto', minHeight: 0, height: 'auto', maxHeight: 'calc(100% - 54px)', padding: '0', margin: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
+            <div className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
               
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
