@@ -3441,7 +3441,7 @@ export default function App() {
               </div>}
 
               <div style={{position:'absolute',bottom:24,left:0,right:0,zIndex:4,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center'}}>
-                <div style={{position:'relative',width:112,height:112,borderRadius:'50%',background:'#334155',border:'4px solid rgba(255,255,255,.25)',padding:5,boxSizing:'border-box'}}>
+                <div style={{position:'relative',width:112,height:112,borderRadius:'50%',background:'#334155',border:'4px solid rgba(255,255,255,.25)',padding:5,boxSizing:'border-box',transform:canDisplayProfileCustomization(selectedProfileUser)?'translate(120px, 65px)':'none',zIndex:5}}>
                   <div onClick={()=>{if(selectedProfileUser.avatarUrl)setPreviewImage(selectedProfileUser.avatarUrl)}} style={{width:'100%',height:'100%',borderRadius:'50%',overflow:'hidden',background:'#e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',cursor:selectedProfileUser.avatarUrl?'pointer':'default'}}>
                     {selectedProfileUser.avatarUrl?<img src={selectedProfileUser.avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:48}}>👤</span>}
                   </div>
