@@ -2443,7 +2443,12 @@ export default function App() {
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
-        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
+        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; flex:1 1 0% !important; min-height:0 !important; margin:0 !important; padding-bottom:0 !important; }
+        .video-chat-layout { flex:1 1 0% !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; gap:0 !important; }
+        .video-chat-layout .video-composer { margin:0 !important; margin-bottom:0 !important; }
+        .video-bottom-nav { margin-top:0 !important; }
+        .video-chat-layout > * { flex-shrink:0; }
+        .video-chat-layout .video-chat-scroll { flex-shrink:1 !important; }
         .video-chat-scroll > div { min-height:46px !important; padding:4px 7px !important; gap:7px !important; border:0 !important; border-bottom:1px solid #e5e5e5 !important; border-radius:0 !important; box-shadow:none !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
@@ -2555,7 +2560,7 @@ export default function App() {
           </div>
         )}
         {currentView === 'chat' && selectedRoom && (
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: 'auto', overflow: 'hidden', position: 'relative' }}>
+          <div className="video-chat-layout" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: 'auto', overflow: 'hidden', position: 'relative', margin: 0, padding: 0, gap: 0 }}>
             
             {activeVideoUrl && (
               <div 
@@ -2928,7 +2933,7 @@ export default function App() {
       )}
 
       {currentView === 'chat' && (
-        <nav className="video-bottom-nav" style={{height:'50px',minHeight:'50px',flexShrink:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
+        <nav className="video-bottom-nav" style={{height:'50px',minHeight:'50px',flexShrink:0,marginTop:0,background:'#003f45',display:'flex',justifyContent:'space-between',alignItems:'center',direction:'ltr',padding:'0 5px',zIndex:10}}>
           <div onClick={()=>setShowRoomsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="home" size={20}/></div><div>الغرف</div></div>
           <div onClick={()=>setShowOnlineModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="users" size={20}/></div><div>المتصلين</div></div>
           <div onClick={()=>setShowFriendsModal(true)} style={{color:'#fff',cursor:'pointer',textAlign:'center',fontSize:'10px',flex:1,minWidth:0}}><div style={{fontSize:'20px',lineHeight:1,display:'flex',justifyContent:'center'}}><VideoIcon type="userplus" size={20}/></div><div>الأصدقاء</div></div>
