@@ -1200,7 +1200,7 @@ export default function App() {
       }));
       setMessages(prev => prev.map((m:any) => {
         const live = profileMap[m.userId] || profileMap[m.uid] || profileMap[m.senderId] || profileMap[m.authorId] || profileMap[m.senderUid];
-        return live ? { ...m, user: live.displayName || live.userName || live.name || m.user, role: normalizeRole(live.role || m.role), color: live.nameColor || m.color, nameColor: live.nameColor || m.nameColor, nameStyle: live.nameStyle || m.nameStyle || 'normal', profileBgColor: live.profileBgColor || m.profileBgColor, avatarUrl: live.avatarUrl || m.avatarUrl } : m;
+        return live ? { ...m, user: live.displayName || live.userName || live.name || m.user, role: normalizeRole(live.role || m.role), color: live.nameColor || m.color, nameColor: live.nameColor || m.nameColor, nameStyle: live.nameStyle || 'normal', profileBgColor: live.profileBgColor || '#ffffff', avatarUrl: live.avatarUrl || m.avatarUrl } : m;
       }));
       const owner = list.find(u => String(u.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase());
       const roleRank = (u:any) => {
@@ -2684,7 +2684,8 @@ export default function App() {
                     <div 
                       key={m.id || idx} 
                       style={{ 
-                        backgroundColor: hasCustomBg ? displayMessage.profileBgColor : (idx % 2 === 0 ? '#ffffff' : '#f1f1f1'), 
+                        // خلفية الرسالة تبقى طبيعية؛ لون الرتبة يظهر داخل مربع الاسم فقط.
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', 
                         padding: '4px 6px', 
                         minHeight: '30px',
                         borderBottom: '1px solid #e7e7e7', 
@@ -2719,6 +2720,7 @@ export default function App() {
                             color: mCanCustomize ? effectiveNameColor : '#111827',
                             padding: hasCustomBg ? '3px 8px' : 0,
                             borderRadius: hasCustomBg ? '4px' : 0,
+                            boxShadow: hasCustomBg ? '0 0 0 1px ' + displayMessage.profileBgColor : 'none',
                             border: 'none',
                             minWidth: 0,
                             overflow: 'hidden',
