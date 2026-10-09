@@ -3251,7 +3251,7 @@ export default function App() {
                 const uStyleKind = liveU.nameStyle || 'normal';
                 const uStyleProps = uCanCustomize
                   ? getNameStyleProps(uStyleKind, uStyleColor)
-                  : { color: '#111827', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
+                  : { color: '#000000', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
                 return (
                   <div 
                     key={u.id} 
@@ -3456,10 +3456,10 @@ export default function App() {
                   marginTop:1,
                   display:'inline-flex',
                   alignSelf:'center',
-                  padding:'3px 10px',
-                  borderRadius:5,
-                  backgroundColor: canDisplayProfileCustomization(selectedProfileUser) ? (liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : 'transparent',
-                  color: canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : '#333333'
+                  padding:0,
+                  borderRadius:0,
+                  backgroundColor:'transparent',
+                  color: canDisplayProfileCustomization(selectedProfileUser) ? (liveUserProfiles[selectedProfileUser.userId]?.nameColor || selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb') : '#000000'
                 }}>
                   <span style={{
                     ...(() => {
@@ -3469,7 +3469,7 @@ export default function App() {
                         ? ((liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal') === 'normal'
                           ? { color: liveProfile.nameColor || selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb' }
                           : getNameStyleProps(liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal', liveProfile.nameColor || selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb'))
-                        : { color: '#333333', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
+                        : { color: '#000000', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
                     })()
                   }}>
                     {liveUserProfiles[selectedProfileUser.userId]?.displayName || liveUserProfiles[selectedProfileUser.userId]?.userName || liveUserProfiles[selectedProfileUser.userId]?.name || selectedProfileUser.name}
