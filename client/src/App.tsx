@@ -2660,9 +2660,9 @@ export default function App() {
                     const joinedDisplayProfile = { ...joinedProfile, uid: joinedUserId, userId: joinedUserId, name: joinedName, user: joinedName, role: joinedRole };
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
-                        <div style={{ color: '#ef4444', padding: '4px 6px', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>
+                        <div style={{ backgroundColor: '#ef4444', color: '#ffffff', padding: '6px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>
                           <span onClick={() => joinedUserId && openUserProfile(joinedDisplayProfile)} style={{ ...joinedStyle, cursor: joinedUserId ? 'pointer' : 'default' }}>{joinedName}</span>
-                          <span style={{ color: '#ef4444' }}> انضم للغرفة (# {joinedRole} #)</span>
+                          <span style={{ color: '#ffffff' }}> انضم للغرفة (# {joinedRole} #)</span>
                         </div>
                       </div>
                     );
