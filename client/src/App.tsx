@@ -252,6 +252,8 @@ export default function App() {
   
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileFlagMenu, setShowProfileFlagMenu] = useState(false);
+  const [showKickDurationModal, setShowKickDurationModal] = useState(false);
   const [editingUserName, setEditingUserName] = useState('');
   const [isEditingNameActive, setIsEditingNameActive] = useState(false);
 
@@ -1887,14 +1889,19 @@ export default function App() {
         selectedProfileUser?.name ||
         'المستخدم';
 
-      const oldRole = targetUserData.role || 'Member';
-      let roleToSave = normalizedNewRole;
-
-      if (normalizedNewRole === 'Member' || normalizedNewRole === 'Guest') {
-        roleToSave = targetUserData.previousRole && !['Member', 'Guest'].includes(targetUserData.previousRole) 
-          ? targetUserData.previousRole 
-          : 'Member';
-      }
+      const oldRole = normalizeRole(targetUserData.role || 'Member');
+      const previousRole = normalizeRole(targetUserData.previousRole || 'Member');
+      const isRevoke = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
+      // عند سحب الرتبة نعيد الرتبة الأصلية المحفوظة، وليس Member بشكل ثابت.
+      const roleToSave = isRevoke
+        ? (previousRole || 'Member')
+        : normalizedNewRole;
+      // لا تستبدل الرتبة الأصلية المحفوظة إذا كان المستخدم يملك رتبة مُهداة بالفعل.
+      const roleToRestore = isRevoke
+        ? null
+        : ((!['Member', 'Guest'].includes(oldRole) && previousRole && !['Member', 'Guest'].includes(previousRole))
+            ? previousRole
+            : oldRole);
 
       const permissions = rolePermissions[roleToSave] || [];
 
@@ -1916,7 +1923,7 @@ export default function App() {
         {
           email: targetEmail,
           role: roleToSave,
-          previousRole: oldRole !== 'Member' && oldRole !== 'Guest' ? oldRole : 'Member',
+          previousRole: roleToRestore,
           permissions,
           roleUpdatedAt: new Date().toISOString()
         },
@@ -1948,7 +1955,7 @@ export default function App() {
         ? (user.displayName || storedGuest || 'المدير') 
         : (user.displayName || user.email?.split('@')[0] || 'المدير');
 
-      const isDemote = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
+      const isDemote = isRevoke;
       if (selectedRoom) {
         const roomMsg = isDemote
           ? `تم سحب الرتبة من ${targetUserName} بواسطة ${currentAdminName}`
@@ -1967,7 +1974,7 @@ export default function App() {
 
       const notifTitle = isDemote ? 'تحديث الرتبة ⚠️' : 'هدايا الرتب 🎁';
       const notifBody = isDemote 
-        ? `تم سحب الرتبة منك وتحديثها إلى ${roleToSave}.`
+        ? `تم سحب الرتبة المُهداة وإعادتك إلى رتبتك السابقة: ${roleToSave}.`
         : `مبروك! تم إهداؤك رتبة (${roleToSave}) وتفعيل صلاحيات الحساب.`;
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
@@ -3436,26 +3443,41 @@ export default function App() {
       )}
 
       {selectedProfileUser && (
-        <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
+        <div className="video-profile-backdrop" onClick={() => { stopProfileSong(); setSelectedProfileUser(null); setShowProfileMenu(false); setShowProfileFlagMenu(false); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',direction:'rtl',padding:'14px'}}>
           <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:'664px',height:'auto',maxHeight:'92dvh',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#fff',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333',borderRadius:'20px',overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.45)',display:'flex',flexDirection:'column'}}>
             <div style={{position:'relative',height:'300px',background:canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.profileBgColor ? selectedProfileUser.profileBgColor : '#003d43',color:'#fff',flexShrink:0,overflow:'hidden'}}>
               {canDisplayProfileCustomization(selectedProfileUser) && selectedProfileUser.coverUrl && <img src={selectedProfileUser.coverUrl} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.5}}/>}
               <div style={{position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,61,67,.15),rgba(0,30,34,.92))'}}/>
-              <button onClick={()=>{stopProfileSong();setSelectedProfileUser(null);setShowProfileMenu(false)}} style={{position:'absolute',top:14,left:14,zIndex:5,width:32,height:32,border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+              <button onClick={()=>{stopProfileSong();setSelectedProfileUser(null);setShowProfileMenu(false);setShowProfileFlagMenu(false)}} style={{position:'absolute',top:14,left:14,zIndex:5,width:32,height:32,border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
               <button onClick={()=>setShowProfileMenu(v=>!v)} style={{position:'absolute',top:14,left:50,zIndex:5,width:32,height:32,border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer',lineHeight:1,display:'flex',alignItems:'center',justifyContent:'center'}}>☰</button>
-              <button onClick={()=>{setErrorMessage('تم تحديد الملف للإبلاغ/المراجعة');setTimeout(()=>setErrorMessage(''),1800)}} style={{position:'absolute',top:14,left:86,zIndex:5,width:32,height:32,border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⚑</button>
+              <button onClick={()=>{setShowProfileFlagMenu(v=>!v);setShowProfileMenu(false)}} style={{position:'absolute',top:14,left:86,zIndex:5,width:32,height:32,border:0,background:'transparent',color:'#fff',fontSize:20,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>⚑</button>
               <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{position:'absolute',top:14,right:14,zIndex:5,width:34,height:34,border:0,background:'transparent',color:'#fff',fontSize:27,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><VideoIcon type="mail" size={22}/></button>
 
               {showProfileMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:70,left:20,zIndex:20,width:230,background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',overflow:'hidden'}}>
-                <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✉️ محادثة خاصة</button>
-                {!isSelfProfile && <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>👤⁺ إضافة صديق</button>}
-                {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>{[5,60].map((mins)=><button key={mins} onClick={()=>handleKickUser(selectedProfileUser.userId,mins)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد {mins===60?'ساعة':'5 دقائق'}</button>)}</>}
-                {isOwner && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
-                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Owner')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Owner 🏆</button>
-                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Admin')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Admin 👑</button>
-                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Super Admin')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Super Admin 🛡️</button>
-                  <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Member')} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>↩️ سحب الرتبة وإعادته Member</button>
+                <button onClick={()=>{openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name);setShowProfileMenu(false)}} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✉️ محادثة خاصة</button>
+                {!isSelfProfile && <button onClick={()=>{handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name);setShowProfileMenu(false)}} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>👤⁺ إضافة صديق</button>}
+              </div>}
+
+              {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:70,left:58,zIndex:21,width:250,maxHeight:'60dvh',overflowY:'auto',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)'}}>
+                <div style={{padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb'}}>إدارة الرتب والطرد</div>
+                {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
+                  <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
                 </>}
+                {isOwner && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Owner');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Owner 🏆</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Admin 👑</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Super Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Super Admin 🛡️</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>↩️ سحب الرتبة وإعادته إلى رتبته السابقة</button>
+                </>}
+                {!isOwner && !['Owner','Super Admin','Admin'].includes(normalizedCurrentRole) && <div style={{padding:13,fontSize:12,color:'#64748b'}}>لا تملك صلاحية إدارة الرتب أو الطرد.</div>}
+              </div>}
+
+              {showKickDurationModal && <div onClick={()=>setShowKickDurationModal(false)} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,.65)',display:'flex',alignItems:'center',justifyContent:'center',padding:18,direction:'rtl'}}>
+                <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:330,background:'#fff',color:'#1f2937',borderRadius:14,overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.4)'}}>
+                  <div style={{padding:15,fontWeight:800,fontSize:17,borderBottom:'1px solid #e5e7eb'}}>مدة الطرد</div>
+                  {[1,5,60].map((mins)=><button key={mins} onClick={()=>{handleKickUser(selectedProfileUser.userId,mins);setShowKickDurationModal(false)}} style={{width:'100%',padding:14,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 {mins===1?'دقيقة واحدة':mins===5?'5 دقائق':'ساعة واحدة'}</button>)}
+                  <button onClick={()=>setShowKickDurationModal(false)} style={{width:'100%',padding:13,border:0,background:'#f8fafc',textAlign:'center',cursor:'pointer',color:'#64748b'}}>إلغاء</button>
+                </div>
               </div>}
 
               <div style={{position:'absolute',bottom:24,left:0,right:0,zIndex:4,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center'}}>
