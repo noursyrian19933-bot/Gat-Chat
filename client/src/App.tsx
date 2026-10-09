@@ -1442,13 +1442,9 @@ export default function App() {
         await addDoc(collection(db, 'rooms', room.id, 'messages'), {
           user: 'نظام الشات',
           userId: 'system',
-          text: `${actualName} انضم للغرفة (# ${currentRoleText} #)`,
+          text: `تم الانضمام ${actualName} (${currentRoleText})`,
           role: 'System',
-          color: '#ef4444',
-          isRoomJoinNotice: true,
-          joinedUserId: user.uid,
-          joinedUserName: actualName,
-          joinedUserRole: currentRoleText,
+          color: '#16a34a',
           isSystemSpecial: false,
           createdAt: serverTimestamp()
         });
@@ -2649,25 +2645,6 @@ export default function App() {
                       </div>
                     );
                   }
-                  if (m.isRoomJoinNotice || (typeof m.text === 'string' && m.text.startsWith('تم الانضمام '))) {
-                    const legacyJoinMatch = typeof m.text === 'string' ? m.text.match(/^تم الانضمام (.*?) \((.*?)\)$/) : null;
-                    const joinedUserId = m.joinedUserId || '';
-                    const joinedProfile = liveUserProfiles[joinedUserId] || {};
-                    const joinedName = joinedProfile.displayName || joinedProfile.userName || joinedProfile.name || m.joinedUserName || legacyJoinMatch?.[1] || 'مستخدم';
-                    const joinedRole = joinedProfile.role ? (joinedProfile.role === 'Owner' ? 'Site Owner' : normalizeRole(joinedProfile.role)) : (m.joinedUserRole || legacyJoinMatch?.[2] || 'Member');
-                    const joinedColor = joinedProfile.nameColor || joinedProfile.color || m.nameColor || m.color || '#2563eb';
-                    const joinedStyle = getNameStyleProps(joinedProfile.nameStyle || m.nameStyle || 'normal', joinedColor);
-                    const joinedDisplayProfile = { ...joinedProfile, uid: joinedUserId, userId: joinedUserId, name: joinedName, user: joinedName, role: joinedRole };
-                    return (
-                      <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
-                        <div style={{ backgroundColor: '#ef4444', color: '#ffffff', padding: '6px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>
-                          <span onClick={() => joinedUserId && openUserProfile(joinedDisplayProfile)} style={{ ...joinedStyle, cursor: joinedUserId ? 'pointer' : 'default' }}>{joinedName}</span>
-                          <span style={{ color: '#ffffff' }}> انضم للغرفة (# {joinedRole} #)</span>
-                        </div>
-                      </div>
-                    );
-                  }
-
 
                   const youtubeEmbedUrl = extractYouTubeEmbedUrl(m.text);
 
