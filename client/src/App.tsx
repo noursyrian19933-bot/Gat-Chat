@@ -2682,10 +2682,11 @@ export default function App() {
                             // Match the online-list name wrapper exactly; decoration stays on the inner name only.
                             fontSize: '12px',
                             fontWeight: 'bold',
-                            backgroundColor: 'transparent',
+                            // Show the selected profile background as a box around the name in public chat.
+                            backgroundColor: displayMessage.profileBgColor || 'transparent',
                             color: effectiveNameColor,
-                            padding: 0,
-                            borderRadius: 0,
+                            padding: displayMessage.profileBgColor ? '3px 8px' : 0,
+                            borderRadius: displayMessage.profileBgColor ? '4px' : 0,
                             border: 'none',
                             minWidth: 0,
                             overflow: 'hidden',
