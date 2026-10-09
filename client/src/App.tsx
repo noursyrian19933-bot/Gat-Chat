@@ -254,6 +254,7 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfileFlagMenu, setShowProfileFlagMenu] = useState(false);
   const [showKickDurationModal, setShowKickDurationModal] = useState(false);
+  const [showRevokeRoleConfirm, setShowRevokeRoleConfirm] = useState(false);
   const [editingUserName, setEditingUserName] = useState('');
   const [isEditingNameActive, setIsEditingNameActive] = useState(false);
 
@@ -3458,7 +3459,7 @@ export default function App() {
                 {!isSelfProfile && <button onClick={()=>{handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name);setShowProfileMenu(false)}} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>👤⁺ إضافة صديق</button>}
               </div>}
 
-              {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:70,left:58,zIndex:21,width:250,maxHeight:'60dvh',overflowY:'auto',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)'}}>
+              {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:112,left:58,zIndex:21,width:250,maxHeight:'55dvh',overflowY:'auto',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)'}}>
                 <div style={{padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb'}}>إدارة الرتب والطرد</div>
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
                   <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
@@ -3467,9 +3468,21 @@ export default function App() {
                   <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Owner');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Owner 🏆</button>
                   <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Admin 👑</button>
                   <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Super Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Super Admin 🛡️</button>
-                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>↩️ سحب الرتبة وإعادته إلى رتبته السابقة</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Premium');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Premium 💎</button>
+                  <button onClick={()=>{setShowRevokeRoleConfirm(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>↩️ سحب الرتبة</button>
                 </>}
                 {!isOwner && !['Owner','Super Admin','Admin'].includes(normalizedCurrentRole) && <div style={{padding:13,fontSize:12,color:'#64748b'}}>لا تملك صلاحية إدارة الرتب أو الطرد.</div>}
+              </div>}
+
+              {showRevokeRoleConfirm && <div onClick={()=>setShowRevokeRoleConfirm(false)} style={{position:'fixed',inset:0,zIndex:310,background:'rgba(0,0,0,.65)',display:'flex',alignItems:'center',justifyContent:'center',padding:18,direction:'rtl'}}>
+                <div onClick={(e)=>e.stopPropagation()} style={{width:'100%',maxWidth:330,background:'#fff',color:'#1f2937',borderRadius:14,overflow:'hidden',boxShadow:'0 12px 34px rgba(0,0,0,.4)'}}>
+                  <div style={{padding:16,fontWeight:800,fontSize:17,borderBottom:'1px solid #e5e7eb'}}>تأكيد سحب الرتبة</div>
+                  <div style={{padding:18,textAlign:'center'}}>هل أنت متأكد أنك تريد سحب الرتبة من هذا المستخدم؟</div>
+                  <div style={{display:'flex',borderTop:'1px solid #e5e7eb'}}>
+                    <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowRevokeRoleConfirm(false)}} style={{flex:1,padding:13,border:0,background:'#fff',cursor:'pointer',color:'#dc2626',fontWeight:700}}>نعم، اسحب الرتبة</button>
+                    <button onClick={()=>setShowRevokeRoleConfirm(false)} style={{flex:1,padding:13,border:0,borderRight:'1px solid #e5e7eb',background:'#f8fafc',cursor:'pointer',fontWeight:700}}>لا</button>
+                  </div>
+                </div>
               </div>}
 
               {showKickDurationModal && <div onClick={()=>setShowKickDurationModal(false)} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,.65)',display:'flex',alignItems:'center',justifyContent:'center',padding:18,direction:'rtl'}}>
