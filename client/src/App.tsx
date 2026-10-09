@@ -2019,9 +2019,9 @@ export default function App() {
 
   const handleUpdateUserName = async (requestedName?: string) => {
     if (!selectedProfileUser) return;
+    const targetUid = selectedProfileUser.userId;
     const canRename = Boolean(user && !user.isAnonymous && (isOwner || ['Owner', 'Super Admin', 'Admin', 'Premium'].includes(normalizedCurrentRole)) && (targetUid === user.uid || isOwner || !isSiteOwnerProfile(selectedProfileUser)));
     if (!canRename) { alert('لا تملك صلاحية تغيير الأسماء'); return; }
-    const targetUid = selectedProfileUser.userId;
     const cleanNewName = String(requestedName ?? editingUserName).trim();
     if (!cleanNewName) return;
     
