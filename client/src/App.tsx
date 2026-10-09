@@ -2633,8 +2633,10 @@ export default function App() {
                   const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#2563eb';
                   const effectiveNameStyle = displayMessage.nameStyle || 'normal';
                   // Use the saved profile background color consistently as the role-name box color; use the selected decoration everywhere.
-                  const styleProps = getNameStyleProps(effectiveNameStyle, effectiveNameColor);
-                  const hasCustomBg = !!displayMessage.profileBgColor;
+                  const styleProps = mCanCustomize
+                    ? getNameStyleProps(effectiveNameStyle, effectiveNameColor)
+                    : { color: '#111827', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
+                  const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
                     return (
@@ -3214,7 +3216,9 @@ export default function App() {
                 const uCanCustomize = canDisplayProfileCustomization(liveU);
                 const uStyleColor = liveU.nameColor || liveU.color || '#2563eb';
                 const uStyleKind = liveU.nameStyle || 'normal';
-                const uStyleProps = getNameStyleProps(uStyleKind, uStyleColor);
+                const uStyleProps = uCanCustomize
+                  ? getNameStyleProps(uStyleKind, uStyleColor)
+                  : { color: '#111827', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
                 return (
                   <div 
                     key={u.id} 
@@ -3226,7 +3230,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: liveU.profileBgColor || '#ffffff', 
+                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
@@ -3422,7 +3426,7 @@ export default function App() {
                   padding:'3px 10px',
                   borderRadius:5,
                   backgroundColor: canDisplayProfileCustomization(selectedProfileUser) ? (liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : 'transparent',
-                  color: canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : '#2563eb'
+                  color: canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(liveUserProfiles[selectedProfileUser.userId]?.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') : '#333333'
                 }}>
                   <span style={{
                     ...(() => {
@@ -3432,7 +3436,7 @@ export default function App() {
                         ? ((liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal') === 'normal'
                           ? { color: liveProfile.nameColor || selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb' }
                           : getNameStyleProps(liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal', liveProfile.nameColor || selectedProfileUser.nameColor || selectedProfileUser.color || '#2563eb'))
-                        : { color: '#2563eb' };
+                        : { color: '#333333', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
                     })()
                   }}>
                     {liveUserProfiles[selectedProfileUser.userId]?.displayName || liveUserProfiles[selectedProfileUser.userId]?.userName || liveUserProfiles[selectedProfileUser.userId]?.name || selectedProfileUser.name}
