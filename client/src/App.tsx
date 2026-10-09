@@ -2443,12 +2443,12 @@ export default function App() {
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
-        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; flex:1 1 0% !important; min-height:0 !important; margin:0 !important; padding-bottom:0 !important; }
-        .video-chat-layout { flex:1 1 0% !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; gap:0 !important; }
+        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; flex:1 1 auto !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; border:0 !important; align-self:stretch !important; }
+        .video-chat-layout { flex:1 1 0% !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; gap:0 !important; justify-content:flex-start !important; }
         .video-chat-layout .video-composer { margin:0 !important; margin-bottom:0 !important; }
-        .video-bottom-nav { margin-top:0 !important; }
-        .video-chat-layout > * { flex-shrink:0; }
-        .video-chat-layout .video-chat-scroll { flex-shrink:1 !important; }
+        .video-bottom-nav { margin:0 !important; margin-top:0 !important; flex-shrink:0 !important; }
+        .video-chat-layout > *:not(.video-chat-scroll) { flex-shrink:0 !important; margin-block:0 !important; }
+        .video-chat-layout .video-chat-scroll { flex:1 1 auto !important; flex-shrink:1 !important; }
         .video-chat-scroll > div { min-height:46px !important; padding:4px 7px !important; gap:7px !important; border:0 !important; border-bottom:1px solid #e5e5e5 !important; border-radius:0 !important; box-shadow:none !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
