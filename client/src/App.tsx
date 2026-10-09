@@ -2631,10 +2631,10 @@ export default function App() {
                   const displayMessage = { ...m, ...liveProfile, userId: m.userId || m.uid || m.senderId || m.authorId || m.senderUid, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle || 'normal', profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
                   const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#2563eb';
-                  const effectiveNameStyle = mCanCustomize ? (displayMessage.nameStyle || 'normal') : 'normal';
+                  const effectiveNameStyle = displayMessage.nameStyle || 'normal';
                   // Use the saved profile background color consistently as the role-name box color; use the selected decoration everywhere.
                   const styleProps = getNameStyleProps(effectiveNameStyle, effectiveNameColor);
-                  const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
+                  const hasCustomBg = !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
                     return (
@@ -3212,7 +3212,7 @@ export default function App() {
                 const liveU = { ...u, ...(liveUserProfiles[u.id] || liveUserProfiles[u.userId] || {}) };
                 const uCanCustomize = canDisplayProfileCustomization(liveU);
                 const uStyleColor = liveU.nameColor || liveU.color || '#2563eb';
-                const uStyleKind = uCanCustomize ? (liveU.nameStyle || 'normal') : 'normal';
+                const uStyleKind = liveU.nameStyle || 'normal';
                 const uStyleProps = getNameStyleProps(uStyleKind, uStyleColor);
                 return (
                   <div 
@@ -3225,7 +3225,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff', 
+                      backgroundColor: liveU.profileBgColor || '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
