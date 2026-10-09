@@ -2679,7 +2679,7 @@ export default function App() {
                         )}
                         <span
                           style={{
-                            // Keep the name's color and decoration identical to the online list.
+                            // Match the online-list name wrapper exactly; decoration stays on the inner name only.
                             fontSize: '12px',
                             fontWeight: 'bold',
                             backgroundColor: 'transparent',
@@ -2687,16 +2687,18 @@ export default function App() {
                             padding: 0,
                             borderRadius: 0,
                             border: 'none',
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            textAlign: 'right',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            minWidth: 0,
                             transition: 'color 0.2s ease',
-                            cursor: 'pointer',
-                            ...styleProps
+                            cursor: 'pointer'
                           }}
                           onClick={() => openUserProfile(displayMessage)}
                         >
-                          {displayMessage.user}
+                          <span style={styleProps}>{displayMessage.user}</span>
                         </span>
                         <span style={{ color: '#111827' }}>:</span>
 
