@@ -253,6 +253,8 @@ export default function App() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<any | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfileFlagMenu, setShowProfileFlagMenu] = useState(false);
+  const [profileFlagMenuPosition, setProfileFlagMenuPosition] = useState({ x: 58, y: 130 });
+  const profileFlagDragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
   const [showKickDurationModal, setShowKickDurationModal] = useState(false);
   const [showRevokeRoleConfirm, setShowRevokeRoleConfirm] = useState(false);
   const [editingUserName, setEditingUserName] = useState('');
@@ -3459,8 +3461,14 @@ export default function App() {
                 {!isSelfProfile && <button onClick={()=>{handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name);setShowProfileMenu(false)}} style={{width:'100%',padding:13,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>👤⁺ إضافة صديق</button>}
               </div>}
 
-              {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:112,left:58,zIndex:21,width:250,maxHeight:'55dvh',overflowY:'auto',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)'}}>
-                <div style={{padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb'}}>إدارة الرتب والطرد</div>
+              {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:profileFlagMenuPosition.y,left:profileFlagMenuPosition.x,zIndex:21,width:250,maxHeight:'55dvh',overflowY:'auto',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',touchAction:'pan-y'}}>
+                <div
+                  onPointerDown={(e)=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);profileFlagDragRef.current={startX:e.clientX,startY:e.clientY,originX:profileFlagMenuPosition.x,originY:profileFlagMenuPosition.y}}}
+                  onPointerMove={(e)=>{if(!profileFlagDragRef.current)return;const dx=e.clientX-profileFlagDragRef.current.startX;const dy=e.clientY-profileFlagDragRef.current.startY;setProfileFlagMenuPosition({x:Math.max(0,Math.min(390,profileFlagDragRef.current.originX+dx)),y:Math.max(0,Math.min(240,profileFlagDragRef.current.originY+dy))})}}
+                  onPointerUp={()=>{profileFlagDragRef.current=null}}
+                  onPointerCancel={()=>{profileFlagDragRef.current=null}}
+                  style={{padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb',cursor:'move',touchAction:'none',userSelect:'none'}}
+                >☰ اسحب لتحريك القائمة · إدارة الرتب والطرد</div>
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
                   <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
                 </>}
