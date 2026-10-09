@@ -341,6 +341,8 @@ export default function App() {
   const isSiteOwnerProfile = (profileUser: any) =>
     String(profileUser?.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase();
 
+  const canKickUsers = Boolean(user && !user.isAnonymous && (isOwner || ['Owner', 'Super Admin', 'Admin'].includes(normalizedCurrentRole)));
+
   const isAdmin = Boolean(
     user &&
     !user.isAnonymous &&
@@ -1804,28 +1806,42 @@ export default function App() {
   };
 
   const handleKickUser = async (targetUid: string, minutes: number) => {
-    if (!user || !isAdmin) return;
+    if (!user || !canKickUsers || !targetUid || !Number.isFinite(minutes) || minutes <= 0) return;
     const targetRole = normalizeRole(selectedProfileUser?.role);
-    if (['owner', 'admin', 'super admin'].includes(targetRole.toLowerCase())) {
+    if (['Site Owner', 'Owner', 'Admin', 'Super Admin'].includes(targetRole) || isSiteOwnerProfile(selectedProfileUser)) {
       return;
     }
 
     const kickUntilTime = Date.now() + minutes * 60 * 1000;
     try {
+      const moderatorName = user.displayName || user.email || 'الإدارة';
+      const targetName = selectedProfileUser?.name || selectedProfileUser?.displayName || 'العضو';
+      const kickReason = 'مخالفة القوانين';
       await updateDoc(doc(db, 'users', targetUid), {
-        kickedUntil: kickUntilTime
+        kickedUntil: kickUntilTime,
+        kickReason,
+        kickedBy: moderatorName,
+        kickedByUid: user.uid
       });
       await setDoc(doc(db, 'room_presence', targetUid), {
-        kickedUntil: kickUntilTime
+        kickedUntil: kickUntilTime,
+        kickedBy: moderatorName,
+        kickReason
       }, { merge: true });
 
       await addDoc(collection(db, 'users', targetUid, 'notifications'), {
         title: 'تنبيه طرد 🚫',
-        body: `تم طردك مؤقتاً لمدة ${minutes} دقيقة بواسطة الإدارة.`,
+        body: `تم طردك لمدة ${minutes} دقيقة بواسطة ${moderatorName}. السبب: ${kickReason}.`,
         isRead: false,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
-
+      if (selectedRoom?.id) {
+        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
+          user: 'نظام الشات', userId: 'system', role: 'System',
+          text: `🚫 تم طرد ${targetName} بواسطة ${moderatorName} لمخالفة القوانين لمدة ${minutes} دقائق.`,
+          createdAt: serverTimestamp(), isSystem: true
+        });
+      }
       setSelectedProfileUser(null);
     } catch (e) {
       console.error(e);
@@ -2435,6 +2451,25 @@ export default function App() {
   const isTargetProfileOwner = targetUserEmail === ownerEmailClean || selectedProfileUser?.role === 'Owner';
   const isViewerOwner = user && (user.email || '').trim().toLowerCase() === ownerEmailClean;
   const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
+
+  if (userKickedUntil && userKickedUntil > Date.now()) {
+    const secondsLeft = Math.max(0, kickTimeLeft || Math.ceil((userKickedUntil - Date.now()) / 1000));
+    const minutesLeft = Math.floor(secondsLeft / 60);
+    const secondsPart = secondsLeft % 60;
+    return (
+      <div dir="rtl" style={{position:'fixed',inset:0,background:'#003d43',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Tahoma,Arial,sans-serif',textAlign:'center'}}>
+        <div style={{width:'100%',maxWidth:420,background:'#fff',color:'#17212b',borderRadius:22,padding:'30px 22px',boxShadow:'0 12px 40px rgba(0,0,0,.3)'}}>
+          <div style={{fontSize:54,marginBottom:12}}>🚫</div>
+          <h2 style={{margin:'0 0 14px',color:'#b91c1c'}}>أنت مطرود من الشات</h2>
+          <p>تم إخراجك مؤقتًا بسبب مخالفة القوانين.</p>
+          <p>المشرف: {String((liveUserProfiles[user.uid] as any)?.kickedBy || 'الإدارة')}</p>
+          <div style={{fontSize:13,color:'#64748b',marginTop:18}}>الوقت المتبقي</div>
+          <div style={{fontSize:36,fontWeight:800,color:'#003d43',margin:'8px 0'}}>{String(minutesLeft).padStart(2,'0')}:{String(secondsPart).padStart(2,'0')}</div>
+          <p style={{fontSize:13,color:'#64748b'}}>ستتمكن من دخول الشات تلقائيًا بعد انتهاء مدة الطرد.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#003d43', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
@@ -3432,7 +3467,7 @@ export default function App() {
               {showProfileMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'absolute',top:70,left:20,zIndex:20,width:230,background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',overflow:'hidden'}}>
                 <button onClick={()=>openPrivateChatWithUser(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✉️ محادثة خاصة</button>
                 {!isSelfProfile && <button onClick={()=>handleSendFriendRequest(selectedProfileUser.userId,selectedProfileUser.name)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>👤⁺ إضافة صديق</button>}
-                {isAdmin && !isSelfProfile && !['Site Owner','Owner','Admin','Super Admin'].includes(normalizeRole(selectedProfileUser.role)) && <button onClick={()=>handleKickUser(selectedProfileUser.userId,5)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد 5 دقائق</button>}
+                {canKickUsers && !isSelfProfile && !['Site Owner','Owner','Admin','Super Admin'].includes(normalizeRole(selectedProfileUser.role)) && !isSiteOwnerProfile(selectedProfileUser) && <button onClick={()=>handleKickUser(selectedProfileUser.userId,5)} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد 5 دقائق</button>}
                 {isOwner && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
                   <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Owner')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🏆 تعيين Owner</button>
                   <button onClick={()=>handleUpdateUserRole(selectedProfileUser.userId,'Admin')} style={{width:'100%',padding:13,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>👑 تعيين Admin</button>
