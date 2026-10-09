@@ -1440,9 +1440,9 @@ export default function App() {
 
       try {
         await addDoc(collection(db, 'rooms', room.id, 'messages'), {
-          user: actualName,
+          user: 'نظام الشات',
           userId: 'system',
-          text: `تم الانضمام (${currentRoleText})`,
+          text: `تم الانضمام ${actualName} (${currentRoleText})`,
           role: 'System',
           color: '#16a34a',
           isSystemSpecial: false,
@@ -2443,24 +2443,19 @@ export default function App() {
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
-        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; flex:1 1 auto !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; border:0 !important; align-self:stretch !important; display:flex !important; flex-direction:column !important; justify-content:flex-end !important; }
-        .video-chat-layout { flex:1 1 0% !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; gap:0 !important; justify-content:flex-start !important; }
-        .video-chat-layout .video-composer { margin:0 !important; margin-bottom:0 !important; }
-        .video-bottom-nav { margin:0 !important; margin-top:0 !important; flex-shrink:0 !important; }
-        .video-chat-layout > *:not(.video-chat-scroll) { flex-shrink:0 !important; margin-block:0 !important; }
-        .video-chat-layout .video-chat-scroll { flex:1 1 auto !important; flex-shrink:1 !important; }
-        .video-chat-scroll > div { min-height:46px !important; padding:4px 7px !important; gap:7px !important; border:0 !important; border-bottom:1px solid #e5e5e5 !important; border-radius:0 !important; box-shadow:none !important; }
+        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
+        .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
         .video-chat-scroll > div > div:first-child { width:34px !important; height:34px !important; border-width:1px !important; font-size:14px !important; }
         .video-chat-scroll > div > div:nth-child(2) { font-size:12px !important; line-height:1.25 !important; justify-content:flex-start !important; gap:4px !important; }
         .video-chat-scroll > div > div:nth-child(2) span { font-size:inherit !important; }
-        .video-composer { height:48px !important; min-height:48px !important; max-height:48px !important; margin:0 !important; border-top:1px solid #d8d8d8 !important; padding:2px 5px !important; gap:3px !important; flex-shrink:0 !important; }
+        .video-composer { min-height:64px !important; border-top:1px solid #d8d8d8 !important; padding:6px 8px !important; gap:6px !important; }
         .video-composer input { font-size:12px !important; color:#333 !important; }
         .video-composer input::placeholder { color:#888 !important; }
-        .video-composer > div { height:34px !important; min-height:34px !important; border-radius:23px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; padding:0 7px !important; min-width:0 !important; }
-        .video-composer > button[type=submit] { width:34px !important; min-width:34px !important; height:34px !important; min-height:34px !important; background:#003d43 !important; font-size:16px !important; padding:0 !important; }
+        .video-composer > div { height:44px !important; border-radius:23px !important; background:#f5f5f5 !important; border:1px solid #ddd !important; }
+        .video-composer > button[type=submit] { width:46px !important; height:46px !important; background:#003d43 !important; font-size:20px !important; }
         .video-bottom-nav { background:#003d43 !important; border-top:0 !important; box-shadow:none !important; height:48px !important; min-height:48px !important; padding:0 4px !important; }
         .video-bottom-nav > div { background:transparent !important; border:0 !important; border-radius:0 !important; color:#fff !important; min-width:0 !important; flex:1 !important; padding:3px 2px !important; }
         .video-bottom-nav > div div:first-child { font-size:18px !important; color:#fff !important; }
@@ -2476,7 +2471,7 @@ export default function App() {
         .video-rooms-panel > div:nth-child(2) > div:not(form) { border-radius:14px !important; min-height:68px !important; padding:10px !important; box-shadow:0 2px 8px rgba(0,0,0,.08) !important; }
         .video-profile-backdrop > div { border-radius:18px !important; max-width:664px !important; width:100% !important; }
         .video-drawer-overlay button, .video-topbar button, .video-bottom-nav div { -webkit-tap-highlight-color:transparent; }
-        .video-composer button { min-width: 20px !important; padding-left:0 !important; padding-right:0 !important; } .video-composer { min-height:48px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
+        .video-composer button { min-width: 28px !important; } .video-composer { min-height: 38px !important; } .animated-emoji { animation: emojiPulse 1.2s ease-in-out infinite; } @keyframes emojiPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28) rotate(5deg)} }
         @media (max-width:600px) {
           .video-topbar { height:48px !important; min-height:48px !important; }
           .video-topbar .brand-logo { font-size:18px !important; }
@@ -2560,7 +2555,7 @@ export default function App() {
           </div>
         )}
         {currentView === 'chat' && selectedRoom && (
-          <div className="video-chat-layout" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: 'auto', overflow: 'hidden', position: 'relative', margin: 0, padding: 0, gap: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: 'auto', minHeight: 0, overflow: 'hidden', position: 'relative' }}>
             
             {activeVideoUrl && (
               <div 
@@ -2654,7 +2649,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="video-chat-scroll" style={{ flex: 1, padding: '0', overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
+            <div className="video-chat-scroll" style={{ flex: '1 1 0%', minHeight: 0, margin: 0, padding: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
               
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
@@ -2823,14 +2818,14 @@ export default function App() {
                 </div>
               </div>
             )}
-            <form className="video-composer" onSubmit={handleSendMessage} style={{ flexShrink: 0, height: '48px', minHeight: '48px', margin: 0, backgroundColor: '#ffffff', padding: '2px 5px', display: 'flex', alignItems: 'center', gap: '3px', borderTop: '1px solid #d8d8d8', direction: 'rtl', boxSizing: 'border-box' }}>
-              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '13px', flexShrink: 0 }}>➤</button>
-              <div style={{ flex: 1, minWidth: 0, backgroundColor: '#f5f5f5', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 8px', border: '1px solid #ddd', height: '34px' }}>
-                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتب هنا أو ألصق رابط يوتيوب..." style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '11px', minWidth: 0 }} />
-                <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{background:'transparent',border:'none',fontSize:'12px',cursor:'pointer',padding:'0 1px',flexShrink:0}}>😊</button>
+            <form className="video-composer" onSubmit={handleSendMessage} style={{ flexShrink: 0, backgroundColor: '#ffffff', padding: '7px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #cbd5e1', direction: 'rtl', boxSizing: 'border-box' }}>
+              <button type="submit" style={{ background: '#004247', color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '13px', flexShrink: 0 }}>➤</button>
+              <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 10px', border: '1px solid #cbd5e1', height: '40px' }}>
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتب هنا أو ألصق رابط يوتيوب..." style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '12px' }} />
+                <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{background:'transparent',border:'none',fontSize:'16px',cursor:'pointer',padding:'0 2px'}}>😊</button>
               </div>
-              <button type="button" onClick={isRecording ? stopVoiceRecording : startVoiceRecording} style={{background:'transparent',border:'none',fontSize:'13px',cursor:'pointer',color:isRecording?'#dc2626':'#64748b',padding:'0 1px',minWidth:'24px'}}>🎙</button>
-              <button type="button" onClick={() => chatImageInputRef.current?.click()} style={{background:'transparent',border:'none',fontSize:'14px',cursor:'pointer',color:'#64748b',padding:'0 1px',minWidth:'24px'}}>🖼️</button>
+              <button type="button" onClick={isRecording ? stopVoiceRecording : startVoiceRecording} style={{background:'transparent',border:'none',fontSize:'17px',cursor:'pointer',color:isRecording?'#dc2626':'#64748b',padding:'0 2px'}}>🎙</button>
+              <button type="button" onClick={() => chatImageInputRef.current?.click()} style={{background:'transparent',border:'none',fontSize:'19px',cursor:'pointer',color:'#64748b',padding:'0 2px'}}>🖼️</button>
             </form>
 
           </div>
