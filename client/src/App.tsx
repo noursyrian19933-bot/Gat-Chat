@@ -15,6 +15,7 @@ import {
 import { 
   getFirestore, 
   collection, 
+  collectionGroup,
   onSnapshot, 
   addDoc, 
   deleteDoc, 
@@ -1615,6 +1616,10 @@ export default function App() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !selectedRoom || !user) return;
+    if (user.isAnonymous) {
+      alert('سجّل دخولك لتستطيع المشاركة في الغرفة');
+      return;
+    }
     const storedGuest = localStorage.getItem('gat_guest_name') || guestName;
     const senderName = user.isAnonymous 
       ? (user.displayName || storedGuest || 'زائر') 
@@ -2012,10 +2017,13 @@ export default function App() {
     }
   };
 
-  const handleUpdateUserName = async () => {
-    if (!selectedProfileUser || !editingUserName.trim()) return;
+  const handleUpdateUserName = async (requestedName?: string) => {
+    if (!selectedProfileUser) return;
+    const canRename = Boolean(user && !user.isAnonymous && (isOwner || ['Owner', 'Super Admin', 'Admin'].includes(normalizedCurrentRole)));
+    if (!canRename) { alert('لا تملك صلاحية تغيير الأسماء'); return; }
     const targetUid = selectedProfileUser.userId;
-    const cleanNewName = editingUserName.trim();
+    const cleanNewName = String(requestedName ?? editingUserName).trim();
+    if (!cleanNewName) return;
     
     const targetEmail = String(selectedProfileUser.email || '').trim().toLowerCase();
     const ownerEmail = ADMIN_EMAIL.trim().toLowerCase();
@@ -2053,9 +2061,18 @@ export default function App() {
       ));
       setMessages((prev: any[]) => prev.map((m: any) =>
         (m.userId || m.uid || m.senderId || m.authorId || m.senderUid) === targetUid
-          ? { ...m, user: cleanNewName, name: cleanNewName }
+          ? { ...m, user: cleanNewName, name: cleanNewName, displayName: cleanNewName }
           : m
       ));
+      // Persist the new name in historical room messages too.
+      try {
+        const historicalMessages = await getDocs(query(collectionGroup(db, 'messages'), where('userId', '==', targetUid)));
+        await Promise.all(historicalMessages.docs.map(messageDoc => updateDoc(messageDoc.ref, {
+          user: cleanNewName, name: cleanNewName, displayName: cleanNewName
+        })));
+      } catch (historyError) {
+        console.warn('Could not update every historical message; check Firestore rules for collection-group message updates.', historyError);
+      }
       setSelectedProfileUser((prev: any) => prev && prev.userId === targetUid
         ? { ...prev, name: cleanNewName, displayName: cleanNewName, userName: cleanNewName }
         : prev
@@ -3463,6 +3480,9 @@ export default function App() {
 
               {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'fixed',top:'20vh',left:'50%',transform:'translateX(-50%)',zIndex:250,width:'min(250px, calc(100vw - 32px))',maxHeight:'60dvh',overflowY:'auto',overscrollBehavior:'contain',WebkitOverflowScrolling:'touch',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',touchAction:'pan-y'}}>
                 <div style={{position:'sticky',top:0,zIndex:1,padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb',userSelect:'none'}}>إدارة الرتب والطرد</div>
+                {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSiteOwnerProfile(selectedProfileUser) && <>
+                  <button onClick={()=>{const nextName=window.prompt('اكتب الاسم الجديد للمستخدم',String(selectedProfileUser.displayName || selectedProfileUser.userName || selectedProfileUser.name || ''));if(nextName && nextName.trim()) void handleUpdateUserName(nextName);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✏️ تغيير الاسم</button>
+                </>}
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
                   <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
                 </>}
