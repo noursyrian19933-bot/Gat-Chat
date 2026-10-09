@@ -2677,30 +2677,27 @@ export default function App() {
                             {getRoleTag(displayMessage)}
                           </span>
                         )}
-                        {getRoleTag(displayMessage) ? (
-                          <span
-                            style={{
-                              // Profile background colors the message row; name decoration affects only the name.
-                              backgroundColor: 'transparent',
-                              color: effectiveNameColor,
-                              padding: '3px 8px',
-                              borderRadius: '5px',
-                              border: '1px solid rgba(0,0,0,0.18)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              transition: 'background-color 0.2s ease, color 0.2s ease',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
-                              {displayMessage.user}
-                            </span>
-                          </span>
-                        ) : (
-                          <span style={{ fontWeight: 'bold', cursor: 'pointer', ...styleProps }} onClick={() => openUserProfile(displayMessage)}>
-                            {displayMessage.user}
-                          </span>
-                        )}
+                        <span
+                          style={{
+                            // Keep the name's color and decoration identical to the online list.
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            backgroundColor: 'transparent',
+                            color: effectiveNameColor,
+                            padding: 0,
+                            borderRadius: 0,
+                            border: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            minWidth: 0,
+                            transition: 'color 0.2s ease',
+                            cursor: 'pointer',
+                            ...styleProps
+                          }}
+                          onClick={() => openUserProfile(displayMessage)}
+                        >
+                          {displayMessage.user}
+                        </span>
                         <span style={{ color: '#111827' }}>:</span>
 
                         {m.mediaType === 'image' ? (
@@ -3218,7 +3215,7 @@ export default function App() {
                 return (
                   <div 
                     key={u.id} 
-                    onClick={() => openUserProfile(u)}
+                    onClick={() => openUserProfile(liveU)}
                     style={{ 
                       padding: '8px 12px', 
                       borderRadius: '8px', 
