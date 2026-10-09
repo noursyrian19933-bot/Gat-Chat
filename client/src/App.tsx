@@ -2630,13 +2630,13 @@ export default function App() {
                   const liveProfile = liveUserProfiles[m.userId] || {};
                   const displayMessage = { ...m, ...liveProfile, userId: m.userId, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle || 'normal', profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
-                  const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#0284c7';
-                  // Use the exact same saved name decoration/color in public chat and all other views.
-                  const styleProps = getNameStyleProps(
-                    mCanCustomize ? (displayMessage.nameStyle || 'normal') : 'normal',
-                    effectiveNameColor
-                  );
-                  const hasCustomBg = mCanCustomize && displayMessage.profileBgColor && displayMessage.profileBgColor !== '#ffffff';
+                  const effectiveNameColor = mCanCustomize ? (displayMessage.profileBgColor || '#ffffff') : (displayMessage.nameColor || displayMessage.color || '#0284c7');
+                  const effectiveNameStyle = mCanCustomize ? (displayMessage.nameStyle || 'normal') : 'normal';
+                  // Use the saved profile background color consistently as the role-name box color; use the selected decoration everywhere.
+                  const styleProps = effectiveNameStyle === 'normal' && mCanCustomize
+                    ? { color: getContrastTextColor(effectiveNameColor) }
+                    : getNameStyleProps(effectiveNameStyle, effectiveNameColor);
+                  const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
                     return (
@@ -3066,7 +3066,7 @@ export default function App() {
         <div style={{position:'fixed',inset:0,zIndex:282,background:'rgba(0,0,0,.45)',display:'flex',justifyContent:'center',alignItems:'center',direction:'rtl',padding:'10px'}} onClick={()=>setShowVipModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:'370px',maxHeight:'82dvh',background:'#fff',borderRadius:'10px',overflow:'hidden',display:'flex',flexDirection:'column'}}>
             <div style={{height:'48px',background:'#004247',color:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 12px'}}><b style={{fontSize:'14px'}}>كبار الشخصيات 💎</b><button onClick={()=>setShowVipModal(false)} style={{background:'none',border:0,color:'#fff',fontSize:'26px'}}>×</button></div>
-            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=>{const liveU={...u,...(liveUserProfiles[u.userId||u.id]||{})};const canStyle=canDisplayProfileCustomization(liveU);const nameStyle=getNameStyleProps(canStyle?(liveU.nameStyle||'normal'):'normal',liveU.nameColor||liveU.color||'#2563eb');const bg=canStyle?(liveU.profileBgColor||'#ffffff'):'transparent';return <div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(liveU);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveU.nameColor||'#17a7d2')}}>{liveU.avatarUrl?<img src={liveU.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{display:'inline-block',fontSize:'12px',fontWeight:'bold',...nameStyle,background:bg,padding:canStyle?'3px 6px':0,borderRadius:canStyle?'4px':0}}>{liveU.displayName||liveU.userName||liveU.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(liveU.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(liveU.role)==='Owner')?'صاحب الموقع':normalizeRole(liveU.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{liveU.country||''} {liveU.flag||''}</div></div></div>})}</div>
+            <div style={{flex:1,overflowY:'auto',padding:'7px'}}>{rankedUsers.filter(u=>['Owner','Super Admin','Admin','Premium'].includes(normalizeRole(u.role)) || String(u.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()).map((u:any,i:number)=>{const liveU={...u,...(liveUserProfiles[u.userId||u.id]||{})};const canStyle=canDisplayProfileCustomization(liveU);const bg=canStyle?(liveU.profileBgColor||'#ffffff'):'transparent';const styleColor=canStyle?bg:(liveU.nameColor||liveU.color||'#2563eb');const styleKind=canStyle?(liveU.nameStyle||'normal'):'normal';const nameStyle=styleKind==='normal'&&canStyle?{color:getContrastTextColor(styleColor)}:getNameStyleProps(styleKind,styleColor);return <div key={u.id} onClick={()=>{setShowVipModal(false);openUserProfile(liveU);}} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderBottom:'1px solid #eee',cursor:'pointer'}}><b style={{width:'24px',fontSize:'12px',color:'#b45309'}}>{i+1}</b><div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#0284c7',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid '+(liveU.nameColor||'#17a7d2')}}>{liveU.avatarUrl?<img src={liveU.avatarUrl} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'👤'}</div><div style={{minWidth:0}}><div style={{display:'inline-block',fontSize:'12px',fontWeight:'bold',...nameStyle,background:bg,padding:canStyle?'3px 6px':0,borderRadius:canStyle?'4px':0}}>{liveU.displayName||liveU.userName||liveU.name||'مستخدم'}</div><div style={{fontSize:'10px',color:'#64748b'}}>{(String(liveU.email||'').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()||normalizeRole(liveU.role)==='Owner')?'صاحب الموقع':normalizeRole(liveU.role)}</div><div style={{fontSize:'9px',color:'#94a3b8'}}>{liveU.country||''} {liveU.flag||''}</div></div></div>})}</div>
           </div>
         </div>
       )}
@@ -3214,7 +3214,9 @@ export default function App() {
               {filteredOnlineUsers.map((u) => {
                 const liveU = { ...u, ...(liveUserProfiles[u.userId || u.id] || {}) };
                 const uCanCustomize = canDisplayProfileCustomization(liveU);
-                const uStyleProps = getNameStyleProps(uCanCustomize ? (liveU.nameStyle || 'normal') : 'normal', liveU.nameColor || liveU.color || '#2563eb');
+                const uStyleColor = uCanCustomize ? (liveU.profileBgColor || '#ffffff') : (liveU.nameColor || liveU.color || '#2563eb');
+                const uStyleKind = uCanCustomize ? (liveU.nameStyle || 'normal') : 'normal';
+                const uStyleProps = uCanCustomize && uStyleKind === 'normal' ? { color: getContrastTextColor(uStyleColor) } : getNameStyleProps(uStyleKind, uStyleColor);
                 return (
                   <div 
                     key={u.id} 
@@ -3429,7 +3431,9 @@ export default function App() {
                       const liveProfile = liveUserProfiles[selectedProfileUser.userId] || {};
                       const profileForStyle = { ...selectedProfileUser, role: normalizeRole(liveProfile.role || selectedProfileUser.role), email: liveProfile.email || selectedProfileUser.email };
                       return canDisplayProfileCustomization(profileForStyle)
-                        ? getNameStyleProps(liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal', liveProfile.nameColor || selectedProfileUser.nameColor || '#2563eb')
+                        ? ((liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal') === 'normal'
+                          ? { color: getContrastTextColor(liveProfile.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff') }
+                          : getNameStyleProps(liveProfile.nameStyle || selectedProfileUser.nameStyle || 'normal', liveProfile.profileBgColor || selectedProfileUser.profileBgColor || '#ffffff'))
                         : { color: '#2563eb' };
                     })()
                   }}>
