@@ -2649,7 +2649,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="video-chat-scroll" style={{ flex: '1 1 0%', minHeight: 0, margin: 0, padding: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', direction: 'rtl', background: '#ffffff' }}>
+            <div className="video-chat-scroll" style={{ flex: '1 1 0%', minHeight: 0, margin: 0, padding: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', direction: 'rtl', background: '#ffffff' }}>
               
               {messages.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
