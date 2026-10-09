@@ -1960,15 +1960,25 @@ export default function App() {
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
 
+      // Apply the new rank locally immediately; the users onSnapshot then keeps every client in sync.
+      const rolePatch = { role: roleToSave, email: targetEmail, permissions };
+      setLiveUserProfiles((prev: any) => ({
+        ...prev,
+        [targetUid]: { ...(prev[targetUid] || {}), userId: targetUid, ...rolePatch }
+      }));
+      setOnlineUsersList((prev: any[]) => prev.map((u: any) =>
+        (u.id === targetUid || u.userId === targetUid) ? { ...u, ...rolePatch } : u
+      ));
+      setRankedUsers((prev: any[]) => prev.map((u: any) =>
+        (u.id === targetUid || u.userId === targetUid) ? { ...u, ...rolePatch } : u
+      ));
+      setMessages((prev: any[]) => prev.map((m: any) =>
+        (m.userId || m.uid || m.senderId || m.authorId || m.senderUid) === targetUid
+          ? { ...m, ...rolePatch }
+          : m
+      ));
       setSelectedProfileUser((prev: any) =>
-        prev
-          ? {
-              ...prev,
-              role: roleToSave,
-              email: targetEmail,
-              permissions
-            }
-          : null
+        prev && prev.userId === targetUid ? { ...prev, ...rolePatch } : prev
       );
     } catch (e: any) {
       console.error(e);
@@ -2002,7 +2012,27 @@ export default function App() {
         await updateProfile(user, { displayName: cleanNewName });
       }
 
-      setSelectedProfileUser((prev: any) => prev ? { ...prev, name: cleanNewName } : null);
+      // Update every visible copy of this user's name immediately, without waiting for snapshots.
+      const namePatch = { displayName: cleanNewName, userName: cleanNewName, name: cleanNewName };
+      setLiveUserProfiles((prev: any) => ({
+        ...prev,
+        [targetUid]: { ...(prev[targetUid] || {}), userId: targetUid, ...namePatch }
+      }));
+      setOnlineUsersList((prev: any[]) => prev.map((u: any) =>
+        (u.id === targetUid || u.userId === targetUid) ? { ...u, ...namePatch } : u
+      ));
+      setRankedUsers((prev: any[]) => prev.map((u: any) =>
+        (u.id === targetUid || u.userId === targetUid) ? { ...u, ...namePatch } : u
+      ));
+      setMessages((prev: any[]) => prev.map((m: any) =>
+        (m.userId || m.uid || m.senderId || m.authorId || m.senderUid) === targetUid
+          ? { ...m, user: cleanNewName, name: cleanNewName }
+          : m
+      ));
+      setSelectedProfileUser((prev: any) => prev && prev.userId === targetUid
+        ? { ...prev, name: cleanNewName, displayName: cleanNewName, userName: cleanNewName }
+        : prev
+      );
       setIsEditingNameActive(false);
     } catch (e: any) {
       console.error(e);
@@ -2685,10 +2715,10 @@ export default function App() {
                             fontSize: '12px',
                             fontWeight: 'bold',
                             // Show the selected profile background as a box around the name in public chat.
-                            backgroundColor: displayMessage.profileBgColor || 'transparent',
-                            color: effectiveNameColor,
-                            padding: displayMessage.profileBgColor ? '3px 8px' : 0,
-                            borderRadius: displayMessage.profileBgColor ? '4px' : 0,
+                            backgroundColor: hasCustomBg ? displayMessage.profileBgColor : 'transparent',
+                            color: mCanCustomize ? effectiveNameColor : '#111827',
+                            padding: hasCustomBg ? '3px 8px' : 0,
+                            borderRadius: hasCustomBg ? '4px' : 0,
                             border: 'none',
                             minWidth: 0,
                             overflow: 'hidden',
@@ -2696,6 +2726,7 @@ export default function App() {
                             textAlign: 'right',
                             display: 'inline-flex',
                             alignItems: 'center',
+                            fontWeight: mCanCustomize ? 'bold' : 'normal',
                             transition: 'color 0.2s ease',
                             cursor: 'pointer'
                           }}
@@ -3244,7 +3275,7 @@ export default function App() {
                       {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'bold', backgroundColor:'transparent', color: uStyleColor, padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                            <span style={{ fontSize:'12px', fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
                               <span style={uStyleProps}>{parts.name}</span>
                             </span>
                           </div>
