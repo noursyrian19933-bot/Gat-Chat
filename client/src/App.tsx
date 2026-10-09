@@ -2443,7 +2443,7 @@ export default function App() {
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
-        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; flex:1 1 auto !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; border:0 !important; align-self:stretch !important; }
+        .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; flex:1 1 auto !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; border:0 !important; align-self:stretch !important; display:flex !important; flex-direction:column !important; justify-content:flex-end !important; }
         .video-chat-layout { flex:1 1 0% !important; min-height:0 !important; height:0 !important; margin:0 !important; padding:0 !important; gap:0 !important; justify-content:flex-start !important; }
         .video-chat-layout .video-composer { margin:0 !important; margin-bottom:0 !important; }
         .video-bottom-nav { margin:0 !important; margin-top:0 !important; flex-shrink:0 !important; }
