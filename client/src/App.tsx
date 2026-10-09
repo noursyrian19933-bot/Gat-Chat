@@ -1438,26 +1438,18 @@ export default function App() {
 
       const currentRoleText = user.isAnonymous ? 'Guest' : (isOwner ? 'Site Owner' : normalizeRole(currentUserRole));
 
-      if (joinMessagesSetting === 'تشغيل') {
-        const currentProfile = liveUserProfiles[user.uid] || {};
-        const joinRoleLabel = currentRoleText === 'Site Owner' ? 'صاحب الموقع' : currentRoleText === 'Super Admin' ? 'سوبر أدمن' : currentRoleText === 'Admin' ? 'أدمن' : currentRoleText === 'Premium' ? 'مميز' : currentRoleText === 'Owner' ? 'Owner' : currentRoleText === 'Guest' ? 'زائر' : 'عضو';
-        try {
-          await addDoc(collection(db, 'rooms', room.id, 'messages'), {
-            user: actualName,
-            userId: user.uid,
-            text: `${actualName} انضم للغرفة (${joinRoleLabel})`,
-            role: currentRoleText,
-            nameColor: currentProfile.nameColor || currentProfile.color || '',
-            color: currentProfile.nameColor || currentProfile.color || '',
-            nameStyle: currentProfile.nameStyle || 'normal',
-            profileBgColor: currentProfile.profileBgColor || '',
-            isJoinNotice: true,
-            isSystemSpecial: false,
-            createdAt: serverTimestamp()
-          });
-        } catch (e) {
-          console.error(e);
-        }
+      try {
+        await addDoc(collection(db, 'rooms', room.id, 'messages'), {
+          user: 'نظام الشات',
+          userId: 'system',
+          text: `${actualName} تم الانضمام (${currentRoleText})`,
+          role: 'System',
+          color: '#16a34a',
+          isSystemSpecial: false,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.error(e);
       }
     }
   };
@@ -2452,7 +2444,8 @@ export default function App() {
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
         .video-topbar .brand-logo { font-size:20px !important; font-weight:800 !important; letter-spacing:-1px; color:#16a6d4 !important; }
         .video-chat-scroll { background:#fff !important; font-family: Tahoma, Arial, sans-serif !important; }
-        .video-chat-scroll > div { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div:not(:last-child) { min-height:44px !important; padding:3px 7px !important; gap:7px !important; border-bottom:1px solid #e5e5e5 !important; }
+        .video-chat-scroll > div:last-child:empty { min-height:0 !important; height:0 !important; padding:0 !important; margin:0 !important; border:0 !important; gap:0 !important; }
         .video-chat-scroll > div:nth-child(even) { background:#efefef !important; }
         .video-chat-scroll > div:nth-child(odd) { background:#fff !important; }
         .video-chat-scroll img { border-radius:50%; }
@@ -2675,20 +2668,6 @@ export default function App() {
                     ? getNameStyleProps(effectiveNameStyle, effectiveNameColor)
                     : { color: '#111827', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
                   const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
-
-                  if (m.isJoinNotice) {
-                    const joinRole = String(m.role || 'Member');
-                    const isJoinRanked = ['Site Owner', 'Owner', 'Super Admin', 'Admin', 'Premium'].includes(joinRole);
-                    const joinNameStyle = isJoinRanked ? getNameStyleProps(m.nameStyle || 'normal', m.nameColor || m.color || '#2563eb') : { color: '#111827', fontWeight: 'normal', textShadow: 'none', background: 'none', WebkitTextFillColor: 'currentColor', filter: 'none' };
-                    const joinNameBg = isJoinRanked ? (m.profileBgColor || 'transparent') : 'transparent';
-                    const joinRoleLabel = joinRole === 'Site Owner' ? 'صاحب الموقع' : joinRole === 'Super Admin' ? 'سوبر أدمن' : joinRole === 'Admin' ? 'أدمن' : joinRole === 'Premium' ? 'مميز' : joinRole === 'Owner' ? 'Owner' : joinRole === 'Guest' ? 'زائر' : 'عضو';
-                    return (
-                      <div key={m.id || idx} style={{ padding: '5px 10px', textAlign: 'center', direction: 'rtl', fontSize: '12px', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', borderBottom: '1px solid #f1f1f1' }}>
-                        <span style={{ display: 'inline', backgroundColor: joinNameBg, padding: isJoinRanked && m.profileBgColor ? '2px 5px' : 0, borderRadius: '4px' }}><span style={joinNameStyle}>{m.user || m.text?.split(' انضم للغرفة (')[0] || 'مستخدم'}</span></span>
-                        <span style={{ color: '#64748b' }}> انضم للغرفة ( {joinRoleLabel} )</span>
-                      </div>
-                    );
-                  }
 
                   if (m.isSystemSpecial) {
                     return (
