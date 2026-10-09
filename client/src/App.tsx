@@ -2630,12 +2630,10 @@ export default function App() {
                   const liveProfile = liveUserProfiles[m.userId] || liveUserProfiles[m.uid] || liveUserProfiles[m.senderId] || liveUserProfiles[m.authorId] || liveUserProfiles[m.senderUid] || {};
                   const displayMessage = { ...m, ...liveProfile, userId: m.userId || m.uid || m.senderId || m.authorId || m.senderUid, name: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, user: liveProfile.displayName || liveProfile.userName || liveProfile.name || m.user, role: normalizeRole(liveProfile.role || m.role), color: liveProfile.nameColor || m.color, nameColor: liveProfile.nameColor || m.nameColor, nameStyle: liveProfile.nameStyle || m.nameStyle || 'normal', profileBgColor: liveProfile.profileBgColor || m.profileBgColor, avatarUrl: liveProfile.avatarUrl || m.avatarUrl };
                   const mCanCustomize = canDisplayProfileCustomization(displayMessage);
-                  const effectiveNameColor = displayMessage.nameColor || displayMessage.color || getContrastTextColor(displayMessage.profileBgColor || '#ffffff');
+                  const effectiveNameColor = displayMessage.nameColor || displayMessage.color || '#2563eb';
                   const effectiveNameStyle = mCanCustomize ? (displayMessage.nameStyle || 'normal') : 'normal';
                   // Use the saved profile background color consistently as the role-name box color; use the selected decoration everywhere.
-                  const styleProps = effectiveNameStyle === 'normal' && mCanCustomize
-                    ? { color: getContrastTextColor(displayMessage.profileBgColor || '#ffffff') }
-                    : getNameStyleProps(effectiveNameStyle, effectiveNameColor);
+                  const styleProps = getNameStyleProps(effectiveNameStyle, effectiveNameColor);
                   const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
@@ -2682,9 +2680,9 @@ export default function App() {
                         {getRoleTag(displayMessage) ? (
                           <span
                             style={{
-                              // The chosen profile background color is the name-box color everywhere.
-                              backgroundColor: displayMessage.profileBgColor || '#ffffff',
-                              color: getContrastTextColor(displayMessage.profileBgColor || '#ffffff'),
+                              // Profile background colors the message row; name decoration affects only the name.
+                              backgroundColor: 'transparent',
+                              color: effectiveNameColor,
                               padding: '3px 8px',
                               borderRadius: '5px',
                               border: '1px solid rgba(0,0,0,0.18)',
@@ -3214,9 +3212,9 @@ export default function App() {
               {filteredOnlineUsers.map((u) => {
                 const liveU = { ...u, ...(liveUserProfiles[u.id] || liveUserProfiles[u.userId] || {}) };
                 const uCanCustomize = canDisplayProfileCustomization(liveU);
-                const uStyleColor = liveU.nameColor || liveU.color || getContrastTextColor(liveU.profileBgColor || '#ffffff');
+                const uStyleColor = liveU.nameColor || liveU.color || '#2563eb';
                 const uStyleKind = uCanCustomize ? (liveU.nameStyle || 'normal') : 'normal';
-                const uStyleProps = uCanCustomize && uStyleKind === 'normal' ? { color: getContrastTextColor(liveU.profileBgColor || '#ffffff') } : getNameStyleProps(uStyleKind, uStyleColor);
+                const uStyleProps = getNameStyleProps(uStyleKind, uStyleColor);
                 return (
                   <div 
                     key={u.id} 
@@ -3228,7 +3226,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: '#ffffff', 
+                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
@@ -3242,7 +3240,7 @@ export default function App() {
                       {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'bold', backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : 'transparent', color: uCanCustomize ? getContrastTextColor(liveU.profileBgColor || '#ffffff') : (liveU.nameColor || liveU.color || '#2563eb'), padding: uCanCustomize ? '3px 8px' : 0, borderRadius: uCanCustomize ? '5px' : 0, border: uCanCustomize ? '1px solid rgba(0,0,0,0.18)' : 'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'background-color 0.2s ease, color 0.2s ease' }}>
+                            <span style={{ fontSize:'12px', fontWeight:'bold', backgroundColor:'transparent', color: uStyleColor, padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
                               <span style={uStyleProps}>{parts.name}</span>
                             </span>
                           </div>
