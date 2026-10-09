@@ -374,7 +374,7 @@ export default function App() {
     const email = String(profileUser?.email || '').trim().toLowerCase();
     const role = normalizeRole(profileUser?.role);
     const isProfileOwner = email === ADMIN_EMAIL.trim().toLowerCase() || role === 'Owner';
-    return isProfileOwner || ['Admin', 'Super Admin', 'Premium'].includes(role);
+    return isProfileOwner || ['Site Owner', 'Owner', 'Admin', 'Super Admin', 'Premium'].includes(role);
   };
 
   const hasCurrentPermission = (permission: string) =>
@@ -2720,8 +2720,8 @@ export default function App() {
                             color: mCanCustomize ? effectiveNameColor : '#111827',
                             padding: hasCustomBg ? '3px 8px' : 0,
                             borderRadius: hasCustomBg ? '4px' : 0,
-                            boxShadow: hasCustomBg ? '0 0 0 1px ' + displayMessage.profileBgColor : 'none',
-                            border: 'none',
+                            boxShadow: hasCustomBg ? '0 0 0 1px ' + (displayMessage.nameColor || displayMessage.color || '#2563eb') : 'none',
+                            border: hasCustomBg ? '1px solid ' + (displayMessage.nameColor || displayMessage.color || '#2563eb') : 'none',
                             minWidth: 0,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
