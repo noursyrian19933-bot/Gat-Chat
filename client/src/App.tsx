@@ -497,6 +497,7 @@ export default function App() {
             nameStyle: 'normal',
             profileBgColor: '#ffffff',
             points: 0,
+            level: 1,
             avatarUrl: '',
             coverUrl: '',
             profileSongUrl: '',
@@ -1122,7 +1123,6 @@ export default function App() {
       lastActive: Date.now(),
       lastSeenAt: Date.now(),
       lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      points: 0,
       age: profileAge || 'عدم إظهار',
       relationship: profileRelationship || 'عدم إظهار',
       privateChatSetting,
@@ -1672,6 +1672,30 @@ export default function App() {
     setNewsCommentInputs(v=>({...v,[item.id]:''}));
   };
 
+  // النقاط دائمة في Firestore؛ كل حرف يرسل في رسالة يمنح نقطة، والرتبة الرقمية مستقلة عن رتبة الصلاحيات.
+  const awardMessagePoints = async (textValue: string) => {
+    if (!user || user.isAnonymous || !textValue.length) return;
+    const ownerAccount = isOwner || String(user.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase();
+    if (ownerAccount) return; // صاحب الموقع نقاطه لا نهائية ولا يحتاج عدّادًا رقميًا.
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
+    const data = snap.exists() ? snap.data() : {};
+    const oldPoints = Math.max(0, Number(data.points || 0));
+    const newPoints = oldPoints + Array.from(textValue).length;
+    const oldLevel = Math.max(1, Number(data.level || (Math.floor(oldPoints / 2000) + 1)));
+    const newLevel = Math.floor(newPoints / 2000) + 1;
+    await setDoc(userRef, { points: newPoints, level: newLevel }, { merge: true });
+    if (newLevel > oldLevel && selectedRoom) {
+      for (let level = oldLevel + 1; level <= newLevel; level++) {
+        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
+          user: 'نظام الرتب', userId: 'system-ranks', role: 'System', isSystemSpecial: true,
+          text: `✨🎉 تهانينا ${user.displayName || user.email?.split('@')[0] || 'عضو'}! تم الانتقال من الرتبة ${level - 1} إلى الرتبة ${level} 🏆`,
+          color: '#b7791f', createdAt: serverTimestamp(), rankAnnouncement: true
+        });
+      }
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !selectedRoom || !user) return;
@@ -1700,6 +1724,7 @@ export default function App() {
         isSystemSpecial: false,
         createdAt: serverTimestamp()
       });
+      await awardMessagePoints(textMsg);
       setInputText('');
       setShowEmojiPicker(false);
     } catch (e) {
@@ -1726,6 +1751,7 @@ export default function App() {
         text: textMsg,
         createdAt: serverTimestamp()
       });
+      await awardMessagePoints(textMsg);
 
       await setDoc(doc(db, 'users', user.uid, 'private_chats', activePrivateChat.peerId), {
         peerId: activePrivateChat.peerId,
@@ -2142,6 +2168,40 @@ export default function App() {
     }
   };
 
+  const handleGiftPoints = async (target: any) => {
+    if (!user || user.isAnonymous || !target?.userId || target.userId === user.uid) return;
+    const senderRole = normalizeRole(currentUserRole);
+    if (!(isOwner || ['Owner','Super Admin','Admin','Premium'].includes(senderRole))) { alert('إهداء النقاط متاح لأصحاب الرتب فقط.'); return; }
+    if (isOwner || String(user.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase()) { alert('نقاط صاحب الموقع لا نهائية ولا تُخصم عند الإهداء.'); return; }
+    const amount = Number(window.prompt('كم نقطة تريد إهداءها؟', '100'));
+    if (!Number.isSafeInteger(amount) || amount <= 0) return;
+    const senderRef = doc(db, 'users', user.uid);
+    const targetRef = doc(db, 'users', target.userId);
+    const [senderSnap, targetSnap] = await Promise.all([getDoc(senderRef), getDoc(targetRef)]);
+    const senderData = senderSnap.exists() ? senderSnap.data() : {};
+    const targetData = targetSnap.exists() ? targetSnap.data() : {};
+    const senderPoints = Math.max(0, Number(senderData.points || 0));
+    if (senderPoints < amount) { alert('رصيد نقاطك غير كافٍ.'); return; }
+    const receiverPoints = Math.max(0, Number(targetData.points || 0));
+    const senderOldLevel = Math.max(1, Number(senderData.level || Math.floor(senderPoints / 2000) + 1));
+    const receiverOldLevel = Math.max(1, Number(targetData.level || Math.floor(receiverPoints / 2000) + 1));
+    const senderNewPoints = senderPoints - amount;
+    const receiverNewPoints = receiverPoints + amount;
+    const senderNewLevel = Math.floor(senderNewPoints / 2000) + 1;
+    const receiverNewLevel = Math.floor(receiverNewPoints / 2000) + 1;
+    await Promise.all([
+      setDoc(senderRef, { points: senderNewPoints, level: senderNewLevel }, { merge: true }),
+      setDoc(targetRef, { points: receiverNewPoints, level: receiverNewLevel }, { merge: true })
+    ]);
+    if (selectedRoom && receiverNewLevel > receiverOldLevel) {
+      for (let level = receiverOldLevel + 1; level <= receiverNewLevel; level++) {
+        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), { user: 'نظام الرتب', userId: 'system-ranks', role: 'System', isSystemSpecial: true, text: `✨🎉 تهانينا ${target.name || target.displayName || 'عضو'}! تم الانتقال من الرتبة ${level - 1} إلى الرتبة ${level} 🏆`, color: '#b7791f', createdAt: serverTimestamp(), rankAnnouncement: true });
+      }
+    }
+    setSuccessMessage(`تم إهداء ${amount} نقطة بنجاح`);
+    setTimeout(() => setSuccessMessage(''), 2200);
+  };
+
   const openUserProfile = async (uData: any) => {
     const targetId = uData.userId || uData.uid || uData.id || 'guest_id';
     let userEmail = uData.email || '';
@@ -2158,7 +2218,8 @@ export default function App() {
       roomName: uData.roomName || uData.currentRoomName || '',
       lastSeen: uData.lastSeen || '',
       points: uData.points ?? 0,
-      nextLevelPoints: 2000,
+      level: Math.max(1, Number(uData.level || Math.floor(Number(uData.points || 0) / 2000) + 1)),
+      nextLevelPoints: Math.max(0, (Math.floor(Number(uData.points || 0) / 2000) + 1) * 2000 - Number(uData.points || 0)),
       friendsVisibilitySetting: uData.friendsVisibilitySetting || 'الجميع',
       pointsVisibilitySetting: uData.pointsVisibilitySetting || 'الجميع',
       privateChatSetting: uData.privateChatSetting || 'تشغيل',
@@ -2188,7 +2249,8 @@ export default function App() {
             roomName: data.currentRoomName || fetchedData.roomName,
             lastSeen: data.lastSeen || fetchedData.lastSeen,
             points: data.points ?? fetchedData.points,
-            nextLevelPoints: 2000,
+            level: Math.max(1, Number(data.level || Math.floor(Number(data.points || 0) / 2000) + 1)),
+            nextLevelPoints: Math.max(0, (Math.floor(Number(data.points || 0) / 2000) + 1) * 2000 - Number(data.points || 0)),
             friendsVisibilitySetting: data.friendsVisibilitySetting || fetchedData.friendsVisibilitySetting,
             pointsVisibilitySetting: data.pointsVisibilitySetting || fetchedData.pointsVisibilitySetting,
             privateChatSetting: data.privateChatSetting || fetchedData.privateChatSetting,
@@ -3455,7 +3517,7 @@ export default function App() {
                   ['طلبات الصداقة','friendRequestsSetting',friendRequestsSetting,setFriendRequestsSetting,['تشغيل','إيقاف']],
                   ['طلبات التحدث','talkRequestsSetting',talkRequestsSetting,setTalkRequestsSetting,['تشغيل','إيقاف']],
                   ['من يمكنه رؤية أصدقائي','friendsVisibilitySetting',friendsVisibilitySetting,setFriendsVisibilitySetting,['الجميع','الأصدقاء فقط','أنا فقط']],
-                  ['من يمكنه رؤية نقاطي','pointsVisibilitySetting',pointsVisibilitySetting,setPointsVisibilitySetting,['الجميع','الأصدقاء فقط','أنا فقط']],
+                  ['إخفاء النقاط عن الآخرين','pointsVisibilitySetting',pointsVisibilitySetting,setPointsVisibilitySetting,['الجميع','أنا فقط']],
                   ['ظهور رسائل الانضمام','joinMessagesSetting',joinMessagesSetting,setJoinMessagesSetting,['تشغيل','إيقاف']],
                   ['الأصوات','soundSetting',soundSetting,setSoundSetting,['صامت','تشغيل']],
                   ['الثيم','themeSetting',themeSetting,setThemeSetting,['الثيم الافتراضي','فاتح','داكن']],
@@ -3549,6 +3611,7 @@ export default function App() {
                 ) && <>
                   <button onClick={()=>{const nextName=window.prompt('اكتب الاسم الجديد',String(selectedProfileUser.displayName || selectedProfileUser.userName || selectedProfileUser.name || ''));if(nextName && nextName.trim()) void handleUpdateUserName(nextName);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✏️ تغيير الاسم</button>
                 </>}
+                {!isSelfProfile && ['Owner','Super Admin','Admin','Premium'].includes(normalizedCurrentRole) && <button onClick={()=>{void handleGiftPoints(selectedProfileUser);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء نقاط من رصيدك</button>}
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
                   <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
                 </>}
@@ -3630,7 +3693,7 @@ export default function App() {
                 ...(selectedProfileUser.lastSeen && selectedProfileUser.lastSeen !== 'عدم إظهار' ? [['آخر تواجد', selectedProfileUser.lastSeen]] : [])
               ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:42,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
+              {(isSelfProfile || selectedProfileUser.pointsVisibilitySetting !== 'أنا فقط') && <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,padding:'8px 0',boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'center'}}><div style={{fontWeight:800,color:'#0f9e8a'}}>{(isOwner || String(selectedProfileUser.email || '').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) ? '∞' : (selectedProfileUser.points ?? 0)}</div><div style={{fontSize:12,color:'#64748b'}}>الرتبة {Math.max(1,Number(selectedProfileUser.level || Math.floor(Number(selectedProfileUser.points || 0)/2000)+1))}</div><div style={{fontSize:11,color:'#64748b'}}>المتبقي للرتبة التالية: {(isOwner || String(selectedProfileUser.email || '').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) ? '∞' : (selectedProfileUser.nextLevelPoints ?? Math.max(0,2000-(Number(selectedProfileUser.points||0)%2000)))}</div></div></div>}
 
               <div style={{padding:'10px 0 4px',textAlign:'right',fontSize:12,fontWeight:700,color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333'}}>رابط الملف الشخصي 🔗</div>
               <div style={{paddingBottom:4,textAlign:'center',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
@@ -3652,4 +3715,4 @@ export default function App() {
     </div>
     </>
   );
-    }
+      }
