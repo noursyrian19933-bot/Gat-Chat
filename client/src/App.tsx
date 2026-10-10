@@ -2873,7 +2873,7 @@ export default function App() {
                         )}
                       </div>
 
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', minWidth: 0, fontSize: '11.5px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '4px', rowGap: '0px', minWidth: 0, fontSize: '11.5px' }}>
                         <span
                           style={{
                             // Match the online-list name wrapper exactly; decoration stays on the inner name only.
@@ -2900,7 +2900,7 @@ export default function App() {
                         >
                           <span style={styleProps}>{displayMessage.user}</span>
                         </span>
-                        <span style={{ color: '#111827' }}>:</span>
+                        <span style={{ color: '#111827', marginLeft: '-3px' }}>:</span>
 
                         {m.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
@@ -3712,4 +3712,4 @@ export default function App() {
     </div>
     </>
   );
-}
+    }
