@@ -115,18 +115,25 @@ const getContrastTextColor = (hex: string) => {
 const getNameStyleProps = (style: string, color: string) => {
   const chosen = color || '#2563eb';
   switch (style) {
-    case 'glowing': return { color: chosen, textShadow: `0 0 5px ${chosen}, 0 0 10px ${chosen}, 0 0 18px ${chosen}` };
-    case 'icy': return { background: 'linear-gradient(135deg,#38bdf8,#e0f2fe,#7dd3fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(56,189,248,.9))' };
-    case 'fire': return { background: 'linear-gradient(135deg,#ef4444,#f97316,#facc15)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(239,68,68,.8))' };
-    case 'gold': return { background: 'linear-gradient(135deg,#a16207,#facc15,#fff1a8,#ca8a04)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 2px rgba(161,98,7,.55))' };
-    case 'neon': return { color: '#39ff14', textShadow: '0 0 4px #39ff14, 0 0 9px #39ff14, 0 0 16px #16a34a' };
-    case 'rainbow': return { background: 'linear-gradient(90deg,#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' };
-    case 'silver': return { background: 'linear-gradient(135deg,#64748b,#f8fafc,#94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 1px rgba(15,23,42,.45))' };
-    case 'pink': return { color: '#ec4899', textShadow: '0 0 5px rgba(236,72,153,.7), 0 0 12px rgba(236,72,153,.55)' };
-    case 'violet': return { color: '#a78bfa', textShadow: '0 0 6px rgba(139,92,246,.8)' };
-    case 'emerald': return { color: '#10b981', textShadow: '0 0 5px rgba(16,185,129,.65)' };
+    case 'glowing': return { color: chosen, textShadow: `0 0 5px ${chosen}, 0 0 10px ${chosen}, 0 0 18px ${chosen}`, animation: 'rankGlow 1.8s ease-in-out infinite' };
+    case 'icy': return { background: 'linear-gradient(135deg,#38bdf8,#ffffff,#7dd3fc,#e0f2fe)', backgroundSize: '220% 220%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(56,189,248,.9))', animation: 'rankIce 2.4s ease-in-out infinite' };
+    case 'fire': return { background: 'linear-gradient(135deg,#ef4444,#f97316,#facc15,#ef4444)', backgroundSize: '240% 240%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px rgba(239,68,68,.8))', animation: 'rankFire 1.6s ease-in-out infinite' };
+    case 'gold': return { background: 'linear-gradient(110deg,#8a5a00,#facc15,#fff8b5,#d4a017,#fff0a0,#8a5a00)', backgroundSize: '250% 250%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 4px rgba(250,204,21,.7))', animation: 'rankGold 2.2s linear infinite' };
+    case 'neon': return { color: '#39ff14', textShadow: '0 0 4px #39ff14, 0 0 9px #39ff14, 0 0 16px #16a34a', animation: 'rankNeon 1.4s ease-in-out infinite' };
+    case 'rainbow': return { background: 'linear-gradient(90deg,#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#a855f7,#ef4444)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'rankRainbow 3s linear infinite' };
+    case 'silver': return { background: 'linear-gradient(110deg,#64748b,#f8fafc,#94a3b8,#ffffff,#64748b)', backgroundSize: '220% 220%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 1px rgba(15,23,42,.45))', animation: 'rankSilver 2.8s linear infinite' };
+    case 'pink': return { color: '#ec4899', textShadow: '0 0 5px rgba(236,72,153,.7), 0 0 12px rgba(236,72,153,.55)', animation: 'rankPink 1.9s ease-in-out infinite' };
+    case 'violet': return { color: '#a78bfa', textShadow: '0 0 6px rgba(139,92,246,.8)', animation: 'rankViolet 2s ease-in-out infinite' };
+    case 'emerald': return { color: '#10b981', textShadow: '0 0 5px rgba(16,185,129,.65)', animation: 'rankEmerald 2s ease-in-out infinite' };
     case 'ruby': return { color: '#e11d48', textShadow: '0 0 5px rgba(225,29,72,.7)' };
-    case 'ocean': return { background: 'linear-gradient(90deg,#0e7490,#22d3ee,#2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' };
+    case 'ocean': return { background: 'linear-gradient(90deg,#0e7490,#22d3ee,#2563eb,#0e7490)', backgroundSize: '220% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'rankOcean 2.7s linear infinite' };
+    case 'aurora': return { background: 'linear-gradient(90deg,#22c55e,#22d3ee,#a78bfa,#f0abfc,#22c55e)', backgroundSize: '250% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'rankAurora 3.4s linear infinite' };
+    case 'diamond': return { color: '#bae6fd', textShadow: '0 0 4px #fff, 0 0 9px #38bdf8', animation: 'rankDiamond 1.7s ease-in-out infinite' };
+    case 'pulse': return { color: chosen, textShadow: `0 0 8px ${chosen}`, animation: 'rankPulse 1.2s ease-in-out infinite' };
+    case 'plasma': return { background: 'linear-gradient(90deg,#f0abfc,#818cf8,#22d3ee,#f0abfc)', backgroundSize: '250% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'rankAurora 2.1s linear infinite' };
+    case 'copper': return { background: 'linear-gradient(90deg,#92400e,#fb923c,#ffedd5,#c2410c)', backgroundSize: '220% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'rankGold 2.8s linear infinite' };
+    case 'mint': return { color: '#6ee7b7', textShadow: '0 0 5px #34d399', animation: 'rankEmerald 2.4s ease-in-out infinite' };
+    case 'electric': return { color: '#67e8f9', textShadow: '0 0 3px #fff,0 0 8px #06b6d4,0 0 16px #0891b2', animation: 'rankNeon 1.1s ease-in-out infinite' };
     case 'shadow': return { color: chosen, textShadow: '2px 2px 0 rgba(15,23,42,.5), 0 0 4px rgba(15,23,42,.25)' };
     case 'bold': return { color: chosen, fontWeight: 900, letterSpacing: '.3px', textShadow: '0 1px 0 rgba(0,0,0,.18)' };
     case 'outline': return { color: chosen, WebkitTextStroke: '0.5px rgba(15,23,42,.65)', paintOrder: 'stroke fill' };
@@ -2672,6 +2679,21 @@ export default function App() {
   return (
     <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#003d43', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       <style>{`
+        @keyframes rankGold { 0%{background-position:0% 50%;filter:drop-shadow(0 0 2px rgba(250,204,21,.45))} 50%{background-position:100% 50%;filter:drop-shadow(0 0 7px rgba(250,204,21,.95))} 100%{background-position:0% 50%;filter:drop-shadow(0 0 2px rgba(250,204,21,.45))} }
+        @keyframes rankIce { 0%,100%{background-position:0% 50%;opacity:.72;filter:drop-shadow(0 0 2px rgba(56,189,248,.45))} 50%{background-position:100% 50%;opacity:1;filter:drop-shadow(0 0 8px rgba(186,230,253,1))} }
+        @keyframes rankFire { 0%,100%{background-position:0% 50%;filter:drop-shadow(0 0 2px #ef4444)} 50%{background-position:100% 50%;filter:drop-shadow(0 0 7px #f97316)} }
+        @keyframes rankGlow { 0%,100%{opacity:.82;text-shadow:0 0 3px currentColor,0 0 6px currentColor} 50%{opacity:1;text-shadow:0 0 7px currentColor,0 0 15px currentColor,0 0 22px currentColor} }
+        @keyframes rankNeon { 0%,100%{opacity:.78;filter:brightness(.9)} 50%{opacity:1;filter:brightness(1.45)} }
+        @keyframes rankRainbow { from{background-position:0% 50%} to{background-position:300% 50%} }
+        @keyframes rankSilver { 0%,100%{background-position:0% 50%;opacity:.82} 50%{background-position:100% 50%;opacity:1} }
+        @keyframes rankPink { 0%,100%{text-shadow:0 0 3px rgba(236,72,153,.35)} 50%{text-shadow:0 0 10px rgba(236,72,153,1),0 0 18px rgba(236,72,153,.65)} }
+        @keyframes rankViolet { 0%,100%{filter:brightness(.85)} 50%{filter:brightness(1.35);text-shadow:0 0 12px rgba(139,92,246,1)} }
+        @keyframes rankEmerald { 0%,100%{opacity:.8;text-shadow:0 0 3px rgba(16,185,129,.35)} 50%{opacity:1;text-shadow:0 0 11px rgba(16,185,129,1)} }
+        @keyframes rankOcean { from{background-position:0% 50%} to{background-position:220% 50%} }
+        @keyframes rankAurora { from{background-position:0% 50%} to{background-position:250% 50%} }
+        @keyframes rankDiamond { 0%,100%{opacity:.75;text-shadow:0 0 3px #38bdf8} 50%{opacity:1;text-shadow:0 0 10px #fff,0 0 18px #38bdf8} }
+        @keyframes rankPulse { 0%,100%{opacity:.75;transform:scale(1)} 50%{opacity:1;transform:scale(1.04)} }
+
         .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
         .video-theme { background:#003d43 !important; }
         .video-topbar { background:#003d43 !important; border-bottom:0 !important; box-shadow:none !important; padding:0 14px !important; }
@@ -3659,7 +3681,7 @@ export default function App() {
                 {hasRankForCustomization && <>
                   <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
                   <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);void saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}>
-                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💚</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="rainbow">قوس قزح 🌈</option><option value="pink">وردي 💗</option><option value="violet">بنفسجي 💜</option><option value="emerald">زمردي 💚</option><option value="ruby">ياقوتي ❤️</option><option value="ocean">محيطي 🌊</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option>
+                    <option value="normal">عادي</option><option value="glowing">ذهبي متوهج 🌟</option><option value="gold">ذهبي ملكي متحرك 👑</option><option value="icy">جليدي يلمع 🧊</option><option value="silver">فضي متلألئ ✨</option><option value="neon">نيون أخضر 💚</option><option value="electric">كهربائي ⚡</option><option value="fire">ناري متحرك 🔥</option><option value="rainbow">قوس قزح متحرك 🌈</option><option value="aurora">الشفق القطبي 🌌</option><option value="plasma">بلازما بنفسجية 💜</option><option value="diamond">ألماس لامع 💎</option><option value="ocean">محيطي متحرك 🌊</option><option value="pink">وردي نابض 💗</option><option value="violet">بنفسجي متوهج 💜</option><option value="emerald">زمردي متوهج 💚</option><option value="mint">نعناعي لامع 🍃</option><option value="copper">نحاسي متحرك 🟠</option><option value="pulse">نبض حسب اللون 💓</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option><option value="ruby">ياقوتي ❤️</option>
                   </select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
                   <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
