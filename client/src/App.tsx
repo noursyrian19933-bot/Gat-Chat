@@ -663,6 +663,12 @@ export default function App() {
       privateFirstDocRef.current[chatId] = snapshot.docs.length ? snapshot.docs[0] : null;
       setHasMorePrivateMessages(snapshot.docs.length === 20);
       const latest = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      // Mark messages from the other member as read while this private chat is open.
+      latest.forEach((m: any) => {
+        if (m.senderId && m.senderId !== user.uid && m.readByUid !== user.uid) {
+          updateDoc(doc(db, 'private_messages', chatId, 'messages', m.id), { readByUid: user.uid }).catch(() => {});
+        }
+      });
       const older = privateOlderMessagesRef.current[chatId] || [];
       const map = new Map<string, any>();
       older.forEach(m => map.set(m.id, m)); latest.forEach(m => map.set(m.id, m));
@@ -2209,12 +2215,18 @@ export default function App() {
     }
 
     try {
+      // Change only the visible name. Keep role/rank/points and the email-based
+      // roles_by_email record untouched so identity and permissions remain tied to email.
       await updateDoc(doc(db, 'users', targetUid), {
-        displayName: cleanNewName
+        displayName: cleanNewName,
+        userName: cleanNewName,
+        name: cleanNewName
       });
 
       await setDoc(doc(db, 'room_presence', targetUid), {
-        userName: cleanNewName
+        userName: cleanNewName,
+        displayName: cleanNewName,
+        name: cleanNewName
       }, { merge: true });
 
       if (user && user.uid === targetUid && !user.isAnonymous) {
@@ -3083,6 +3095,7 @@ export default function App() {
                     <div style={{ maxWidth: '75%', backgroundColor: isMe ? '#dcfce7' : '#ffffff', color: '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #cbd5e1' }}>
                       <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', fontWeight: 'bold' }}>{msg.senderName}</div>
                       {msg.mediaType === 'image' && msg.mediaData ? <div style={{display:'flex',flexDirection:'column',gap:4}}><img src={msg.mediaData} alt={msg.mediaName || 'صورة مرسلة'} style={{display:'block',maxWidth:220,maxHeight:220,borderRadius:8,objectFit:'contain'}} /><a href={msg.mediaData} download={msg.mediaName || 'image.jpg'} style={{fontSize:10,color:'#0284c7'}}>تنزيل الصورة</a></div> : msg.mediaType === 'voice' && msg.mediaData ? <audio controls preload="metadata" src={msg.mediaData} style={{width:220,maxWidth:'100%',height:38}} /> : <div>{msg.text}</div>}
+                      {isMe && <div aria-label={msg.readByUid === activePrivateChat.peerId ? 'تمت القراءة' : 'تم الإرسال'} style={{display:'flex',justifyContent:'flex-end',gap:1,marginTop:3,fontSize:12,lineHeight:1,color:msg.readByUid === activePrivateChat.peerId ? '#16a34a' : '#94a3b8'}}><span>✓</span><span>✓</span></div>}
                     </div>
                   </div>
                 );
@@ -3673,7 +3686,7 @@ export default function App() {
 
               {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'fixed',top:'20vh',left:'50%',transform:'translateX(-50%)',zIndex:250,width:'min(250px, calc(100vw - 32px))',maxHeight:'60dvh',overflowY:'auto',overscrollBehavior:'contain',WebkitOverflowScrolling:'touch',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',touchAction:'pan-y'}}>
                 <div style={{position:'sticky',top:0,zIndex:1,padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb',userSelect:'none'}}>إدارة الرتب والطرد</div>
-                {((isSelfProfile && ['Owner','Super Admin','Admin','Premium'].includes(normalizedCurrentRole)) || (isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSiteOwnerProfile(selectedProfileUser)) && <>
+                {((isSelfProfile && ['Owner','Super Admin','Admin','Premium'].includes(normalizeRole(profileUser?.role || selectedProfileUser.role))) || ((isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSiteOwnerProfile(selectedProfileUser))) && <>
                   <button onClick={()=>{const nextName=window.prompt('اكتب الاسم الجديد',String(selectedProfileUser.displayName || selectedProfileUser.userName || selectedProfileUser.name || ''));if(nextName && nextName.trim()) void handleUpdateUserName(nextName);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✏️ تغيير الاسم</button>
                 </>}
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
