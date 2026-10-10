@@ -2577,8 +2577,17 @@ export default function App() {
     const name = String(profileUser?.name || 'مستخدم').trim();
     const country = getCountryLabel(profileUser);
     const flag = country ? String(profileUser?.flag || '').trim() : '';
-    const tag = getRoleTag(profileUser);
-    return { name, flag, tag };
+    const email = String(profileUser?.email || '').trim().toLowerCase();
+    const role = email === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(profileUser?.role);
+    let label = '';
+    if (role === 'Guest' || profileUser?.isAnonymous === true) label = 'زائر';
+    else if (role === 'Site Owner') label = 'صاحب الموقع';
+    else if (role === 'Owner') label = 'Owner';
+    else if (role === 'Super Admin') label = 'Super Admin';
+    else if (role === 'Admin') label = 'Admin';
+    else if (role === 'Premium') label = 'Premium';
+    else label = `عضو رتبة ${Math.floor(Math.max(0, Number(profileUser?.points || 0)) / 2000) + 1}`;
+    return { name, flag, tag: getRoleTag(profileUser), label };
   };
 
   // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
@@ -3440,15 +3449,15 @@ export default function App() {
                       </div>
                       {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
-                          <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'12px', fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                          <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', alignItems:'flex-start', justifyContent:'center', direction:'rtl', whiteSpace:'nowrap', gap:'2px' }}>
+                            <span style={{ fontSize:'10px', lineHeight:1.2, color:'#64748b', fontWeight:600 }}>{parts.label}</span>
+                            <span style={{ fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
                               <span style={uStyleProps}>{parts.name}</span>
                             </span>
                           </div>
                           {(parts.flag || parts.tag) && (
                             <div style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', paddingLeft:'0px', paddingRight:'0px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
                               {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
-                              {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
                             </div>
                           )}
                         </>
@@ -3712,4 +3721,4 @@ export default function App() {
     </div>
     </>
   );
-    }
+}
