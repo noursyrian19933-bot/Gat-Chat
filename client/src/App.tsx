@@ -3447,25 +3447,21 @@ export default function App() {
                       position: 'relative'
                     }}
                   >
-                    <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', direction:'rtl', minWidth:0 }}>
-                      <div style={{ width:'32px', height:'32px', borderRadius:'50%', backgroundColor:'#0284c7', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'bold', overflow:'hidden', flexShrink:0 }}>
-                        {liveU.avatarUrl ? <img src={liveU.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '👤'}
-                      </div>
-                      {(() => { const parts = getOnlineNameParts(liveU); return (
-                        <>
-                          <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap', gap:0 }}>
-                            <span style={{ fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
-                              <span style={uStyleProps}>{parts.name}</span>
-                            </span>
+                    {(() => { const parts = getOnlineNameParts(liveU); return (
+                      <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', direction:'rtl', minWidth:0 }}>
+                        <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
+                          <span style={{ fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                            <span style={uStyleProps}>{parts.name}</span>
+                          </span>
+                        </div>
+                        {(parts.flag || parts.tag) && (
+                          <div style={{ marginRight:'auto', display:'inline-flex', alignItems:'center', gap:'5px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0, whiteSpace:'nowrap' }}>
+                            {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
+                            {parts.tag && <span style={{ display:'inline-flex', alignItems:'center', fontSize:'13px', lineHeight:1 }}>{parts.tag}</span>}
                           </div>
-                          {(parts.flag || parts.tag) && (
-                            <div style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', paddingLeft:'0px', paddingRight:'0px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
-                              {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
-                            </div>
-                          )}
-                        </>
-                      ); })()}
-                    </div>
+                        )}
+                      </div>
+                    ); })()}
                   </div>
                 );
               })}
@@ -3724,4 +3720,4 @@ export default function App() {
     </div>
     </>
   );
-    }
+                    }
