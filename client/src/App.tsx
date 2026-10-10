@@ -36,7 +36,7 @@ import {
   endBefore
 } from 'firebase/firestore';
 
-import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
+import { getDatabase, ref, child, get, set, update, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, query as rtdbQuery, orderByChild as rtdbOrderByChild, equalTo as rtdbEqualTo } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYMtDF5lcLhSc2vvNlvkH0VkYV-PaoL2I",
@@ -590,8 +590,10 @@ export default function App() {
       const userRef = doc(db, 'users', user.uid);
       
       const rememberedRoom = selectedRoom ? { roomId: selectedRoom.id, roomName: selectedRoom.name } : {};
-      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, online: false, ...rememberedRoom }, { merge: true });
-      await setDoc(userRef, { lastSeen: nowTime, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true });
+      const exitedAt = Date.now();
+      await update(ref(rdb, `presence/${user.uid}`), { online: false, lastActive: 0, lastSeen: nowTime, lastSeenAt: exitedAt });
+      await setDoc(presenceRef, { lastSeen: nowTime, lastSeenAt: exitedAt, lastActive: 0, online: false, ...rememberedRoom }, { merge: true });
+      await setDoc(userRef, { lastSeen: nowTime, lastSeenAt: exitedAt, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true });
     } catch (e) {
       console.error(e);
     }
@@ -604,13 +606,14 @@ export default function App() {
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
       const rememberedRoom = selectedRoom ? { roomId: selectedRoom.id, roomName: selectedRoom.name } : {};
-      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, online: false, ...rememberedRoom }, { merge: true }).catch(() => {});
-      setDoc(userRef, { lastSeen: nowTime, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true }).catch(() => {});
+      const exitedAt = Date.now();
+      update(ref(rdb, `presence/${user.uid}`), { online: false, lastActive: 0, lastSeen: nowTime, lastSeenAt: exitedAt }).catch(() => {});
+      setDoc(presenceRef, { lastSeen: nowTime, lastSeenAt: exitedAt, lastActive: 0, online: false, ...rememberedRoom }, { merge: true }).catch(() => {});
+      setDoc(userRef, { lastSeen: nowTime, lastSeenAt: exitedAt, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
     };
   }, [user]);
 
@@ -1075,6 +1078,7 @@ export default function App() {
       online: true,
       lastActive: Date.now(),
       lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      lastSeenAt: Date.now(),
       points: 0,
       age: profileAge || 'عدم إظهار',
       relationship: profileRelationship || 'عدم إظهار',
@@ -1090,7 +1094,7 @@ export default function App() {
     onDisconnect(presenceRef).update({
       online: false,
       lastActive: 0,
-      lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      lastSeenAt: rtdbServerTimestamp()
     }).catch(() => {});
 
     const publishPresence = () => set(presenceRef, presenceData()).catch(() => {});
@@ -1121,7 +1125,7 @@ export default function App() {
     const roomId = selectedRoom?.id || 'lobby';
     const presenceQuery = ref(rdb, 'presence');
 
-    return onValue(presenceQuery, (snapshot) => {
+    const unsubscribePresence = onValue(presenceQuery, (snapshot) => {
       const raw = snapshot.val() || {};
       const now = Date.now();
       const users: any[] = [];
@@ -1130,8 +1134,10 @@ export default function App() {
         if (!data) return;
         const dataRoomId = data.roomId || 'lobby';
         if (dataRoomId !== roomId) return;
-        if (data.online !== true) return;
-        if (data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
+        const isOnlineNow = data.online === true && (!data.lastActive || now - Number(data.lastActive) <= 2 * 60 * 1000);
+        const exitedAt = Number(data.lastSeenAt || 0);
+        const isRecentlyDeparted = data.online !== true && exitedAt > 0 && now - exitedAt >= 0 && now - exitedAt < 15 * 60 * 1000;
+        if (!isOnlineNow && !isRecentlyDeparted) return;
 
         users.push({
           id: uid,
@@ -1157,7 +1163,9 @@ export default function App() {
           nameStyle: data.nameStyle || undefined,
           profileBgColor: data.profileBgColor || '#ffffff',
           joinedDate: data.joinedDate || '',
-          lastSeen: data.lastSeen || '',
+          lastSeen: isOnlineNow ? (data.lastSeen || '') : (exitedAt ? new Date(exitedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (data.lastSeen || '')),
+          lastSeenAt: exitedAt,
+          online: isOnlineNow,
           points: data.points || 0,
           roomId: dataRoomId,
           roomName: data.roomName || 'القائمة الرئيسية',
@@ -1179,6 +1187,22 @@ export default function App() {
       setOnlineUsersList(users);
       setRoomCounts(prev => ({ ...prev, ...(roomId !== 'lobby' ? { [roomId]: users.length } : {}) }));
     });
+
+    // Remove departed users from the room list after exactly 15 minutes, even if RTDB has no new events.
+    const expiryTimer = window.setInterval(() => {
+      const now = Date.now();
+      setOnlineUsersList(prev => prev.filter((u: any) => {
+        if (u.roomId !== roomId) return true;
+        if (u.online === true) return true;
+        const exitedAt = Number(u.lastSeenAt || 0);
+        return exitedAt > 0 && now - exitedAt < 15 * 60 * 1000;
+      }));
+    }, 15000);
+
+    return () => {
+      unsubscribePresence();
+      window.clearInterval(expiryTimer);
+    };
   }, [selectedRoom?.id]);
 
   useEffect(() => {
@@ -3301,15 +3325,14 @@ export default function App() {
                   <div 
                     key={u.id} 
                     onClick={() => openUserProfile(liveU)}
-                    style={{
-                      padding: '6px 10px',
-                      minHeight: '42px',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff',
+                    style={{ 
+                      padding: '8px 12px', 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      cursor: 'pointer', 
+                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
