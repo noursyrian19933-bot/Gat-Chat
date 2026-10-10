@@ -2700,17 +2700,16 @@ export default function App() {
                   </div>
                 </div>
 
-                {!isVideoMinimized && (
-                  <div style={{ width: '100%', height: '170px', background: '#000' }}>
-                    <iframe 
-                      src={`${activeVideoUrl}?autoplay=1`} 
-                      title="YouTube player" 
-                      style={{ width: '100%', height: '100%', border: 'none' }}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                      allowFullScreen
-                    />
-                  </div>
-                )}
+                {/* Keep the same iframe mounted while minimizing. Unmounting it stops playback and resets the song. */}
+                <div style={{ width: '100%', height: isVideoMinimized ? '90px' : '170px', background: '#000', transition: 'height 0.2s' }}>
+                  <iframe 
+                    src={`${activeVideoUrl}${activeVideoUrl.includes('?') ? '&' : '?'}autoplay=1`} 
+                    title="YouTube player" 
+                    style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                  />
+                </div>
               </div>
             )}
 
@@ -3612,4 +3611,4 @@ export default function App() {
     </div>
     </>
   );
-  }
+    }
