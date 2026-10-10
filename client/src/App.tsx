@@ -3301,12 +3301,18 @@ export default function App() {
           <div style={{flex:1,overflowY:'auto',padding:'10px'}}>
             {newsItems.length===0 ? <div style={{textAlign:'center',padding:'40px',color:'#64748b',fontSize:'12px'}}>لا توجد أخبار حالياً.</div> : newsItems.map(n=>{
               const likes=Array.isArray(n.likes)?n.likes:[]; const comments=Array.isArray(n.comments)?n.comments:[]; const interact=canInteractWithNews(n);
-              const roleLabel=n.authorRole==='Site Owner'?'صاحب الموقع':n.authorRole==='Owner'?'Owner':n.authorRole==='Super Admin'?'سوبر أدمن':n.authorRole==='Admin'?'أدمن':(n.authorRole||'عضو');
+              const liveNewsAuthor = liveUserProfiles[n.authorId] || {};
+              const newsAuthorName = liveNewsAuthor.displayName || liveNewsAuthor.userName || liveNewsAuthor.name || n.authorName || 'الإدارة';
+              const newsAuthorRole = normalizeRole(liveNewsAuthor.role || n.authorRole || 'Member');
+              const roleLabel = newsAuthorRole === 'Site Owner' ? 'صاحب الموقع' : newsAuthorRole === 'Owner' ? 'Owner' : newsAuthorRole === 'Super Admin' ? 'سوبر أدمن' : newsAuthorRole === 'Admin' ? 'أدمن' : newsAuthorRole === 'Premium' ? 'مميز' : (newsAuthorRole || 'عضو');
+              const newsAuthorColor = liveNewsAuthor.nameColor || liveNewsAuthor.color || n.authorNameColor || '#2563eb';
+              const newsAuthorStyle = getNameStyleProps(liveNewsAuthor.nameStyle || 'normal', newsAuthorColor);
+              const newsAuthorRank = liveNewsAuthor.rankName || liveNewsAuthor.customRank || liveNewsAuthor.rank || liveNewsAuthor.badge || roleLabel;
               return <article key={n.id} style={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:'10px',padding:'10px',marginBottom:'9px',boxShadow:'0 1px 3px rgba(0,0,0,.05)',borderRight:n.pinned?'3px solid #eab308':'1px solid #e2e8f0'}}>
                 {n.pinned&&<div style={{fontSize:'10px',color:'#92400e',marginBottom:'5px'}}>📌 منشور مثبت</div>}
                 <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
                   <div style={{width:'40px',height:'40px',borderRadius:'50%',overflow:'hidden',background:'#e2e8f0',flexShrink:0}}>{n.authorAvatar?<img src={n.authorAvatar} alt='' style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',fontSize:'18px'}}>👤</span>}</div>
-                  <div style={{minWidth:0}}><div style={{fontSize:'12px',fontWeight:'800',color:n.authorNameColor||'#2563eb'}}>{n.authorName||'الإدارة'}</div><div style={{fontSize:'9px',color:'#64748b'}}>{roleLabel}</div></div>
+                  <div style={{minWidth:0,display:'flex',flexDirection:'column',alignItems:'flex-start',gap:'2px'}}><div style={{fontSize:'12px',fontWeight:'800',color:newsAuthorColor,display:'inline-flex',alignItems:'center',flexWrap:'wrap',gap:'4px'}}><span style={newsAuthorStyle}>{newsAuthorName}</span></div><div style={{fontSize:'9px',color:'#64748b',display:'flex',alignItems:'center',gap:'4px'}}><span>{newsAuthorRank}</span>{liveNewsAuthor.flag||liveNewsAuthor.countryFlag ? <span>{liveNewsAuthor.flag||liveNewsAuthor.countryFlag}</span> : null}</div></div>
                 </div>
                 {n.image&&<img src={n.image} alt='' style={{width:'100%',maxHeight:'280px',objectFit:'cover',borderRadius:'7px',marginBottom:'7px'}}/>}
                 <div style={{fontSize:'12px',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{n.text}</div>
