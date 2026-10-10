@@ -308,6 +308,30 @@ export default function App() {
   const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
   const [userJoinedDate, setUserJoinedDate] = useState<string>('');
 
+  // تاريخ العضوية يُحفظ مرة واحدة في ملف الحساب ولا يُعاد توليده عند تبديل الغرف أو الدخول مجددًا.
+  useEffect(() => {
+    if (!user || user.isAnonymous) return;
+    let cancelled = false;
+    const ensureJoinedDate = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(userRef);
+        const existing = String(snap.data()?.joinedDate || '').trim();
+        if (existing) {
+          if (!cancelled) setUserJoinedDate(existing);
+          return;
+        }
+        const firstDate = new Date().toISOString().slice(0, 10);
+        await setDoc(userRef, { joinedDate: firstDate }, { merge: true });
+        if (!cancelled) setUserJoinedDate(firstDate);
+      } catch (error) {
+        console.error('تعذر حفظ تاريخ الانضمام:', error);
+      }
+    };
+    void ensureJoinedDate();
+    return () => { cancelled = true; };
+  }, [user]);
+
   const [profileAvatar, setProfileAvatar] = useState<string>('');
   const [profileCover, setProfileCover] = useState<string>('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -608,8 +632,9 @@ export default function App() {
       const userRef = doc(db, 'users', user.uid);
       
       const rememberedRoom = selectedRoom ? { roomId: selectedRoom.id, roomName: selectedRoom.name } : {};
-      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, online: false, ...rememberedRoom }, { merge: true });
-      await setDoc(userRef, { lastSeen: nowTime, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true });
+      const exitAt = Date.now();
+      await setDoc(presenceRef, { lastSeen: nowTime, lastSeenAt: exitAt, leftAt: exitAt, lastActive: exitAt, online: true, ...rememberedRoom }, { merge: true });
+      await setDoc(userRef, { lastSeen: nowTime, lastSeenAt: exitAt, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true });
     } catch (e) {
       console.error(e);
     }
@@ -622,8 +647,9 @@ export default function App() {
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
       const rememberedRoom = selectedRoom ? { roomId: selectedRoom.id, roomName: selectedRoom.name } : {};
-      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, online: false, ...rememberedRoom }, { merge: true }).catch(() => {});
-      setDoc(userRef, { lastSeen: nowTime, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true }).catch(() => {});
+      const exitAt = Date.now();
+      setDoc(presenceRef, { lastSeen: nowTime, lastSeenAt: exitAt, leftAt: exitAt, lastActive: exitAt, online: true, ...rememberedRoom }, { merge: true }).catch(() => {});
+      setDoc(userRef, { lastSeen: nowTime, lastSeenAt: exitAt, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
@@ -1070,6 +1096,7 @@ export default function App() {
     setDoc(doc(db, 'users', user.uid), {
       currentRoomId: roomId,
       currentRoomName: roomName,
+      ...(userJoinedDate ? { joinedDate: userJoinedDate } : {}),
       online: true
     }, { merge: true }).catch(() => {});
 
@@ -1091,7 +1118,9 @@ export default function App() {
       roomId,
       roomName,
       online: true,
+      leftAt: 0,
       lastActive: Date.now(),
+      lastSeenAt: Date.now(),
       lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       points: 0,
       age: profileAge || 'عدم إظهار',
@@ -1106,8 +1135,10 @@ export default function App() {
 
     // Firebase نفسه يغيّر الحالة عند انقطاع الاتصال، حتى لو أُغلقت الصفحة فجأة.
     onDisconnect(presenceRef).update({
-      online: false,
-      lastActive: 0,
+      online: true,
+      leftAt: Date.now(),
+      lastActive: Date.now(),
+      lastSeenAt: Date.now(),
       lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }).catch(() => {});
 
@@ -1118,11 +1149,18 @@ export default function App() {
     const interval = window.setInterval(publishPresence, 30000);
 
     const handleBeforeUnload = () => {
+      const exitAt = Date.now();
       update(presenceRef, {
-        online: false,
-        lastActive: 0,
+        online: true,
+        leftAt: exitAt,
+        lastActive: exitAt,
+        lastSeenAt: exitAt,
         lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }).catch(() => {});
+      setDoc(doc(db, 'users', user.uid), {
+        lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        lastSeenAt: exitAt
+      }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -1148,8 +1186,11 @@ export default function App() {
         if (!data) return;
         const dataRoomId = data.roomId || 'lobby';
         if (dataRoomId !== roomId) return;
-        if (data.online !== true) return;
-        if (data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
+        const departedAt = Number(data.leftAt || 0);
+        const withinGracePeriod = departedAt > 0 && now - departedAt < 15 * 60 * 1000;
+        if (data.online !== true && !withinGracePeriod) return;
+        if (!withinGracePeriod && data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
+        if (departedAt > 0 && now - departedAt >= 15 * 60 * 1000) return;
 
         users.push({
           id: uid,
@@ -2768,7 +2809,7 @@ export default function App() {
                         )}
                       </div>
 
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
                                                 {getRoleTag(displayMessage) && (
                           <span style={{ flexShrink: 0, fontWeight: 'bold', lineHeight: 1 }} aria-label={getRoleLabel(displayMessage)}>
                             {getRoleTag(displayMessage)}
@@ -3611,4 +3652,4 @@ export default function App() {
     </div>
     </>
   );
-    }
+                                                                                                       }
