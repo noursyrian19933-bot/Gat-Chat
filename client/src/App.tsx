@@ -2874,9 +2874,6 @@ export default function App() {
                       </div>
 
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', minWidth: 0, fontSize: '11.5px' }}>
-                        <span style={{ display: 'block', fontSize: '10px', lineHeight: 1.2, color: getRoleTag(displayMessage) ? '#475569' : '#64748b', fontWeight: 700 }}>
-                          {getRoleTag(displayMessage) ? `${getRoleTag(displayMessage)} ` : ''}{getRoleLabel(displayMessage)}
-                        </span>
                         <span
                           style={{
                             // Match the online-list name wrapper exactly; decoration stays on the inner name only.
@@ -3715,4 +3712,4 @@ export default function App() {
     </div>
     </>
   );
-                                                    }
+}
