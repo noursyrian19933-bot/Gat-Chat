@@ -2201,7 +2201,9 @@ export default function App() {
     if (!selectedProfileUser) return;
     const targetUid = selectedProfileUser.userId;
     const sameAccountByEmail = Boolean(user?.email && selectedProfileUser.email && String(user.email).trim().toLowerCase() === String(selectedProfileUser.email).trim().toLowerCase());
-    const canRename = Boolean(user && !user.isAnonymous && ['Owner', 'Super Admin', 'Admin', 'Premium'].includes(normalizedCurrentRole) && (targetUid === user.uid || sameAccountByEmail) || user && !user.isAnonymous && isOwner && !isSiteOwnerProfile(selectedProfileUser));
+    const profileRoleForRename = normalizeRole(selectedProfileUser.role || selectedProfileUser.rank || selectedProfileUser.userRole);
+    const hasRenameRank = ['Site Owner', 'Owner', 'Super Admin', 'Admin', 'Premium'].includes(normalizedCurrentRole) || ['Site Owner', 'Owner', 'Super Admin', 'Admin', 'Premium'].includes(profileRoleForRename) || isOwner;
+    const canRename = Boolean(user && !user.isAnonymous && hasRenameRank && (targetUid === user.uid || sameAccountByEmail || (isOwner && !isSiteOwnerProfile(selectedProfileUser))));
     if (!canRename) { alert('لا تملك صلاحية تغيير الأسماء'); return; }
     const cleanNewName = String(requestedName ?? editingUserName).trim();
     if (!cleanNewName) return;
@@ -3687,7 +3689,7 @@ export default function App() {
 
               {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'fixed',top:'20vh',left:'50%',transform:'translateX(-50%)',zIndex:250,width:'min(250px, calc(100vw - 32px))',maxHeight:'60dvh',overflowY:'auto',overscrollBehavior:'contain',WebkitOverflowScrolling:'touch',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',touchAction:'pan-y'}}>
                 <div style={{position:'sticky',top:0,zIndex:1,padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb',userSelect:'none'}}>إدارة الرتب والطرد</div>
-                {((user && !user.isAnonymous && ['Owner','Super Admin','Admin','Premium'].includes(normalizedCurrentRole) && (isSelfProfile || (user.email && selectedProfileUser.email && String(user.email).trim().toLowerCase() === String(selectedProfileUser.email).trim().toLowerCase()))) || ((isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSiteOwnerProfile(selectedProfileUser))) && <>
+                {((user && !user.isAnonymous && (hasRankForCustomization || ['Site Owner','Owner','Super Admin','Admin','Premium'].includes(normalizeRole(selectedProfileUser.role || selectedProfileUser.rank || selectedProfileUser.userRole))) && (isSelfProfile || (user.email && selectedProfileUser.email && String(user.email).trim().toLowerCase() === String(selectedProfileUser.email).trim().toLowerCase()))) || ((isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSiteOwnerProfile(selectedProfileUser))) && <>
                   <button onClick={()=>{const nextName=window.prompt('اكتب الاسم الجديد',String(selectedProfileUser.displayName || selectedProfileUser.userName || selectedProfileUser.name || ''));if(nextName && nextName.trim()) void handleUpdateUserName(nextName);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✏️ تغيير الاسم</button>
                 </>}
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
