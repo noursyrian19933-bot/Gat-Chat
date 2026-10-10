@@ -3441,7 +3441,7 @@ export default function App() {
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer', 
-                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff', 
+                      backgroundColor: '#ffffff', 
                       border: '1px solid rgba(0,0,0,0.1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
@@ -3451,7 +3451,7 @@ export default function App() {
                     {(() => { const parts = getOnlineNameParts(liveU); return (
                       <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', direction:'rtl', minWidth:0 }}>
                         <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                          <span style={{ boxSizing:'border-box', fontSize:'12px', lineHeight:1.45, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:uCanCustomize ? (liveU.profileBgColor || '#f8fafc') : '#f8fafc', color:uCanCustomize ? uStyleColor : '#111827', padding:'5px 10px', borderRadius:'6px', border:'1px solid ' + (uCanCustomize ? (liveU.nameColor || liveU.color || '#cbd5e1') : '#e2e8f0'), minWidth:'76px', minHeight:'29px', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', justifyContent:'flex-start', transition:'color 0.2s ease' }}>
+                          <span style={{ boxSizing:'border-box', fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:uCanCustomize ? (liveU.profileBgColor || 'transparent') : 'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:'2px 5px', borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
                             <span style={uStyleProps}>{parts.name}</span>
                           </span>
                         </div>
@@ -3721,4 +3721,4 @@ export default function App() {
     </div>
     </>
   );
-                           }
+}
