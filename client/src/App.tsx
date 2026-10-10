@@ -131,6 +131,24 @@ const getNameStyleProps = (style: string, color: string) => {
     case 'bold': return { color: chosen, fontWeight: 900, letterSpacing: '.3px', textShadow: '0 1px 0 rgba(0,0,0,.18)' };
     case 'outline': return { color: chosen, WebkitTextStroke: '0.5px rgba(15,23,42,.65)', paintOrder: 'stroke fill' };
     case 'soft': return { color: chosen, textShadow: `0 0 7px ${chosen}66` };
+    case 'fire-dance': return { background: 'linear-gradient(0deg,#b91c1c,#f97316,#fde047,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 5px rgba(249,115,22,.8))', animation: 'nameFireDance 1.1s ease-in-out infinite alternate' };
+    case 'blink': return { color: chosen, animation: 'nameBlink 1.25s ease-in-out infinite' };
+    case 'shine': return { background: 'linear-gradient(100deg,#64748b 0%,#fff 35%,#38bdf8 50%,#fff 65%,#64748b 100%)', backgroundSize: '220% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'nameShine 2.1s linear infinite' };
+    case 'pulse': return { color: chosen, animation: 'namePulse 1.5s ease-in-out infinite', textShadow: `0 0 8px ${chosen}99` };
+    case 'electric': return { color: '#67e8f9', textShadow: '0 0 3px #fff,0 0 8px #06b6d4,0 0 15px #2563eb', animation: 'nameElectric .8s steps(2,end) infinite' };
+    case 'aurora': return { background: 'linear-gradient(90deg,#22c55e,#06b6d4,#818cf8,#d946ef,#22c55e)', backgroundSize: '250% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'nameShine 3s linear infinite' };
+    case 'candy': return { color: '#f472b6', textShadow: '1px 1px 0 #fff,0 0 7px #fb7185', animation: 'namePulse 1.8s ease-in-out infinite' };
+    case 'plasma': return { color: '#c084fc', textShadow: '0 0 4px #c084fc,0 0 12px #7c3aed,0 0 20px #ec4899', animation: 'nameElectric 1.2s steps(2,end) infinite' };
+    case 'mint': return { color: '#6ee7b7', textShadow: '0 0 4px #10b981,0 0 11px #34d399' };
+    case 'copper': return { background: 'linear-gradient(90deg,#7c2d12,#fb923c,#ffedd5,#c2410c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 1px #7c2d12)' };
+    case 'diamond': return { background: 'linear-gradient(90deg,#67e8f9,#fff,#a5f3fc,#60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 4px #67e8f9)' };
+    case 'royal': return { background: 'linear-gradient(90deg,#7e22ce,#f0abfc,#fef08a,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px #a855f7)' };
+    case 'matrix': return { color: '#4ade80', textShadow: '0 0 3px #16a34a,0 0 9px #22c55e', fontFamily: 'monospace' };
+    case 'wave': return { color: chosen, display: 'inline-block', animation: 'nameWave 1.7s ease-in-out infinite' };
+    case 'heartbeat': return { color: chosen, display: 'inline-block', animation: 'nameHeartbeat 1.4s ease-in-out infinite' };
+    case 'flicker': return { color: '#fef08a', textShadow: '0 0 4px #facc15,0 0 12px #f97316', animation: 'nameFlicker 2s linear infinite' };
+    case 'ice-glow': return { color: '#e0f2fe', textShadow: '0 0 4px #38bdf8,0 0 12px #7dd3fc,0 0 20px #0284c7' };
+    case 'black-gold': return { color: '#facc15', textShadow: '1px 1px 0 #111827,0 0 6px #ca8a04', fontWeight: 900 };
     default: return { color: chosen };
   }
 };
@@ -2481,6 +2499,8 @@ export default function App() {
   const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
 
   return (
+    <>
+    <style>{`@keyframes nameFireDance{0%{filter:drop-shadow(0 0 2px #ef4444);transform:translateY(0)}100%{filter:drop-shadow(0 -3px 7px #facc15);transform:translateY(-1px)}}@keyframes nameBlink{0%,100%{opacity:1}45%{opacity:.15}55%{opacity:.35}}@keyframes nameShine{0%{background-position:100% 0}100%{background-position:-120% 0}}@keyframes namePulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.06);filter:brightness(1.35)}}@keyframes nameElectric{0%,100%{opacity:1}50%{opacity:.7}52%{opacity:1}}@keyframes nameWave{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}@keyframes nameHeartbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.12)}24%{transform:scale(1)}36%{transform:scale(1.08)}48%{transform:scale(1)}}`}</style>
     <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#003d43', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       <style>{`
         .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
@@ -3450,7 +3470,7 @@ export default function App() {
                 {hasRankForCustomization && <>
                   <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
                   <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);void saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}>
-                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💚</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="rainbow">قوس قزح 🌈</option><option value="pink">وردي 💗</option><option value="violet">بنفسجي 💜</option><option value="emerald">زمردي 💚</option><option value="ruby">ياقوتي ❤️</option><option value="ocean">محيطي 🌊</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option>
+                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💚</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="fire-dance">🔥 نار مشتعلة متحركة</option><option value="rainbow">قوس قزح 🌈</option><option value="shine">✨ لمعان يمر على الاسم</option><option value="blink">💡 يلمع ويختفي</option><option value="pulse">💓 نبض مضيء</option><option value="electric">⚡ كهربائي</option><option value="aurora">🌌 شفق متدرج</option><option value="candy">🍬 حلوى وردية</option><option value="plasma">🪄 بلازما بنفسجية</option><option value="mint">🌿 نعناعي</option><option value="copper">🟠 نحاسي</option><option value="diamond">💎 ألماسي</option><option value="royal">👑 ملكي بنفسجي</option><option value="matrix">🟢 ماتريكس</option><option value="wave">〰️ موجة</option><option value="heartbeat">❤️ نبض سريع</option><option value="flicker">✨ وميض ذهبي</option><option value="ice-glow">❄️ جليدي متوهج</option><option value="black-gold">🖤 أسود وذهبي</option><option value="pink">وردي 💗</option><option value="violet">بنفسجي 💜</option><option value="emerald">زمردي 💚</option><option value="ruby">ياقوتي ❤️</option><option value="ocean">محيطي 🌊</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option>
                   </select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
                   <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
@@ -3493,9 +3513,9 @@ export default function App() {
                   <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
                 </>}
                 {isOwner && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
-                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Owner');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Owner  👑</button>
-                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Admin  🎖️</button>
-                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Super Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Super Admin ⭐</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Owner');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Owner 🏆</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Admin 👑</button>
+                  <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Super Admin');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Super Admin 🛡️</button>
                   <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Premium');setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء رتبة Premium 💎</button>
                   <button onClick={()=>{setShowRevokeRoleConfirm(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,background:'#fff',textAlign:'right',cursor:'pointer'}}>↩️ سحب الرتبة</button>
                 </>}
@@ -3590,5 +3610,6 @@ export default function App() {
       )}
 
     </div>
+    </>
   );
-}
+  }
