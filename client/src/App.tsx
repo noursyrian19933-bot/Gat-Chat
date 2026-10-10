@@ -3451,7 +3451,7 @@ export default function App() {
                     {(() => { const parts = getOnlineNameParts(liveU); return (
                       <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', direction:'rtl', minWidth:0 }}>
                         <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                          <span style={{ boxSizing:'border-box', fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:uCanCustomize ? (liveU.profileBgColor || 'transparent') : 'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:'2px 5px', borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                          <span style={{ boxSizing:'border-box', fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:uCanCustomize ? (liveU.profileBgColor || 'transparent') : 'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:'2px 8px', borderRadius:0, border:'none', minWidth:0, width:'100%', flex:1, alignSelf:'stretch', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'flex', alignItems:'center', justifyContent:'flex-start', transition:'color 0.2s ease' }}>
                             <span style={uStyleProps}>{parts.name}</span>
                           </span>
                         </div>
@@ -3721,4 +3721,4 @@ export default function App() {
     </div>
     </>
   );
-}
+    }
