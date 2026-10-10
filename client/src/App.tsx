@@ -193,6 +193,15 @@ export default function App() {
   const [inputText, setInputText] = useState('');
   const [onlineUsersList, setOnlineUsersList] = useState<Array<any>>([]);
   const [liveUserProfiles, setLiveUserProfiles] = useState<Record<string, any>>({});
+  const [currentClockTime, setCurrentClockTime] = useState(() => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
+  // Keep the displayed time current while a user is online; offline users retain their exit time.
+  useEffect(() => {
+    const updateClock = () => setCurrentClockTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    updateClock();
+    const clockTimer = window.setInterval(updateClock, 1000);
+    return () => window.clearInterval(clockTimer);
+  }, []);
   
   const [showOnlineModal, setShowOnlineModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
@@ -3585,7 +3594,7 @@ export default function App() {
                 ...(selectedProfileUser.country && selectedProfileUser.country !== 'عدم إظهار' ? [['البلد', selectedProfileUser.country]] : []),
                 ...(selectedProfileUser.joinedDate && selectedProfileUser.joinedDate !== 'عدم إظهار' ? [['تاريخ الانضمام', selectedProfileUser.joinedDate]] : []),
                 ...(selectedProfileUser.roomName && selectedProfileUser.roomName !== 'عدم إظهار' ? [['الغرفة الحالية', selectedProfileUser.roomName]] : []),
-                ...(selectedProfileUser.lastSeen && selectedProfileUser.lastSeen !== 'عدم إظهار' ? [['آخر تواجد', selectedProfileUser.lastSeen]] : [])
+                ...((selectedProfileUser.lastSeen && selectedProfileUser.lastSeen !== 'عدم إظهار') || onlineUsersList.some((u:any) => (u.id === selectedProfileUser.userId || u.userId === selectedProfileUser.userId || u.id === selectedProfileUser.id) && u.online === true) ? [['آخر تواجد', onlineUsersList.some((u:any) => (u.id === selectedProfileUser.userId || u.userId === selectedProfileUser.userId || u.id === selectedProfileUser.id) && u.online === true) ? currentClockTime : selectedProfileUser.lastSeen]] : [])
               ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:42,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
