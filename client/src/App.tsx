@@ -2851,10 +2851,11 @@ export default function App() {
                   const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
+                    const isRankGiftMessage = /تم إهداء رتبة|تم منح رتبة|سحب الرتبة/.test(String(m.text || ''));
                     return (
-                      <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
-                        <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
-                          📢 {m.text}
+                      <div key={m.id || idx} style={{ padding: '5px 8px', display: 'flex', justifyContent: 'center', direction: 'rtl', width: '100%', boxSizing: 'border-box' }}>
+                        <div style={{ boxSizing:'border-box', backgroundColor: isRankGiftMessage ? '#ffffff' : '#d9f7e8', border: isRankGiftMessage ? '1px solid #d1d5db' : 'none', color: '#111827', padding: isRankGiftMessage ? '7px 12px' : '6px 10px', borderRadius: isRankGiftMessage ? '8px' : '4px', fontSize: '12px', lineHeight: 1.65, fontWeight: isRankGiftMessage ? '500' : 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', textAlign: 'center', maxWidth:'96%', whiteSpace:'normal', overflowWrap:'anywhere', wordBreak:'normal' }}>
+                          {isRankGiftMessage ? '🎁 ' : '📢 '}{m.text}
                         </div>
                       </div>
                     );
@@ -3450,7 +3451,7 @@ export default function App() {
                     {(() => { const parts = getOnlineNameParts(liveU); return (
                       <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', direction:'rtl', minWidth:0 }}>
                         <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                          <span style={{ fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                          <span style={{ boxSizing:'border-box', fontSize:'12px', lineHeight:1.45, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:uCanCustomize ? (liveU.profileBgColor || '#f8fafc') : '#f8fafc', color:uCanCustomize ? uStyleColor : '#111827', padding:'5px 10px', borderRadius:'6px', border:'1px solid ' + (uCanCustomize ? (liveU.nameColor || liveU.color || '#cbd5e1') : '#e2e8f0'), minWidth:'76px', minHeight:'29px', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', justifyContent:'flex-start', transition:'color 0.2s ease' }}>
                             <span style={uStyleProps}>{parts.name}</span>
                           </span>
                         </div>
@@ -3720,4 +3721,4 @@ export default function App() {
     </div>
     </>
   );
-                    }
+                           }
