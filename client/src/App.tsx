@@ -1805,16 +1805,17 @@ export default function App() {
       const peerData = peerSnap.exists() ? peerSnap.data() : {};
       const peerPrivateSetting = peerData.privateChatSetting || 'تشغيل';
       const isFriend = friendsList.some((f: any) => (f.friendUid || f.userId || f.uid || f.id) === peerId);
-      if (peerPrivateSetting === 'إيقاف' || peerPrivateSetting === 'مغلق') {
-        setErrorMessage('عفواً، هذا العضو قامَ بإغلاق الرسائل الخاصة ولا يستطيع أي أحد محادثته.');
-        return;
-      }
       if (peerPrivateSetting === 'الأصدقاء فقط' && !isFriend) {
         setErrorMessage('🔒 المحادثة الخاصة متاحة للأصدقاء فقط.');
         return;
       }
+      const ownChatSnap = await getDoc(doc(db, 'users', user.uid, 'private_chats', peerId));
+      const requestWasAccepted = ownChatSnap.exists() && ownChatSnap.data()?.requestAccepted === true;
+      const accessMode = (peerPrivateSetting === 'إيقاف' || peerPrivateSetting === 'مغلق')
+        ? 'مغلق'
+        : (peerPrivateSetting === 'بطلب' && !requestWasAccepted ? 'بطلب' : 'مفتوح');
       stopProfileSong();
-      setActivePrivateChat({ peerId, peerName, accessMode: peerPrivateSetting === 'بطلب' ? 'بطلب' : 'مفتوح' });
+      setActivePrivateChat({ peerId, peerName, accessMode });
       setShowPrivateChatMenu(false);
       setSelectedProfileUser(null);
       setShowFriendsModal(false);
@@ -1888,10 +1889,10 @@ export default function App() {
       });
       if (accepted) {
         await setDoc(doc(db, 'users', user.uid, 'private_chats', note.fromUid), {
-          peerId: note.fromUid, peerName: note.fromName || 'عضو', lastMessage: '', lastMessageTime: serverTimestamp(), unreadCount: 0
+          peerId: note.fromUid, peerName: note.fromName || 'عضو', lastMessage: '', lastMessageTime: serverTimestamp(), unreadCount: 0, requestAccepted: true
         }, { merge: true });
         await setDoc(doc(db, 'users', note.fromUid, 'private_chats', user.uid), {
-          peerId: user.uid, peerName: user.displayName || user.email?.split('@')[0] || 'عضو', lastMessage: '', lastMessageTime: serverTimestamp(), unreadCount: 0
+          peerId: user.uid, peerName: user.displayName || user.email?.split('@')[0] || 'عضو', lastMessage: '', lastMessageTime: serverTimestamp(), unreadCount: 0, requestAccepted: true
         }, { merge: true });
       }
       setNotificationsList(prev => prev.map(n => n.id === note.id ? { ...n, status: accepted ? 'accepted' : 'rejected', isRead: true } : n));
@@ -3067,7 +3068,7 @@ export default function App() {
             <button type="button" onClick={deleteActivePrivateConversation} style={{width:'100%',padding:14,border:0,background:'#fff',textAlign:'right',fontSize:14,cursor:'pointer'}}>🗑 حذف المحادثة</button>
           </div>}
           <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {activePrivateChat.accessMode === 'بطلب' || activePrivateChat.accessMode === 'طلب_مرسل' ? <div style={{margin:'auto',textAlign:'center',background:'#fff',padding:18,borderRadius:10,color:'#475569',maxWidth:280}}>{activePrivateChat.accessMode === 'طلب_مرسل' ? 'تم إرسال طلب المحادثة، بانتظار قبول الطرف الآخر.' : <><div style={{marginBottom:12}}>هذا العضو يستقبل المحادثات بطلب. اضغط هنا لإرسال طلب محادثة خاصة.</div><button type="button" onClick={sendPrivateChatRequest} style={{border:0,borderRadius:8,padding:'10px 18px',background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>اضغط هنا لطلب المحادثة</button></>}</div> : <>
+            {activePrivateChat.accessMode === 'مغلق' ? <div style={{margin:'auto',textAlign:'center',background:'#fff',padding:20,borderRadius:10,color:'#b91c1c',maxWidth:320,fontWeight:700,lineHeight:1.8}}>عفواً، هذا العضو قامَ بإغلاق الرسائل الخاصة ولا يستطيع أي أحد محادثته.</div> : activePrivateChat.accessMode === 'بطلب' || activePrivateChat.accessMode === 'طلب_مرسل' ? <div style={{margin:'auto',textAlign:'center',background:'#fff',padding:18,borderRadius:10,color:'#475569',maxWidth:280}}>{activePrivateChat.accessMode === 'طلب_مرسل' ? 'تم إرسال طلب المحادثة، بانتظار قبول الطرف الآخر.' : <><div style={{marginBottom:12}}>هذا العضو يستقبل المحادثات بطلب. اضغط هنا لإرسال طلب محادثة خاصة.</div><button type="button" onClick={sendPrivateChatRequest} style={{border:0,borderRadius:8,padding:'10px 18px',background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>اضغط هنا لطلب المحادثة</button></>}</div> : <>
 
             {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,borderRadius:'8px',padding:'6px 12px',fontSize:'10px',background:'#e2e8f0',color:'#0f172a'}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
             {privateMessages.length === 0 ? (
@@ -3091,7 +3092,7 @@ export default function App() {
             </>}
           </div>
 
-          {activePrivateChat.accessMode !== 'بطلب' && activePrivateChat.accessMode !== 'طلب_مرسل' && <>
+          {activePrivateChat.accessMode !== 'مغلق' && activePrivateChat.accessMode !== 'بطلب' && activePrivateChat.accessMode !== 'طلب_مرسل' && <>
           <input type="file" ref={privateImageInputRef} accept="image/*" style={{display:'none'}} onChange={handlePrivateImageSelect} />
           {privateRecording && <div style={{padding:'5px 10px',background:'#fff1f2',color:'#dc2626',fontSize:12,textAlign:'center'}}>● جاري تسجيل الرسالة الصوتية {privateRecordingSeconds} ثانية <button type="button" onClick={stopPrivateVoiceRecording} style={{marginRight:8,border:0,borderRadius:5,padding:'4px 9px',background:'#dc2626',color:'#fff'}}>إيقاف وإرسال</button></div>}
           <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
