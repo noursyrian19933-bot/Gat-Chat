@@ -1976,12 +1976,6 @@ export default function App() {
           role: 'System',
           color: isDemote ? '#ef4444' : '#eab308',
           isSystemSpecial: true,
-          isRankGiftAnnouncement: !isDemote,
-          giftSenderName: currentAdminName,
-          giftSenderNameColor: nameColor || '#2563eb',
-          giftSenderNameStyle: nameStyle || 'normal',
-          giftedRole: !isDemote ? roleToSave : '',
-          giftTargetName: !isDemote ? targetUserName : '',
           createdAt: serverTimestamp()
         });
       }
@@ -2720,22 +2714,6 @@ export default function App() {
                   const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
-                    if (m.isRankGiftAnnouncement) {
-                      const giftSenderStyle = getNameStyleProps(
-                        m.giftSenderNameStyle || 'normal',
-                        m.giftSenderNameColor || '#2563eb'
-                      );
-                      return (
-                        <div key={m.id || idx} style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px', direction: 'rtl', fontSize: '13px', lineHeight: 1.8, color: '#222', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', borderBottom: '1px solid #e7e7e7' }}>
-                          <span>🎁 تم إهداء رتبة</span>
-                          <strong style={{ color: '#b7791f', whiteSpace: 'nowrap' }}>{m.giftedRole || ''}</strong>
-                          <span>من</span>
-                          <span style={{ ...giftSenderStyle, fontWeight: 'bold', whiteSpace: 'nowrap' }}>{m.giftSenderName || 'المدير'}</span>
-                          <span>إلى</span>
-                          <strong style={{ color: '#111827', whiteSpace: 'nowrap' }}>{m.giftTargetName || ''}</strong>
-                        </div>
-                      );
-                    }
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
                         <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
@@ -3324,32 +3302,28 @@ export default function App() {
                     key={u.id} 
                     onClick={() => openUserProfile(liveU)}
                     style={{
-                      boxSizing: 'border-box',
-                      minHeight: '54px',
-                      width: '100%',
-                      padding: '11px 14px',
-                      borderRadius: '10px',
+                      padding: '6px 10px',
+                      minHeight: '42px',
+                      borderRadius: '8px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       cursor: 'pointer',
-                      // Apply the user's chosen profile color to the WHOLE online-list row,
-                      // including the name, crown/rank tag, and flag area.
                       backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff',
-                      border: '1px solid ' + (uCanCustomize ? (liveU.nameColor || liveU.color || '#d1d5db') : '#e5e7eb'),
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                       transition: 'background-color 0.3s ease',
                       position: 'relative'
                     }}
                   >
-                    <div style={{ width:'100%', minHeight:'30px', display:'flex', alignItems:'center', gap:'10px', direction:'rtl', minWidth:0 }}>
-                      <div style={{ width:'36px', height:'36px', borderRadius:'50%', backgroundColor:'#0284c7', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'bold', overflow:'hidden', flexShrink:0 }}>
+                    <div style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', direction:'rtl', minWidth:0 }}>
+                      <div style={{ width:'32px', height:'32px', borderRadius:'50%', backgroundColor:'#0284c7', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'bold', overflow:'hidden', flexShrink:0 }}>
                         {liveU.avatarUrl ? <img src={liveU.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '👤'}
                       </div>
                       {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
                           <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                            <span style={{ fontSize:'14px', lineHeight:1.5, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                            <span style={{ fontSize:'12px', fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
                               <span style={uStyleProps}>{parts.name}</span>
                             </span>
                           </div>
