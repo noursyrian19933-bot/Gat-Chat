@@ -1983,18 +1983,18 @@ export default function App() {
         'المستخدم';
 
       const oldRole = normalizeRole(targetUserData.role || 'Member');
-      const previousRole = normalizeRole(targetUserData.previousRole || 'Member');
+      const storedPreviousRole = targetUserData.previousRole ? normalizeRole(targetUserData.previousRole) : '';
       const isRevoke = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
-      // عند سحب الرتبة نعيد الرتبة الأصلية المحفوظة، وليس Member بشكل ثابت.
+      const isElevatedRole = (role: string) => ['Owner', 'Super Admin', 'Admin', 'Premium'].includes(role);
+      // خزّن الرتبة الأساسية قبل أول ترقية فقط، ولا تستبدلها عند تغيير رتبة إدارية بأخرى.
+      // هذا يضمن أن سحب Owner/Admin/Super Admin يعيد الحساب إلى رتبته السابقة فعلًا.
+      const savedBaseRole = storedPreviousRole && ['Member', 'Guest'].includes(storedPreviousRole)
+        ? storedPreviousRole
+        : (isElevatedRole(oldRole) ? 'Member' : oldRole);
       const roleToSave = isRevoke
-        ? (previousRole || 'Member')
+        ? (storedPreviousRole && ['Member', 'Guest'].includes(storedPreviousRole) ? storedPreviousRole : 'Member')
         : normalizedNewRole;
-      // لا تستبدل الرتبة الأصلية المحفوظة إذا كان المستخدم يملك رتبة مُهداة بالفعل.
-      const roleToRestore = isRevoke
-        ? null
-        : ((!['Member', 'Guest'].includes(oldRole) && previousRole && !['Member', 'Guest'].includes(previousRole))
-            ? previousRole
-            : oldRole);
+      const roleToRestore = isRevoke ? null : savedBaseRole;
 
       const permissions = rolePermissions[roleToSave] || [];
 
@@ -3720,4 +3720,4 @@ export default function App() {
     </div>
     </>
   );
-}
+    }
