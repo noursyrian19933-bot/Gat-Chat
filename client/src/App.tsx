@@ -1975,7 +1975,10 @@ export default function App() {
         }
       }
 
-      if (!targetEmail) return;
+      if (!targetEmail) {
+        setErrorMessage('تعذر سحب الرتبة: لم يتم العثور على بريد الحساب.');
+        return;
+      }
 
       const targetUserName =
         targetUserData.displayName ||
@@ -2098,7 +2101,8 @@ export default function App() {
         prev && prev.userId === targetUid ? { ...prev, ...rolePatch } : prev
       );
     } catch (e: any) {
-      console.error(e);
+      console.error('تعذر تحديث/سحب الرتبة:', e);
+      setErrorMessage(`تعذر سحب الرتبة من Firebase: ${e?.code || e?.message || 'تحقق من صلاحيات قاعدة البيانات واتصال الإنترنت'}`);
     }
   };
 
@@ -3635,7 +3639,7 @@ export default function App() {
                   <div style={{padding:16,fontWeight:800,fontSize:17,borderBottom:'1px solid #e5e7eb'}}>تأكيد سحب الرتبة</div>
                   <div style={{padding:18,textAlign:'center'}}>هل أنت متأكد أنك تريد سحب الرتبة من هذا المستخدم؟</div>
                   <div style={{display:'flex',borderTop:'1px solid #e5e7eb'}}>
-                    <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowRevokeRoleConfirm(false)}} style={{flex:1,padding:13,border:0,background:'#fff',cursor:'pointer',color:'#dc2626',fontWeight:700}}>نعم، اسحب الرتبة</button>
+                    <button onClick={async()=>{await handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowRevokeRoleConfirm(false)}} style={{flex:1,padding:13,border:0,background:'#fff',cursor:'pointer',color:'#dc2626',fontWeight:700}}>نعم، اسحب الرتبة</button>
                     <button onClick={()=>setShowRevokeRoleConfirm(false)} style={{flex:1,padding:13,border:0,borderRight:'1px solid #e5e7eb',background:'#f8fafc',cursor:'pointer',fontWeight:700}}>لا</button>
                   </div>
                 </div>
