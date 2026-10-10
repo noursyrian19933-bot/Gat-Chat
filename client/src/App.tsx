@@ -1976,6 +1976,12 @@ export default function App() {
           role: 'System',
           color: isDemote ? '#ef4444' : '#eab308',
           isSystemSpecial: true,
+          isRankGiftAnnouncement: !isDemote,
+          giftSenderName: currentAdminName,
+          giftSenderNameColor: nameColor || '#2563eb',
+          giftSenderNameStyle: nameStyle || 'normal',
+          giftedRole: !isDemote ? roleToSave : '',
+          giftTargetName: !isDemote ? targetUserName : '',
           createdAt: serverTimestamp()
         });
       }
@@ -2714,6 +2720,22 @@ export default function App() {
                   const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
+                    if (m.isRankGiftAnnouncement) {
+                      const giftSenderStyle = getNameStyleProps(
+                        m.giftSenderNameStyle || 'normal',
+                        m.giftSenderNameColor || '#2563eb'
+                      );
+                      return (
+                        <div key={m.id || idx} style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px', direction: 'rtl', fontSize: '13px', lineHeight: 1.8, color: '#222', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f1f1f1', borderBottom: '1px solid #e7e7e7' }}>
+                          <span>🎁 تم إهداء رتبة</span>
+                          <strong style={{ color: '#b7791f', whiteSpace: 'nowrap' }}>{m.giftedRole || ''}</strong>
+                          <span>من</span>
+                          <span style={{ ...giftSenderStyle, fontWeight: 'bold', whiteSpace: 'nowrap' }}>{m.giftSenderName || 'المدير'}</span>
+                          <span>إلى</span>
+                          <strong style={{ color: '#111827', whiteSpace: 'nowrap' }}>{m.giftTargetName || ''}</strong>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
                         <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
