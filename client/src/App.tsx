@@ -2809,7 +2809,7 @@ export default function App() {
                         )}
                       </div>
 
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '11.5px' }}>
                                                 {getRoleTag(displayMessage) && (
                           <span style={{ flexShrink: 0, fontWeight: 'bold', lineHeight: 1 }} aria-label={getRoleLabel(displayMessage)}>
                             {getRoleTag(displayMessage)}
@@ -3652,4 +3652,4 @@ export default function App() {
     </div>
     </>
   );
-                                                                                                       }
+    }
