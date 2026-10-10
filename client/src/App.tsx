@@ -3449,8 +3449,7 @@ export default function App() {
                       </div>
                       {(() => { const parts = getOnlineNameParts(liveU); return (
                         <>
-                          <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', alignItems:'flex-start', justifyContent:'center', direction:'rtl', whiteSpace:'nowrap', gap:'2px' }}>
-                            <span style={{ fontSize:'10px', lineHeight:1.2, color:'#64748b', fontWeight:600 }}>{parts.label}</span>
+                          <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap', gap:0 }}>
                             <span style={{ fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
                               <span style={uStyleProps}>{parts.name}</span>
                             </span>
