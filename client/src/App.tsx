@@ -131,24 +131,6 @@ const getNameStyleProps = (style: string, color: string) => {
     case 'bold': return { color: chosen, fontWeight: 900, letterSpacing: '.3px', textShadow: '0 1px 0 rgba(0,0,0,.18)' };
     case 'outline': return { color: chosen, WebkitTextStroke: '0.5px rgba(15,23,42,.65)', paintOrder: 'stroke fill' };
     case 'soft': return { color: chosen, textShadow: `0 0 7px ${chosen}66` };
-    case 'fire-dance': return { background: 'linear-gradient(0deg,#b91c1c,#f97316,#fde047,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 5px rgba(249,115,22,.8))', animation: 'nameFireDance 1.1s ease-in-out infinite alternate' };
-    case 'blink': return { color: chosen, animation: 'nameBlink 1.25s ease-in-out infinite' };
-    case 'shine': return { background: 'linear-gradient(100deg,#64748b 0%,#fff 35%,#38bdf8 50%,#fff 65%,#64748b 100%)', backgroundSize: '220% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'nameShine 2.1s linear infinite' };
-    case 'pulse': return { color: chosen, animation: 'namePulse 1.5s ease-in-out infinite', textShadow: `0 0 8px ${chosen}99` };
-    case 'electric': return { color: '#67e8f9', textShadow: '0 0 3px #fff,0 0 8px #06b6d4,0 0 15px #2563eb', animation: 'nameElectric .8s steps(2,end) infinite' };
-    case 'aurora': return { background: 'linear-gradient(90deg,#22c55e,#06b6d4,#818cf8,#d946ef,#22c55e)', backgroundSize: '250% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'nameShine 3s linear infinite' };
-    case 'candy': return { color: '#f472b6', textShadow: '1px 1px 0 #fff,0 0 7px #fb7185', animation: 'namePulse 1.8s ease-in-out infinite' };
-    case 'plasma': return { color: '#c084fc', textShadow: '0 0 4px #c084fc,0 0 12px #7c3aed,0 0 20px #ec4899', animation: 'nameElectric 1.2s steps(2,end) infinite' };
-    case 'mint': return { color: '#6ee7b7', textShadow: '0 0 4px #10b981,0 0 11px #34d399' };
-    case 'copper': return { background: 'linear-gradient(90deg,#7c2d12,#fb923c,#ffedd5,#c2410c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 1px 1px #7c2d12)' };
-    case 'diamond': return { background: 'linear-gradient(90deg,#67e8f9,#fff,#a5f3fc,#60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 4px #67e8f9)' };
-    case 'royal': return { background: 'linear-gradient(90deg,#7e22ce,#f0abfc,#fef08a,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 3px #a855f7)' };
-    case 'matrix': return { color: '#4ade80', textShadow: '0 0 3px #16a34a,0 0 9px #22c55e', fontFamily: 'monospace' };
-    case 'wave': return { color: chosen, display: 'inline-block', animation: 'nameWave 1.7s ease-in-out infinite' };
-    case 'heartbeat': return { color: chosen, display: 'inline-block', animation: 'nameHeartbeat 1.4s ease-in-out infinite' };
-    case 'flicker': return { color: '#fef08a', textShadow: '0 0 4px #facc15,0 0 12px #f97316', animation: 'nameFlicker 2s linear infinite' };
-    case 'ice-glow': return { color: '#e0f2fe', textShadow: '0 0 4px #38bdf8,0 0 12px #7dd3fc,0 0 20px #0284c7' };
-    case 'black-gold': return { color: '#facc15', textShadow: '1px 1px 0 #111827,0 0 6px #ca8a04', fontWeight: 900 };
     default: return { color: chosen };
   }
 };
@@ -307,30 +289,6 @@ export default function App() {
   const [profileBgColor, setProfileBgColor] = useState('#ffffff'); 
   const [currentUserRole, setCurrentUserRole] = useState<string>('Member');
   const [userJoinedDate, setUserJoinedDate] = useState<string>('');
-
-  // تاريخ العضوية يُحفظ مرة واحدة في ملف الحساب ولا يُعاد توليده عند تبديل الغرف أو الدخول مجددًا.
-  useEffect(() => {
-    if (!user || user.isAnonymous) return;
-    let cancelled = false;
-    const ensureJoinedDate = async () => {
-      try {
-        const userRef = doc(db, 'users', user.uid);
-        const snap = await getDoc(userRef);
-        const existing = String(snap.data()?.joinedDate || '').trim();
-        if (existing) {
-          if (!cancelled) setUserJoinedDate(existing);
-          return;
-        }
-        const firstDate = new Date().toISOString().slice(0, 10);
-        await setDoc(userRef, { joinedDate: firstDate }, { merge: true });
-        if (!cancelled) setUserJoinedDate(firstDate);
-      } catch (error) {
-        console.error('تعذر حفظ تاريخ الانضمام:', error);
-      }
-    };
-    void ensureJoinedDate();
-    return () => { cancelled = true; };
-  }, [user]);
 
   const [profileAvatar, setProfileAvatar] = useState<string>('');
   const [profileCover, setProfileCover] = useState<string>('');
@@ -497,7 +455,6 @@ export default function App() {
             nameStyle: 'normal',
             profileBgColor: '#ffffff',
             points: 0,
-            level: 1,
             avatarUrl: '',
             coverUrl: '',
             profileSongUrl: '',
@@ -633,9 +590,8 @@ export default function App() {
       const userRef = doc(db, 'users', user.uid);
       
       const rememberedRoom = selectedRoom ? { roomId: selectedRoom.id, roomName: selectedRoom.name } : {};
-      const exitAt = Date.now();
-      await setDoc(presenceRef, { lastSeen: nowTime, lastSeenAt: exitAt, leftAt: exitAt, lastActive: exitAt, online: true, ...rememberedRoom }, { merge: true });
-      await setDoc(userRef, { lastSeen: nowTime, lastSeenAt: exitAt, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true });
+      await setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, online: false, ...rememberedRoom }, { merge: true });
+      await setDoc(userRef, { lastSeen: nowTime, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true });
     } catch (e) {
       console.error(e);
     }
@@ -648,9 +604,8 @@ export default function App() {
       const presenceRef = doc(db, 'room_presence', user.uid);
       const userRef = doc(db, 'users', user.uid);
       const rememberedRoom = selectedRoom ? { roomId: selectedRoom.id, roomName: selectedRoom.name } : {};
-      const exitAt = Date.now();
-      setDoc(presenceRef, { lastSeen: nowTime, lastSeenAt: exitAt, leftAt: exitAt, lastActive: exitAt, online: true, ...rememberedRoom }, { merge: true }).catch(() => {});
-      setDoc(userRef, { lastSeen: nowTime, lastSeenAt: exitAt, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true }).catch(() => {});
+      setDoc(presenceRef, { lastSeen: nowTime, lastActive: 0, online: false, ...rememberedRoom }, { merge: true }).catch(() => {});
+      setDoc(userRef, { lastSeen: nowTime, ...(selectedRoom ? { currentRoomId: selectedRoom.id, currentRoomName: selectedRoom.name } : {}) }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
@@ -1097,7 +1052,6 @@ export default function App() {
     setDoc(doc(db, 'users', user.uid), {
       currentRoomId: roomId,
       currentRoomName: roomName,
-      ...(userJoinedDate ? { joinedDate: userJoinedDate } : {}),
       online: true
     }, { merge: true }).catch(() => {});
 
@@ -1119,10 +1073,9 @@ export default function App() {
       roomId,
       roomName,
       online: true,
-      leftAt: 0,
       lastActive: Date.now(),
-      lastSeenAt: Date.now(),
       lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      points: 0,
       age: profileAge || 'عدم إظهار',
       relationship: profileRelationship || 'عدم إظهار',
       privateChatSetting,
@@ -1135,10 +1088,8 @@ export default function App() {
 
     // Firebase نفسه يغيّر الحالة عند انقطاع الاتصال، حتى لو أُغلقت الصفحة فجأة.
     onDisconnect(presenceRef).update({
-      online: true,
-      leftAt: Date.now(),
-      lastActive: Date.now(),
-      lastSeenAt: Date.now(),
+      online: false,
+      lastActive: 0,
       lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }).catch(() => {});
 
@@ -1149,18 +1100,11 @@ export default function App() {
     const interval = window.setInterval(publishPresence, 30000);
 
     const handleBeforeUnload = () => {
-      const exitAt = Date.now();
       update(presenceRef, {
-        online: true,
-        leftAt: exitAt,
-        lastActive: exitAt,
-        lastSeenAt: exitAt,
+        online: false,
+        lastActive: 0,
         lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }).catch(() => {});
-      setDoc(doc(db, 'users', user.uid), {
-        lastSeen: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        lastSeenAt: exitAt
-      }, { merge: true }).catch(() => {});
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -1186,11 +1130,8 @@ export default function App() {
         if (!data) return;
         const dataRoomId = data.roomId || 'lobby';
         if (dataRoomId !== roomId) return;
-        const departedAt = Number(data.leftAt || 0);
-        const withinGracePeriod = departedAt > 0 && now - departedAt < 15 * 60 * 1000;
-        if (data.online !== true && !withinGracePeriod) return;
-        if (!withinGracePeriod && data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
-        if (departedAt > 0 && now - departedAt >= 15 * 60 * 1000) return;
+        if (data.online !== true) return;
+        if (data.lastActive && now - Number(data.lastActive) > 2 * 60 * 1000) return;
 
         users.push({
           id: uid,
@@ -1672,30 +1613,6 @@ export default function App() {
     setNewsCommentInputs(v=>({...v,[item.id]:''}));
   };
 
-  // النقاط دائمة في Firestore؛ كل حرف يرسل في رسالة يمنح نقطة، والرتبة الرقمية مستقلة عن رتبة الصلاحيات.
-  const awardMessagePoints = async (textValue: string) => {
-    if (!user || user.isAnonymous || !textValue.length) return;
-    const ownerAccount = isOwner || String(user.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase();
-    if (ownerAccount) return; // صاحب الموقع نقاطه لا نهائية ولا يحتاج عدّادًا رقميًا.
-    const userRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userRef);
-    const data = snap.exists() ? snap.data() : {};
-    const oldPoints = Math.max(0, Number(data.points || 0));
-    const newPoints = oldPoints + Array.from(textValue).length;
-    const oldLevel = Math.max(1, Number(data.level || (Math.floor(oldPoints / 2000) + 1)));
-    const newLevel = Math.floor(newPoints / 2000) + 1;
-    await setDoc(userRef, { points: newPoints, level: newLevel }, { merge: true });
-    if (newLevel > oldLevel && selectedRoom) {
-      for (let level = oldLevel + 1; level <= newLevel; level++) {
-        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), {
-          user: 'نظام الرتب', userId: 'system-ranks', role: 'System', isSystemSpecial: true,
-          text: `✨🎉 تهانينا ${user.displayName || user.email?.split('@')[0] || 'عضو'}! تم الانتقال من الرتبة ${level - 1} إلى الرتبة ${level} 🏆`,
-          color: '#b7791f', createdAt: serverTimestamp(), rankAnnouncement: true
-        });
-      }
-    }
-  };
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !selectedRoom || !user) return;
@@ -1724,7 +1641,6 @@ export default function App() {
         isSystemSpecial: false,
         createdAt: serverTimestamp()
       });
-      await awardMessagePoints(textMsg);
       setInputText('');
       setShowEmojiPicker(false);
     } catch (e) {
@@ -1751,7 +1667,6 @@ export default function App() {
         text: textMsg,
         createdAt: serverTimestamp()
       });
-      await awardMessagePoints(textMsg);
 
       await setDoc(doc(db, 'users', user.uid, 'private_chats', activePrivateChat.peerId), {
         peerId: activePrivateChat.peerId,
@@ -1975,10 +1890,7 @@ export default function App() {
         }
       }
 
-      if (!targetEmail) {
-        setErrorMessage('تعذر سحب الرتبة: لم يتم العثور على بريد الحساب.');
-        return;
-      }
+      if (!targetEmail) return;
 
       const targetUserName =
         targetUserData.displayName ||
@@ -1986,18 +1898,18 @@ export default function App() {
         'المستخدم';
 
       const oldRole = normalizeRole(targetUserData.role || 'Member');
-      const storedPreviousRole = targetUserData.previousRole ? normalizeRole(targetUserData.previousRole) : '';
+      const previousRole = normalizeRole(targetUserData.previousRole || 'Member');
       const isRevoke = normalizedNewRole === 'Member' || normalizedNewRole === 'Guest';
-      const isElevatedRole = (role: string) => ['Owner', 'Super Admin', 'Admin', 'Premium'].includes(role);
-      // خزّن الرتبة الأساسية قبل أول ترقية فقط، ولا تستبدلها عند تغيير رتبة إدارية بأخرى.
-      // هذا يضمن أن سحب Owner/Admin/Super Admin يعيد الحساب إلى رتبته السابقة فعلًا.
-      const savedBaseRole = storedPreviousRole && ['Member', 'Guest'].includes(storedPreviousRole)
-        ? storedPreviousRole
-        : (isElevatedRole(oldRole) ? 'Member' : oldRole);
+      // عند سحب الرتبة نعيد الرتبة الأصلية المحفوظة، وليس Member بشكل ثابت.
       const roleToSave = isRevoke
-        ? (storedPreviousRole && ['Member', 'Guest'].includes(storedPreviousRole) ? storedPreviousRole : 'Member')
+        ? (previousRole || 'Member')
         : normalizedNewRole;
-      const roleToRestore = isRevoke ? null : savedBaseRole;
+      // لا تستبدل الرتبة الأصلية المحفوظة إذا كان المستخدم يملك رتبة مُهداة بالفعل.
+      const roleToRestore = isRevoke
+        ? null
+        : ((!['Member', 'Guest'].includes(oldRole) && previousRole && !['Member', 'Guest'].includes(previousRole))
+            ? previousRole
+            : oldRole);
 
       const permissions = rolePermissions[roleToSave] || [];
 
@@ -2101,8 +2013,7 @@ export default function App() {
         prev && prev.userId === targetUid ? { ...prev, ...rolePatch } : prev
       );
     } catch (e: any) {
-      console.error('تعذر تحديث/سحب الرتبة:', e);
-      setErrorMessage(`تعذر سحب الرتبة من Firebase: ${e?.code || e?.message || 'تحقق من صلاحيات قاعدة البيانات واتصال الإنترنت'}`);
+      console.error(e);
     }
   };
 
@@ -2172,40 +2083,6 @@ export default function App() {
     }
   };
 
-  const handleGiftPoints = async (target: any) => {
-    if (!user || user.isAnonymous || !target?.userId || target.userId === user.uid) return;
-    const senderRole = normalizeRole(currentUserRole);
-    if (!(isOwner || ['Owner','Super Admin','Admin','Premium'].includes(senderRole))) { alert('إهداء النقاط متاح لأصحاب الرتب فقط.'); return; }
-    if (isOwner || String(user.email || '').trim().toLowerCase() === ADMIN_EMAIL.trim().toLowerCase()) { alert('نقاط صاحب الموقع لا نهائية ولا تُخصم عند الإهداء.'); return; }
-    const amount = Number(window.prompt('كم نقطة تريد إهداءها؟', '100'));
-    if (!Number.isSafeInteger(amount) || amount <= 0) return;
-    const senderRef = doc(db, 'users', user.uid);
-    const targetRef = doc(db, 'users', target.userId);
-    const [senderSnap, targetSnap] = await Promise.all([getDoc(senderRef), getDoc(targetRef)]);
-    const senderData = senderSnap.exists() ? senderSnap.data() : {};
-    const targetData = targetSnap.exists() ? targetSnap.data() : {};
-    const senderPoints = Math.max(0, Number(senderData.points || 0));
-    if (senderPoints < amount) { alert('رصيد نقاطك غير كافٍ.'); return; }
-    const receiverPoints = Math.max(0, Number(targetData.points || 0));
-    const senderOldLevel = Math.max(1, Number(senderData.level || Math.floor(senderPoints / 2000) + 1));
-    const receiverOldLevel = Math.max(1, Number(targetData.level || Math.floor(receiverPoints / 2000) + 1));
-    const senderNewPoints = senderPoints - amount;
-    const receiverNewPoints = receiverPoints + amount;
-    const senderNewLevel = Math.floor(senderNewPoints / 2000) + 1;
-    const receiverNewLevel = Math.floor(receiverNewPoints / 2000) + 1;
-    await Promise.all([
-      setDoc(senderRef, { points: senderNewPoints, level: senderNewLevel }, { merge: true }),
-      setDoc(targetRef, { points: receiverNewPoints, level: receiverNewLevel }, { merge: true })
-    ]);
-    if (selectedRoom && receiverNewLevel > receiverOldLevel) {
-      for (let level = receiverOldLevel + 1; level <= receiverNewLevel; level++) {
-        await addDoc(collection(db, 'rooms', selectedRoom.id, 'messages'), { user: 'نظام الرتب', userId: 'system-ranks', role: 'System', isSystemSpecial: true, text: `✨🎉 تهانينا ${target.name || target.displayName || 'عضو'}! تم الانتقال من الرتبة ${level - 1} إلى الرتبة ${level} 🏆`, color: '#b7791f', createdAt: serverTimestamp(), rankAnnouncement: true });
-      }
-    }
-    setSuccessMessage(`تم إهداء ${amount} نقطة بنجاح`);
-    setTimeout(() => setSuccessMessage(''), 2200);
-  };
-
   const openUserProfile = async (uData: any) => {
     const targetId = uData.userId || uData.uid || uData.id || 'guest_id';
     let userEmail = uData.email || '';
@@ -2222,8 +2099,7 @@ export default function App() {
       roomName: uData.roomName || uData.currentRoomName || '',
       lastSeen: uData.lastSeen || '',
       points: uData.points ?? 0,
-      level: Math.max(1, Number(uData.level || Math.floor(Number(uData.points || 0) / 2000) + 1)),
-      nextLevelPoints: Math.max(0, (Math.floor(Number(uData.points || 0) / 2000) + 1) * 2000 - Number(uData.points || 0)),
+      nextLevelPoints: 2000,
       friendsVisibilitySetting: uData.friendsVisibilitySetting || 'الجميع',
       pointsVisibilitySetting: uData.pointsVisibilitySetting || 'الجميع',
       privateChatSetting: uData.privateChatSetting || 'تشغيل',
@@ -2253,8 +2129,7 @@ export default function App() {
             roomName: data.currentRoomName || fetchedData.roomName,
             lastSeen: data.lastSeen || fetchedData.lastSeen,
             points: data.points ?? fetchedData.points,
-            level: Math.max(1, Number(data.level || Math.floor(Number(data.points || 0) / 2000) + 1)),
-            nextLevelPoints: Math.max(0, (Math.floor(Number(data.points || 0) / 2000) + 1) * 2000 - Number(data.points || 0)),
+            nextLevelPoints: 2000,
             friendsVisibilitySetting: data.friendsVisibilitySetting || fetchedData.friendsVisibilitySetting,
             pointsVisibilitySetting: data.pointsVisibilitySetting || fetchedData.pointsVisibilitySetting,
             privateChatSetting: data.privateChatSetting || fetchedData.privateChatSetting,
@@ -2555,9 +2430,7 @@ export default function App() {
     if (role === 'Super Admin') return '🛡️ Super Admin';
     if (role === 'Admin') return '👑 Admin';
     if (role === 'Premium') return '💎 Premium';
-    const points = Math.max(0, Number(profileUser?.points || 0));
-    const memberRank = Math.floor(points / 2000) + 1;
-    return `عضو رتبة ${memberRank}`;
+    return 'Member';
   };
 
   const getRoleTag = (profileUser: any) => {
@@ -2581,17 +2454,8 @@ export default function App() {
     const name = String(profileUser?.name || 'مستخدم').trim();
     const country = getCountryLabel(profileUser);
     const flag = country ? String(profileUser?.flag || '').trim() : '';
-    const email = String(profileUser?.email || '').trim().toLowerCase();
-    const role = email === ADMIN_EMAIL.trim().toLowerCase() ? 'Site Owner' : normalizeRole(profileUser?.role);
-    let label = '';
-    if (role === 'Guest' || profileUser?.isAnonymous === true) label = 'زائر';
-    else if (role === 'Site Owner') label = 'صاحب الموقع';
-    else if (role === 'Owner') label = 'Owner';
-    else if (role === 'Super Admin') label = 'Super Admin';
-    else if (role === 'Admin') label = 'Admin';
-    else if (role === 'Premium') label = 'Premium';
-    else label = `عضو رتبة ${Math.floor(Math.max(0, Number(profileUser?.points || 0)) / 2000) + 1}`;
-    return { name, flag, tag: getRoleTag(profileUser), label };
+    const tag = getRoleTag(profileUser);
+    return { name, flag, tag };
   };
 
   // تخصيص الوسائط الشخصية (الصورة/الغلاف/الأغنية) متاح فقط لصاحب الموقع
@@ -2617,8 +2481,6 @@ export default function App() {
   const canModifyTargetName = isSuperAdmin && (!isTargetProfileOwner || isViewerOwner);
 
   return (
-    <>
-    <style>{`@keyframes nameFireDance{0%{filter:drop-shadow(0 0 2px #ef4444);transform:translateY(0)}100%{filter:drop-shadow(0 -3px 7px #facc15);transform:translateY(-1px)}}@keyframes nameBlink{0%,100%{opacity:1}45%{opacity:.15}55%{opacity:.35}}@keyframes nameShine{0%{background-position:100% 0}100%{background-position:-120% 0}}@keyframes namePulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.06);filter:brightness(1.35)}}@keyframes nameElectric{0%,100%{opacity:1}50%{opacity:.7}52%{opacity:1}}@keyframes nameWave{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}@keyframes nameHeartbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.12)}24%{transform:scale(1)}36%{transform:scale(1.08)}48%{transform:scale(1)}}`}</style>
     <div className="video-theme" style={{ height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: '#003d43', overflow: 'hidden', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, boxSizing: 'border-box' }}>
       <style>{`
         .video-theme, .video-theme * { font-family: Arial, Tahoma, sans-serif; }
@@ -2818,16 +2680,17 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Keep the same iframe mounted while minimizing. Unmounting it stops playback and resets the song. */}
-                <div style={{ width: '100%', height: isVideoMinimized ? '90px' : '170px', background: '#000', transition: 'height 0.2s' }}>
-                  <iframe 
-                    src={`${activeVideoUrl}${activeVideoUrl.includes('?') ? '&' : '?'}autoplay=1`} 
-                    title="YouTube player" 
-                    style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowFullScreen
-                  />
-                </div>
+                {!isVideoMinimized && (
+                  <div style={{ width: '100%', height: '170px', background: '#000' }}>
+                    <iframe 
+                      src={`${activeVideoUrl}?autoplay=1`} 
+                      title="YouTube player" 
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowFullScreen
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -2851,11 +2714,10 @@ export default function App() {
                   const hasCustomBg = mCanCustomize && !!displayMessage.profileBgColor;
 
                   if (m.isSystemSpecial) {
-                    const isRankGiftMessage = /تم إهداء رتبة|تم منح رتبة|سحب الرتبة/.test(String(m.text || ''));
                     return (
-                      <div key={m.id || idx} style={{ padding: '5px 8px', display: 'flex', justifyContent: 'center', direction: 'rtl', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ boxSizing:'border-box', backgroundColor: isRankGiftMessage ? '#ffffff' : '#d9f7e8', border: isRankGiftMessage ? '1px solid #d1d5db' : 'none', color: '#111827', padding: isRankGiftMessage ? '7px 12px' : '6px 10px', borderRadius: isRankGiftMessage ? '8px' : '4px', fontSize: '12px', lineHeight: 1.65, fontWeight: isRankGiftMessage ? '500' : 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', textAlign: 'center', maxWidth:'96%', whiteSpace:'normal', overflowWrap:'anywhere', wordBreak:'normal' }}>
-                          {isRankGiftMessage ? '🎁 ' : '📢 '}{m.text}
+                      <div key={m.id || idx} style={{ padding: '6px 12px', display: 'flex', justifyContent: 'center', direction: 'rtl' }}>
+                        <div style={{ backgroundColor: '#d9f7e8', border: 'none', color: '#111827', padding: '6px 10px', borderRadius: '0', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+                          📢 {m.text}
                         </div>
                       </div>
                     );
@@ -2887,7 +2749,12 @@ export default function App() {
                         )}
                       </div>
 
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '4px', rowGap: '0px', minWidth: 0, fontSize: '11.5px' }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '13px' }}>
+                                                {getRoleTag(displayMessage) && (
+                          <span style={{ flexShrink: 0, fontWeight: 'bold', lineHeight: 1 }} aria-label={getRoleLabel(displayMessage)}>
+                            {getRoleTag(displayMessage)}
+                          </span>
+                        )}
                         <span
                           style={{
                             // Match the online-list name wrapper exactly; decoration stays on the inner name only.
@@ -2914,7 +2781,7 @@ export default function App() {
                         >
                           <span style={styleProps}>{displayMessage.user}</span>
                         </span>
-                        <span style={{ color: '#111827', marginLeft: '-3px' }}>:</span>
+                        <span style={{ color: '#111827' }}>:</span>
 
                         {m.mediaType === 'image' ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'4px',maxWidth:'220px'}}>
@@ -3434,35 +3301,45 @@ export default function App() {
                   <div 
                     key={u.id} 
                     onClick={() => openUserProfile(liveU)}
-                    style={{ 
-                      padding: '8px 12px', 
-                      borderRadius: '8px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      cursor: 'pointer', 
-                      backgroundColor: '#ffffff', 
-                      border: '1px solid rgba(0,0,0,0.1)',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    style={{
+                      boxSizing: 'border-box',
+                      minHeight: '54px',
+                      width: '100%',
+                      padding: '11px 14px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      // Apply the user's chosen profile color to the WHOLE online-list row,
+                      // including the name, crown/rank tag, and flag area.
+                      backgroundColor: uCanCustomize ? (liveU.profileBgColor || '#ffffff') : '#ffffff',
+                      border: '1px solid ' + (uCanCustomize ? (liveU.nameColor || liveU.color || '#d1d5db') : '#e5e7eb'),
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
                       transition: 'background-color 0.3s ease',
                       position: 'relative'
                     }}
                   >
-                    {(() => { const parts = getOnlineNameParts(liveU); return (
-                      <div style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', direction:'rtl', minWidth:0 }}>
-                        <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
-                          <span style={{ boxSizing:'border-box', fontSize:'12px', lineHeight:1.35, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:uCanCustomize ? (liveU.profileBgColor || 'transparent') : 'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:'2px 8px', borderRadius:0, border:'none', minWidth:0, width:'100%', flex:1, alignSelf:'stretch', overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'flex', alignItems:'center', justifyContent:'flex-start', transition:'color 0.2s ease' }}>
-                            <span style={uStyleProps}>{parts.name}</span>
-                          </span>
-                        </div>
-                        {(parts.flag || parts.tag) && (
-                          <div style={{ marginRight:'auto', display:'inline-flex', alignItems:'center', gap:'5px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0, whiteSpace:'nowrap' }}>
-                            {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
-                            {parts.tag && <span style={{ display:'inline-flex', alignItems:'center', fontSize:'13px', lineHeight:1 }}>{parts.tag}</span>}
-                          </div>
-                        )}
+                    <div style={{ width:'100%', minHeight:'30px', display:'flex', alignItems:'center', gap:'10px', direction:'rtl', minWidth:0 }}>
+                      <div style={{ width:'36px', height:'36px', borderRadius:'50%', backgroundColor:'#0284c7', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'bold', overflow:'hidden', flexShrink:0 }}>
+                        {liveU.avatarUrl ? <img src={liveU.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '👤'}
                       </div>
-                    ); })()}
+                      {(() => { const parts = getOnlineNameParts(liveU); return (
+                        <>
+                          <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'flex-start', direction:'rtl', whiteSpace:'nowrap' }}>
+                            <span style={{ fontSize:'14px', lineHeight:1.5, fontWeight:uCanCustomize ? 'bold' : 'normal', backgroundColor:'transparent', color:uCanCustomize ? uStyleColor : '#111827', padding:0, borderRadius:0, border:'none', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', textAlign:'right', display:'inline-flex', alignItems:'center', transition:'color 0.2s ease' }}>
+                              <span style={uStyleProps}>{parts.name}</span>
+                            </span>
+                          </div>
+                          {(parts.flag || parts.tag) && (
+                            <div style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', paddingLeft:'0px', paddingRight:'0px', display:'inline-flex', alignItems:'center', gap:'10px', direction:'ltr', unicodeBidi:'isolate', flexShrink:0 }}>
+                              {parts.flag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.flag}</span>}
+                              {parts.tag && <span style={{ display:'inline-flex', alignItems:'center' }}>{parts.tag}</span>}
+                            </div>
+                          )}
+                        </>
+                      ); })()}
+                    </div>
                   </div>
                 );
               })}
@@ -3523,7 +3400,7 @@ export default function App() {
                   ['طلبات الصداقة','friendRequestsSetting',friendRequestsSetting,setFriendRequestsSetting,['تشغيل','إيقاف']],
                   ['طلبات التحدث','talkRequestsSetting',talkRequestsSetting,setTalkRequestsSetting,['تشغيل','إيقاف']],
                   ['من يمكنه رؤية أصدقائي','friendsVisibilitySetting',friendsVisibilitySetting,setFriendsVisibilitySetting,['الجميع','الأصدقاء فقط','أنا فقط']],
-                  ['إخفاء النقاط عن الآخرين','pointsVisibilitySetting',pointsVisibilitySetting,setPointsVisibilitySetting,['الجميع','أنا فقط']],
+                  ['من يمكنه رؤية نقاطي','pointsVisibilitySetting',pointsVisibilitySetting,setPointsVisibilitySetting,['الجميع','الأصدقاء فقط','أنا فقط']],
                   ['ظهور رسائل الانضمام','joinMessagesSetting',joinMessagesSetting,setJoinMessagesSetting,['تشغيل','إيقاف']],
                   ['الأصوات','soundSetting',soundSetting,setSoundSetting,['صامت','تشغيل']],
                   ['الثيم','themeSetting',themeSetting,setThemeSetting,['الثيم الافتراضي','فاتح','داكن']],
@@ -3578,7 +3455,7 @@ export default function App() {
                 {hasRankForCustomization && <>
                   <label style={{color:'#159db9',fontWeight:700}}>لون خلفية الملف<input type="color" value={profileBgColor} onChange={(e)=>{const value=e.target.value;setProfileBgColor(value);void saveSettingToFirebase('profileBgColor',value)}} style={{display:'block',width:'100%',height:34,marginTop:5}}/></label>
                   <label style={{color:'#159db9',fontWeight:700}}>زخرفة الاسم<select value={nameStyle} onChange={(e)=>{setNameStyle(e.target.value);void saveSettingToFirebase('nameStyle',e.target.value)}} style={{display:'block',width:'100%',height:38,marginTop:5,border:'1px solid #ddd',background:'#f5f5f5',borderRadius:5,fontSize:12}}>
-                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💚</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="fire-dance">🔥 نار مشتعلة متحركة</option><option value="rainbow">قوس قزح 🌈</option><option value="shine">✨ لمعان يمر على الاسم</option><option value="blink">💡 يلمع ويختفي</option><option value="pulse">💓 نبض مضيء</option><option value="electric">⚡ كهربائي</option><option value="aurora">🌌 شفق متدرج</option><option value="candy">🍬 حلوى وردية</option><option value="plasma">🪄 بلازما بنفسجية</option><option value="mint">🌿 نعناعي</option><option value="copper">🟠 نحاسي</option><option value="diamond">💎 ألماسي</option><option value="royal">👑 ملكي بنفسجي</option><option value="matrix">🟢 ماتريكس</option><option value="wave">〰️ موجة</option><option value="heartbeat">❤️ نبض سريع</option><option value="flicker">✨ وميض ذهبي</option><option value="ice-glow">❄️ جليدي متوهج</option><option value="black-gold">🖤 أسود وذهبي</option><option value="pink">وردي 💗</option><option value="violet">بنفسجي 💜</option><option value="emerald">زمردي 💚</option><option value="ruby">ياقوتي ❤️</option><option value="ocean">محيطي 🌊</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option>
+                    <option value="normal">عادي</option><option value="glowing">متوهج 🌟</option><option value="neon">نيون مضيء 💚</option><option value="gold">ذهبي ملكي 👑</option><option value="silver">فضي ✨</option><option value="icy">جليدي 🧊</option><option value="fire">ناري 🔥</option><option value="rainbow">قوس قزح 🌈</option><option value="pink">وردي 💗</option><option value="violet">بنفسجي 💜</option><option value="emerald">زمردي 💚</option><option value="ruby">ياقوتي ❤️</option><option value="ocean">محيطي 🌊</option><option value="shadow">ظل بارز 🌑</option><option value="bold">عريض قوي 💪</option><option value="outline">محدد الحواف ✍️</option><option value="soft">توهج ناعم ✨</option>
                   </select></label>
                   <label style={{color:'#159db9',fontWeight:700}}>النبذة الشخصية<textarea value={profileBio} onChange={(e)=>setProfileBio(e.target.value)} onBlur={()=>saveSettingToFirebase('bio',profileBio)} rows={3} style={{display:'block',width:'100%',marginTop:5,border:'1px solid #ddd',borderRadius:5,padding:6,boxSizing:'border-box'}}/></label>
                   <button onClick={()=>setSuccessMessage('إعدادات الملف محفوظة')} style={{padding:'8px 10px',border:0,borderRadius:5,background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>حفظ التخصيصات 💾</button>
@@ -3608,16 +3485,9 @@ export default function App() {
 
               {showProfileFlagMenu && <div onClick={(e)=>e.stopPropagation()} style={{position:'fixed',top:'20vh',left:'50%',transform:'translateX(-50%)',zIndex:250,width:'min(250px, calc(100vw - 32px))',maxHeight:'60dvh',overflowY:'auto',overscrollBehavior:'contain',WebkitOverflowScrolling:'touch',background:'#fff',color:'#333',borderRadius:10,boxShadow:'0 8px 22px rgba(0,0,0,.35)',touchAction:'pan-y'}}>
                 <div style={{position:'sticky',top:0,zIndex:1,padding:'10px 13px',fontWeight:800,background:'#f1f5f9',borderBottom:'1px solid #e5e7eb',userSelect:'none'}}>إدارة الرتب والطرد</div>
-                {(
-                  (Boolean(user && selectedProfileUser.userId === user.uid) &&
-                    (isOwner || ['Owner','Super Admin','Admin','Premium'].includes(normalizedCurrentRole))) ||
-                  (Boolean(user && selectedProfileUser.userId !== user.uid) &&
-                    (isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) &&
-                    !isSiteOwnerProfile(selectedProfileUser))
-                ) && <>
+                {((isSelfProfile && ['Owner','Super Admin','Admin','Premium'].includes(normalizedCurrentRole)) || (isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSiteOwnerProfile(selectedProfileUser)) && <>
                   <button onClick={()=>{const nextName=window.prompt('اكتب الاسم الجديد',String(selectedProfileUser.displayName || selectedProfileUser.userName || selectedProfileUser.name || ''));if(nextName && nextName.trim()) void handleUpdateUserName(nextName);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>✏️ تغيير الاسم</button>
                 </>}
-                {!isSelfProfile && ['Owner','Super Admin','Admin','Premium'].includes(normalizedCurrentRole) && <button onClick={()=>{void handleGiftPoints(selectedProfileUser);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🎁 إهداء نقاط من رصيدك</button>}
                 {(isOwner || ['Owner','Super Admin','Admin'].includes(normalizedCurrentRole)) && !isSelfProfile && !isSiteOwnerProfile(selectedProfileUser) && <>
                   <button onClick={()=>{setShowKickDurationModal(true);setShowProfileFlagMenu(false)}} style={{width:'100%',padding:12,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',cursor:'pointer'}}>🚫 طرد...</button>
                 </>}
@@ -3636,7 +3506,7 @@ export default function App() {
                   <div style={{padding:16,fontWeight:800,fontSize:17,borderBottom:'1px solid #e5e7eb'}}>تأكيد سحب الرتبة</div>
                   <div style={{padding:18,textAlign:'center'}}>هل أنت متأكد أنك تريد سحب الرتبة من هذا المستخدم؟</div>
                   <div style={{display:'flex',borderTop:'1px solid #e5e7eb'}}>
-                    <button onClick={async()=>{await handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowRevokeRoleConfirm(false)}} style={{flex:1,padding:13,border:0,background:'#fff',cursor:'pointer',color:'#dc2626',fontWeight:700}}>نعم، اسحب الرتبة</button>
+                    <button onClick={()=>{handleUpdateUserRole(selectedProfileUser.userId,'Member');setShowRevokeRoleConfirm(false)}} style={{flex:1,padding:13,border:0,background:'#fff',cursor:'pointer',color:'#dc2626',fontWeight:700}}>نعم، اسحب الرتبة</button>
                     <button onClick={()=>setShowRevokeRoleConfirm(false)} style={{flex:1,padding:13,border:0,borderRight:'1px solid #e5e7eb',background:'#f8fafc',cursor:'pointer',fontWeight:700}}>لا</button>
                   </div>
                 </div>
@@ -3699,7 +3569,7 @@ export default function App() {
                 ...(selectedProfileUser.lastSeen && selectedProfileUser.lastSeen !== 'عدم إظهار' ? [['آخر تواجد', selectedProfileUser.lastSeen]] : [])
               ].map(([label,value]:any)=><div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:42,borderBottom:'1px solid rgba(0,0,0,.14)',fontSize:14,background:'transparent',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#4a4a4a',padding:'0 8px'}}><span style={{fontWeight:700}}>{label}</span><span>{value}</span></div>)}
 
-              {(isSelfProfile || selectedProfileUser.pointsVisibilitySetting !== 'أنا فقط') && <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,padding:'8px 0',boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'center'}}><div style={{fontWeight:800,color:'#0f9e8a'}}>{(isOwner || String(selectedProfileUser.email || '').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) ? '∞' : (selectedProfileUser.points ?? 0)}</div><div style={{fontSize:12,color:'#64748b'}}>الرتبة {Math.max(1,Number(selectedProfileUser.level || Math.floor(Number(selectedProfileUser.points || 0)/2000)+1))}</div><div style={{fontSize:11,color:'#64748b'}}>المتبقي للرتبة التالية: {(isOwner || String(selectedProfileUser.email || '').trim().toLowerCase()===ADMIN_EMAIL.trim().toLowerCase()) ? '∞' : (selectedProfileUser.nextLevelPoints ?? Math.max(0,2000-(Number(selectedProfileUser.points||0)%2000)))}</div></div></div>}
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',minHeight:72,borderBottom:'1px solid #d9d9d9',fontSize:14,paddingTop:8,boxSizing:'border-box'}}><span style={{fontWeight:700}}>النقاط</span><div style={{textAlign:'right'}}><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'مخفي':(selectedProfileUser.points ?? 0)}</div><div>{selectedProfileUser.pointsVisibilitySetting==='أنا فقط'&&!isSelfProfile?'':(selectedProfileUser.nextLevelPoints ?? 2000)}</div></div><span style={{fontWeight:700}}>النقاط المطلوبة للمستوى التالي</span></div>
 
               <div style={{padding:'10px 0 4px',textAlign:'right',fontSize:12,fontWeight:700,color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#333'}}>رابط الملف الشخصي 🔗</div>
               <div style={{paddingBottom:4,textAlign:'center',color:canDisplayProfileCustomization(selectedProfileUser) ? getContrastTextColor(selectedProfileUser.profileBgColor || '#fff') : '#e5a51b',fontSize:14,wordBreak:'break-all'}}>https://www.arabic.chat/#id{selectedProfileUser.userId}</div>
@@ -3719,6 +3589,5 @@ export default function App() {
       )}
 
     </div>
-    </>
   );
-    }
+}
