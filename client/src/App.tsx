@@ -232,7 +232,8 @@ export default function App() {
   const recordingTimerRef = useRef<number | null>(null);
   const chatImageInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string } | null>(null);
+  const [activePrivateChat, setActivePrivateChat] = useState<{ peerId: string; peerName: string; accessMode?: string } | null>(null);
+  const [showPrivateChatMenu, setShowPrivateChatMenu] = useState(false);
   const [privateMessages, setPrivateMessages] = useState<Array<any>>([]);
   const privateOlderMessagesRef = useRef<Record<string, any[]>>({});
   const privateFirstDocRef = useRef<Record<string, any>>({});
@@ -1737,8 +1738,8 @@ export default function App() {
       const peerData = peerSnap.exists() ? peerSnap.data() : {};
       const peerPrivateSetting = peerData.privateChatSetting || 'تشغيل';
       const isFriend = friendsList.some((f: any) => (f.friendUid || f.userId || f.uid || f.id) === peerId);
-      if (peerPrivateSetting === 'إيقاف') {
-        setErrorMessage('🔒 هذا المستخدم أغلق المحادثة الخاصة.');
+      if (peerPrivateSetting === 'إيقاف' || peerPrivateSetting === 'مغلق') {
+        setErrorMessage('عفواً، هذا العضو قامَ بإغلاق الرسائل الخاصة ولا يستطيع أي أحد محادثته.');
         return;
       }
       if (peerPrivateSetting === 'الأصدقاء فقط' && !isFriend) {
@@ -1746,7 +1747,8 @@ export default function App() {
         return;
       }
       stopProfileSong();
-      setActivePrivateChat({ peerId, peerName });
+      setActivePrivateChat({ peerId, peerName, accessMode: peerPrivateSetting === 'بطلب' ? 'بطلب' : 'مفتوح' });
+      setShowPrivateChatMenu(false);
       setSelectedProfileUser(null);
       setShowFriendsModal(false);
       setShowOnlineModal(false);
@@ -1756,6 +1758,77 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const closeMyPrivateMessages = async () => {
+    if (!user) return;
+    try {
+      await saveSettingToFirebase('privateChatSetting', 'إيقاف');
+      setPrivateChatSetting('إيقاف');
+      setShowPrivateChatMenu(false);
+      setSuccessMessage('تم إغلاق الرسائل الخاصة');
+      setTimeout(() => setSuccessMessage(''), 2200);
+    } catch (e) { console.error(e); setErrorMessage('تعذر إغلاق الرسائل الخاصة.'); }
+  };
+
+  const deleteActivePrivateConversation = async () => {
+    if (!user || !activePrivateChat) return;
+    const peerId = activePrivateChat.peerId;
+    const chatId = [user.uid, peerId].sort().join('_');
+    try {
+      // احذف الرسائل التابعة لهذه المحادثة، ثم احذفها من قائمتي الطرفين.
+      const messagesSnap = await getDocs(collection(db, 'private_messages', chatId, 'messages'));
+      await Promise.all(messagesSnap.docs.map(d => deleteDoc(d.ref)));
+      await Promise.all([
+        deleteDoc(doc(db, 'users', user.uid, 'private_chats', peerId)),
+        deleteDoc(doc(db, 'users', peerId, 'private_chats', user.uid))
+      ]);
+      setPrivateConversations(prev => prev.filter(c => c.peerId !== peerId));
+      setPrivateMessages([]);
+      setActivePrivateChat(null);
+      setShowPrivateChatMenu(false);
+    } catch (e) { console.error(e); setErrorMessage('تعذر حذف المحادثة. تحقق من صلاحيات Firebase.'); }
+  };
+
+  const sendPrivateChatRequest = async () => {
+    if (!user || !activePrivateChat) return;
+    try {
+      const senderName = user.displayName || user.email?.split('@')[0] || guestName || 'عضو';
+      await addDoc(collection(db, 'users', activePrivateChat.peerId, 'notifications'), {
+        type: 'private_chat_request', fromUid: user.uid, fromName: senderName,
+        title: 'طلب محادثة خاصة', body: `يريد ${senderName} بدء محادثة خاصة معك.`,
+        isRead: false, status: 'pending', createdAt: serverTimestamp()
+      });
+      setActivePrivateChat(prev => prev ? { ...prev, accessMode: 'طلب_مرسل' } : prev);
+      setSuccessMessage('تم إرسال طلب المحادثة، بانتظار قبول الطرف الآخر.');
+      setTimeout(() => setSuccessMessage(''), 2500);
+    } catch (e) { console.error(e); setErrorMessage('تعذر إرسال طلب المحادثة.'); }
+  };
+
+  const respondToPrivateChatRequest = async (note: any, accepted: boolean) => {
+    if (!user || !note?.id || !note.fromUid) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid, 'notifications', note.id), {
+        status: accepted ? 'accepted' : 'rejected', isRead: true,
+        responseAt: serverTimestamp()
+      });
+      await addDoc(collection(db, 'users', note.fromUid, 'notifications'), {
+        type: 'private_chat_response', fromUid: user.uid,
+        fromName: user.displayName || user.email?.split('@')[0] || 'عضو',
+        title: accepted ? 'تم قبول طلب المحادثة' : 'تم رفض طلب المحادثة',
+        body: accepted ? 'تم قبول طلبك. يمكنك الآن بدء المحادثة الخاصة.' : 'تم رفض طلب المحادثة الخاصة.',
+        accepted, isRead: false, createdAt: serverTimestamp()
+      });
+      if (accepted) {
+        await setDoc(doc(db, 'users', user.uid, 'private_chats', note.fromUid), {
+          peerId: note.fromUid, peerName: note.fromName || 'عضو', lastMessage: '', lastMessageTime: serverTimestamp(), unreadCount: 0
+        }, { merge: true });
+        await setDoc(doc(db, 'users', note.fromUid, 'private_chats', user.uid), {
+          peerId: user.uid, peerName: user.displayName || user.email?.split('@')[0] || 'عضو', lastMessage: '', lastMessageTime: serverTimestamp(), unreadCount: 0
+        }, { merge: true });
+      }
+      setNotificationsList(prev => prev.map(n => n.id === note.id ? { ...n, status: accepted ? 'accepted' : 'rejected', isRead: true } : n));
+    } catch (e) { console.error(e); setErrorMessage('تعذر معالجة طلب المحادثة.'); }
   };
 
   const handleSendFriendRequest = async (targetUserId: string, targetUserName: string) => {
@@ -2917,12 +2990,18 @@ export default function App() {
           <div style={{ backgroundColor: '#0b141a', color: '#ffffff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{activePrivateChat.peerName}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '16px', cursor: 'pointer' }}>⚙</span>
+              <button type="button" onClick={() => setShowPrivateChatMenu(v => !v)} style={{fontSize:'16px',cursor:'pointer',background:'transparent',border:0,color:'#fff'}}>⚙</button>
               <button onClick={() => setActivePrivateChat(null)} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             </div>
           </div>
 
+          {showPrivateChatMenu && <div style={{position:'absolute',top:48,left:70,zIndex:5,width:220,background:'#fff',borderRadius:8,boxShadow:'0 4px 16px #0003',color:'#555',overflow:'hidden'}}>
+            <button type="button" onClick={closeMyPrivateMessages} style={{width:'100%',padding:14,border:0,borderBottom:'1px solid #eee',background:'#fff',textAlign:'right',fontSize:14,cursor:'pointer'}}>🔕 غلق الخاص</button>
+            <button type="button" onClick={deleteActivePrivateConversation} style={{width:'100%',padding:14,border:0,background:'#fff',textAlign:'right',fontSize:14,cursor:'pointer'}}>🗑 حذف المحادثة</button>
+          </div>}
           <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {activePrivateChat.accessMode === 'بطلب' || activePrivateChat.accessMode === 'طلب_مرسل' ? <div style={{margin:'auto',textAlign:'center',background:'#fff',padding:18,borderRadius:10,color:'#475569',maxWidth:280}}>{activePrivateChat.accessMode === 'طلب_مرسل' ? 'تم إرسال طلب المحادثة، بانتظار قبول الطرف الآخر.' : <><div style={{marginBottom:12}}>هذا العضو يستقبل المحادثات بطلب. اضغط هنا لإرسال طلب محادثة خاصة.</div><button type="button" onClick={sendPrivateChatRequest} style={{border:0,borderRadius:8,padding:'10px 18px',background:'#13acd0',color:'#fff',fontWeight:700,cursor:'pointer'}}>اضغط هنا لطلب المحادثة</button></>}</div> : <>
+
             {hasMorePrivateMessages && <button type="button" onClick={loadMorePrivateMessages} disabled={loadingMorePrivateMessages} style={{alignSelf:'center',border:0,borderRadius:'8px',padding:'6px 12px',fontSize:'10px',background:'#e2e8f0',color:'#0f172a'}}>{loadingMorePrivateMessages?'جاري التحميل...':'تحميل المزيد'}</button>}
             {privateMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
@@ -2942,9 +3021,10 @@ export default function App() {
               })
             )}
             <div ref={privateChatBottomRef} />
+            </>}
           </div>
 
-          <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
+          {activePrivateChat.accessMode !== 'بطلب' && activePrivateChat.accessMode !== 'طلب_مرسل' && <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
             <button type="submit" style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px' }}>➤</button>
             <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '40px' }}>
               <input 
@@ -2957,7 +3037,7 @@ export default function App() {
             </div>
             <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#64748b' }}>📎</button>
             <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#64748b' }}>🎙</button>
-          </form>
+          </form>}
 
         </div>
       )}
@@ -3242,6 +3322,9 @@ export default function App() {
                       <span style={{ fontSize: '9px', color: '#a16207' }}>{note.createdAt}</span>
                     </div>
                     <div style={{ fontSize: '11px', color: '#713f12' }}>{note.body}</div>
+                    {note.type === 'private_chat_request' && (note.status || 'pending') === 'pending' && <div style={{display:'flex',gap:8,marginTop:8}}><button type="button" onClick={()=>respondToPrivateChatRequest(note,true)} style={{border:0,borderRadius:6,padding:'6px 14px',background:'#16a34a',color:'#fff',cursor:'pointer'}}>قبول</button><button type="button" onClick={()=>respondToPrivateChatRequest(note,false)} style={{border:0,borderRadius:6,padding:'6px 14px',background:'#dc2626',color:'#fff',cursor:'pointer'}}>رفض</button></div>}
+                    {note.type === 'private_chat_request' && note.status === 'accepted' && <div style={{fontSize:11,color:'#15803d',marginTop:5}}>تم قبول الطلب</div>}
+                    {note.type === 'private_chat_request' && note.status === 'rejected' && <div style={{fontSize:11,color:'#b91c1c',marginTop:5}}>تم رفض الطلب</div>}
                   </div>
                 ))
               )}
@@ -3423,7 +3506,7 @@ export default function App() {
                 {[
                   ['لغة الدردشة','chatLanguageSetting',chatLanguageSetting,setChatLanguageSetting,['Arabic','English']],
                   ['منطقة التوقيت الزمني','timezoneSetting',timezoneSetting,setTimezoneSetting,['Asia/Amman','Asia/Damascus','UTC']],
-                  ['دردشة خاصة','privateChatSetting',privateChatSetting,setPrivateChatSetting,['تشغيل','الأصدقاء فقط','إيقاف']],
+                  ['دردشة خاصة','privateChatSetting',privateChatSetting,setPrivateChatSetting,['تشغيل','الأصدقاء فقط','بطلب','إيقاف']],
                   ['الذين يمكنهم إرسال صور خاصة','privateImagesSetting',privateImagesSetting,setPrivateImagesSetting,['الجميع','الأصدقاء فقط','أنا فقط']],
                   ['طلبات الصداقة','friendRequestsSetting',friendRequestsSetting,setFriendRequestsSetting,['تشغيل','إيقاف']],
                   ['طلبات التحدث','talkRequestsSetting',talkRequestsSetting,setTalkRequestsSetting,['تشغيل','إيقاف']],
