@@ -243,6 +243,13 @@ export default function App() {
   const [loadingMorePrivateConversations, setLoadingMorePrivateConversations] = useState(false);
   const privateConversationsCursorRef = useRef<any>(null);
   const [privateInputText, setPrivateInputText] = useState('');
+  const [privateRecording, setPrivateRecording] = useState(false);
+  const [privateRecordingData, setPrivateRecordingData] = useState<string | null>(null);
+  const [privateRecordingSeconds, setPrivateRecordingSeconds] = useState(0);
+  const privateMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const privateVoiceChunksRef = useRef<Blob[]>([]);
+  const privateRecordingTimerRef = useRef<number | null>(null);
+  const privateImageInputRef = useRef<HTMLInputElement | null>(null);
   const [privateConversations, setPrivateConversations] = useState<Array<any>>([]);
 
   const [pendingRequests, setPendingRequests] = useState<Array<any>>([]);
@@ -1731,6 +1738,66 @@ export default function App() {
     }
   };
 
+  const sendPrivateMedia = async (mediaType: 'image' | 'voice', mediaData: string, mediaName: string) => {
+    if (!user || !activePrivateChat || !mediaData) return;
+    const chatId = [user.uid, activePrivateChat.peerId].sort().join('_');
+    const { senderName } = getSenderInfo();
+    const preview = mediaType === 'image' ? '📷 صورة' : '🎙 رسالة صوتية';
+    try {
+      await addDoc(collection(db, 'private_messages', chatId, 'messages'), {
+        senderId: user.uid, senderName, text: '', mediaType, mediaData, mediaName,
+        createdAt: serverTimestamp()
+      });
+      const ownRef = doc(db, 'users', user.uid, 'private_chats', activePrivateChat.peerId);
+      await setDoc(ownRef, { peerId: activePrivateChat.peerId, peerName: activePrivateChat.peerName, lastMessage: preview, lastMessageTime: serverTimestamp(), unreadCount: 0 }, { merge: true });
+      const peerRef = doc(db, 'users', activePrivateChat.peerId, 'private_chats', user.uid);
+      const peerSnap = await getDoc(peerRef);
+      await setDoc(peerRef, { peerId: user.uid, peerName: senderName, lastMessage: preview, lastMessageTime: serverTimestamp(), unreadCount: (peerSnap.exists() ? Number(peerSnap.data().unreadCount || 0) : 0) + 1 }, { merge: true });
+      setPrivateRecordingData(null);
+    } catch (err) {
+      console.error('sendPrivateMedia error:', err);
+      setErrorMessage('❌ تعذر إرسال الوسائط في الخاص. تحقق من اتصالك وحجم الملف.');
+    }
+  };
+
+  const handlePrivateImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setErrorMessage('اختر صورة من الاستوديو.'); e.target.value = ''; return; }
+    if (file.size > 700 * 1024) { setErrorMessage('حجم الصورة كبير؛ اختر صورة أقل من 700 كيلوبايت.'); e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => { if (typeof reader.result === 'string') void sendPrivateMedia('image', reader.result, file.name || 'image.jpg'); };
+    reader.onerror = () => setErrorMessage('تعذر قراءة الصورة.');
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const startPrivateVoiceRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || !activePrivateChat || privateRecording) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+      const recorder = mime ? new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 24000 }) : new MediaRecorder(stream, { audioBitsPerSecond: 24000 });
+      privateVoiceChunksRef.current = [];
+      recorder.ondataavailable = ev => { if (ev.data.size) privateVoiceChunksRef.current.push(ev.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(privateVoiceChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => { if (typeof reader.result === 'string') void sendPrivateMedia('voice', reader.result, 'voice.webm'); };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      recorder.start(); privateMediaRecorderRef.current = recorder; setPrivateRecording(true); setPrivateRecordingSeconds(0);
+      privateRecordingTimerRef.current = window.setInterval(() => setPrivateRecordingSeconds(v => v + 1), 1000);
+    } catch (err) { console.error(err); setErrorMessage('تعذر تشغيل المايك. اسمح للموقع باستخدام الميكروفون ثم حاول مجددًا.'); }
+  };
+
+  const stopPrivateVoiceRecording = () => {
+    if (privateMediaRecorderRef.current && privateMediaRecorderRef.current.state !== 'inactive') privateMediaRecorderRef.current.stop();
+    privateMediaRecorderRef.current = null; setPrivateRecording(false);
+    if (privateRecordingTimerRef.current) { window.clearInterval(privateRecordingTimerRef.current); privateRecordingTimerRef.current = null; }
+  };
+
   const openPrivateChatWithUser = async (peerId: string, peerName: string) => {
     if (!user || peerId === user.uid) return;
     try {
@@ -3014,7 +3081,7 @@ export default function App() {
                   <div key={msg.id || idx} style={{ display: 'flex', justifyContent: isMe ? 'flex-start' : 'flex-end' }}>
                     <div style={{ maxWidth: '75%', backgroundColor: isMe ? '#dcfce7' : '#ffffff', color: '#1e293b', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #cbd5e1' }}>
                       <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', fontWeight: 'bold' }}>{msg.senderName}</div>
-                      <div>{msg.text}</div>
+                      {msg.mediaType === 'image' && msg.mediaData ? <div style={{display:'flex',flexDirection:'column',gap:4}}><img src={msg.mediaData} alt={msg.mediaName || 'صورة مرسلة'} style={{display:'block',maxWidth:220,maxHeight:220,borderRadius:8,objectFit:'contain'}} /><a href={msg.mediaData} download={msg.mediaName || 'image.jpg'} style={{fontSize:10,color:'#0284c7'}}>تنزيل الصورة</a></div> : msg.mediaType === 'voice' && msg.mediaData ? <audio controls preload="metadata" src={msg.mediaData} style={{width:220,maxWidth:'100%',height:38}} /> : <div>{msg.text}</div>}
                     </div>
                   </div>
                 );
@@ -3024,7 +3091,10 @@ export default function App() {
             </>}
           </div>
 
-          {activePrivateChat.accessMode !== 'بطلب' && activePrivateChat.accessMode !== 'طلب_مرسل' && <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
+          {activePrivateChat.accessMode !== 'بطلب' && activePrivateChat.accessMode !== 'طلب_مرسل' && <>
+          <input type="file" ref={privateImageInputRef} accept="image/*" style={{display:'none'}} onChange={handlePrivateImageSelect} />
+          {privateRecording && <div style={{padding:'5px 10px',background:'#fff1f2',color:'#dc2626',fontSize:12,textAlign:'center'}}>● جاري تسجيل الرسالة الصوتية {privateRecordingSeconds} ثانية <button type="button" onClick={stopPrivateVoiceRecording} style={{marginRight:8,border:0,borderRadius:5,padding:'4px 9px',background:'#dc2626',color:'#fff'}}>إيقاف وإرسال</button></div>}
+          <form onSubmit={handleSendPrivateMessage} style={{ backgroundColor: '#f1f5f9', padding: '8px', borderTop: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: '0' }}>
             <button type="submit" style={{ backgroundColor: '#0b141a', color: '#fff', border: 'none', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '15px' }}>➤</button>
             <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '20px', display: 'flex', alignItems: 'center', padding: '0 12px', border: '1px solid #cbd5e1', height: '40px' }}>
               <input 
@@ -3035,9 +3105,9 @@ export default function App() {
                 style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', textAlign: 'right', fontSize: '13px' }}
               />
             </div>
-            <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#64748b' }}>📎</button>
-            <button type="button" style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#64748b' }}>🎙</button>
-          </form>}
+            <button type="button" onClick={() => privateImageInputRef.current?.click()} title="إرسال صورة من الاستوديو" style={{ background: 'transparent', border: 'none', fontSize: '19px', cursor: 'pointer', color: '#64748b' }}>📎</button>
+            <button type="button" onClick={privateRecording ? stopPrivateVoiceRecording : startPrivateVoiceRecording} title={privateRecording ? 'إيقاف وإرسال التسجيل' : 'تسجيل رسالة صوتية'} style={{ background: 'transparent', border: 'none', fontSize: '19px', cursor: 'pointer', color: privateRecording ? '#dc2626' : '#64748b' }}>🎙</button>
+          </form></>}
 
         </div>
       )}
